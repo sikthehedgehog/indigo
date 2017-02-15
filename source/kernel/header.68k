@@ -27,13 +27,14 @@
 ;****************************************************************************
 
     dc.b    'SEGA MEGA DRIVE '
-    dc.b    '(C) SIK 20XX.XXX'
+    dc.b    '(C) SIK 2017.FEB'
     dc.b    'INDIGO OPERATING SYSTEM 0.10'
     dcb.b   $150-*, $20
     dc.b    'INDIGO OPERATING SYSTEM 0.10'
     dcb.b   $180-*, $20
-    dc.b    'OS SIK-INDI-XX'
+    dc.b    'OS SIK-INDI-00'
     dc.w    $0000
+    dc.b    'M'
     dcb.b   $1A0-*, $20
     dc.l    $000000, $1FFFFF
     dc.l    $FF0000, $FFFFFF
