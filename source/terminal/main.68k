@@ -1,0 +1,81 @@
+EntryPoint:
+    moveq   #0, d7                      ; Load graphics
+    move.w  #NumPatterns, d6
+    lea     Patterns(pc), a6
+    syscall OS_LOADPATTERNS
+    moveq   #1, d7
+    lea     AltPalette(pc), a6
+    syscall OS_LOADPALETTE
+    
+    lea     Layout(pc), a6              ; Load interface
+    syscall OS_PARSELAYOUT
+    
+    syscall OS_ALLOCSPRITE              ; Allocate sprite for the cursor
+    move.b  d7, (CursorSprite)
+    
+;----------------------------------------------------------------------------
+
+    moveq   #0, d7                      ; Draw monitor
+    moveq   #0, d6
+    moveq   #0, d5
+    move.w  #40, a6
+    move.w  #25, a5
+    move.w  #VramBorder+$A000, a4
+    syscall OS_FILLTILES
+
+    moveq   #1, d7                      ; Draw monitor frame
+    moveq   #1, d6
+    moveq   #0, d5
+    move.w  #36, a6
+    move.w  #21, a5
+    move.w  #VramFrame+$A000, a4
+    syscall OS_FILLFRAME
+    
+    moveq   #2, d7                      ; Draw text mode graphics
+    moveq   #0, d6
+    moveq   #1, d5
+    move.w  #36, a6
+    move.w  #32, a5
+    move.w  #VramScreen+$2000, a4
+    syscall OS_DRAWTILES
+    
+    move.w  #VramScreen, d7
+    move.w  #36*NUM_ROWS, d6
+    moveq   #$0E, d5
+    syscall OS_FILLPATTERNS
+
+;----------------------------------------------------------------------------
+
+    clr.b   (CursorX)                   ; Set up console
+    clr.b   (CursorY)
+    clr.b   (CursorBlink)
+    bsr     ClearBuffer
+    
+    bsr     ShowVersion
+    bsr     ShowMemory
+    
+    lea     @Message1(pc), a6           ; Sowwy!
+    bsr     PrintLine
+    lea     @Message2(pc), a6
+    bsr     PrintLine
+    bsr     PrintBlank
+    
+    bsr     ClearBuffer                 ; Render a fake prompt
+    lea     @Prompt(pc), a6
+    bsr     AddText
+    bsr     RenderText
+    
+    bra     MainLoop
+
+@Message1:  dc.b 'Sorry!! Terminal currently out of order', 0
+@Message2:  dc.b 'Please wait for keyboard support :)', 0
+@Prompt:    dc.b '>', 0
+            even
+
+;----------------------------------------------------------------------------
+
+MainLoop:
+    bsr     UpdateCursor                ; Position the cursor
+    syscall OS_GUILOOP
+    not.b   (CursorBlink)
+    bra.s   MainLoop

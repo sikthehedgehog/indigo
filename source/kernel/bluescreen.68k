@@ -1,0 +1,85 @@
+;****************************************************************************
+; ErrorInt
+; Handler for when a program crashes.
+;****************************************************************************
+
+ErrorInt:
+    move.w  #$2700, sr                  ; Disable all interrupts!
+    move.l  ($0000).w, sp               ; Restore the stack
+    
+    bsr     InitVideo                   ; Reinitialize video hardware
+    bsr     ClearScreen                 ; Remove any screen leftovers
+    
+    moveq   #0, d7                      ; Set scrolling
+    moveq   #-1, d6                     ; Plane B is pushed by 1px to
+    move.w  d7, a6                      ; do the text shadow effect
+    move.w  d6, a5
+    bsr     SetScroll
+    
+    moveq   #0, d7                      ; Ensure blank tile is blank
+    lea     ($C00000), a6               ; (should have left this in InitVideo
+    st.b    (DontDraw)                  ; too... gonna see how do I handle
+    move.l  #$7FE00003, 4(a6)           ; this one later, maybe)
+    move.l  d7, (a6)
+    move.l  d7, (a6)
+    move.l  d7, (a6)
+    move.l  d7, (a6)
+    move.l  d7, (a6)
+    move.l  d7, (a6)
+    move.l  d7, (a6)
+    move.l  d7, (a6)
+    clr.b   (DontDraw)
+    
+    lea     ($C00004), a0               ; Change some settings
+    lea     ($C00000), a1
+    move.w  #$870E, (a0)
+    move.w  #$9100, (a0)
+    move.w  #$9200, (a0)
+    
+    move.l  #$78000003, (a0)            ; Move all sprites away
+    move.l  #$00000000, (a1)
+    
+    move.l  #$C01C0000, (a0)            ; Load palettes
+    move.l  #$08200EEE, (a1)
+    move.l  #$C03C0000, (a0)
+    move.l  #$08200000, (a1)
+    
+    moveq   #0, d7                      ; Show message on screen
+    lea     @Message(pc), a6
+    bsr     LoadTextList
+    lea     @MessageList(pc), a6
+    bsr     DrawLabelList
+    
+    move.w  #$8174, ($C00004)           ; Make screen visible
+    bra.s   *                           ; Hang up
+
+;----------------------------------------------------------------------------
+
+@Message:
+    dc.b    32,$0E,'Error!!',$0F,' Application has stopped working!',0
+    dc.b    32,'Any not saved work ',$0E,'may',$0F,' have been lost.',0
+    dc.b    32,'Press ',$0E,'Reset',$0F,' button to go back to the desktop.',0
+    dc.b    32,'Sorry for the inconvenience ',$0E,'(',$27,'-',$27,';)',0
+    dc.b    0
+    even
+
+@MessageList:
+    dc.b    4,2,0,32
+    dc.w    $0000
+    dc.b    4,4,0,32
+    dc.w    $0020
+    dc.b    4,5,0,32
+    dc.w    $0040
+    dc.b    4,7,0,32
+    dc.w    $0060
+    
+    dc.b    4,2,1,32
+    dc.w    $2000
+    dc.b    4,4,1,32
+    dc.w    $2020
+    dc.b    4,5,1,32
+    dc.w    $2040
+    dc.b    4,7,1,32
+    dc.w    $2060
+    
+    dc.w    $FFFF

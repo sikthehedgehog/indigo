@@ -1,0 +1,538 @@
+;****************************************************************************
+; Normalize
+; Normalizes a number (removes excess zeroes, etc.)
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to number
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+Normalize:
+    moveq   #0, d7                      ; Check if we need to add the comma
+    move.b  11(a6), d7
+    beq.s   @CommaOk
+    bpl.s   @HasComma
+    clr.b   11(a6)
+    bra.s   @CommaOk
+@HasComma:
+    
+    moveq   #0, d6                      ; Count how many excess zeroes are
+    lea     10(a6), a5                  ; after the comma (we want to get
+@ExcessLoop:                            ; rid of them)
+    cmp.b   d7, d6
+    beq.s   @ExcessEnd
+    tst.b   -(a5)
+    bne.s   @ExcessEnd
+    addq.b  #1, d6
+    bra.s   @ExcessLoop
+@ExcessEnd:
+    tst.b   d6
+    beq.s   @CommaOk
+    
+    sub.b   d6, d7                      ; Store fixed comma
+    move.b  d7, 11(a6)
+    
+    move.w  d6, d7                      ; Push all digits to the right to
+    neg.w   d7                          ; remove the excess zeroes
+    lea     10(a6), a5
+    lea     (a5,d7.w), a4
+    moveq   #10-1, d7
+    sub.w   d6, d7
+@FixLoop:
+    move.b  -(a4), -(a5)
+    dbf     d7, @FixLoop
+    
+    moveq   #0, d5                      ; Fill in spaces with zeroes
+    move.l  a6, a5
+    move.w  d6, d7
+    subq.w  #1, d7
+@PadLoop:
+    move.b  d5, (a5)+
+    dbf     d7, @PadLoop
+@CommaOk:
+    
+    move.l  (a6), d7                    ; Ensure zero is always +0.
+    or.w    4(a6), d7
+    or.l    6(a6), d7
+    bne.s   @NotZero
+    clr.w   10(a6)
+@NotZero:
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; Equal
+; Code for the equals (=) operation.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to source number
+; input a5.l ... Pointer to destination number
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+Equal:
+    move.l  (a6)+, (a5)+                ; Just copy the number
+    move.l  (a6)+, (a5)+
+    move.l  (a6)+, (a5)+
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; Add
+; Code for the addition (+) operation.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to source number
+; input a5.l ... Pointer to destination number
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+Add:
+    moveq   #0, d0                      ; Allocate buffers
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    move.l  sp, a1
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    move.l  sp, a0
+    
+    move.b  11(a6), d0                  ; Copy 1st number into buffer
+    lea     (a0,d0.w), a2
+    move.b  (a6)+, (a2)+
+    move.b  (a6)+, (a2)+
+    move.b  (a6)+, (a2)+
+    move.b  (a6)+, (a2)+
+    move.b  (a6)+, (a2)+
+    move.b  (a6)+, (a2)+
+    move.b  (a6)+, (a2)+
+    move.b  (a6)+, (a2)+
+    move.b  (a6)+, (a2)+
+    move.b  (a6)+, (a2)+
+    lea     -10(a6), a6
+    
+    move.b  11(a5), d0                  ; Copy 2nd number into buffer
+    lea     (a1,d0.w), a2
+    move.b  (a5)+, (a2)+
+    move.b  (a5)+, (a2)+
+    move.b  (a5)+, (a2)+
+    move.b  (a5)+, (a2)+
+    move.b  (a5)+, (a2)+
+    move.b  (a5)+, (a2)+
+    move.b  (a5)+, (a2)+
+    move.b  (a5)+, (a2)+
+    move.b  (a5)+, (a2)+
+    move.b  (a5)+, (a2)+
+    lea     -10(a5), a5
+    
+    move.b  10(a6), d0                  ; Check what kind of operation to do
+    move.b  10(a5), d1                  ; I wish we could just do ADD with
+                                        ; two's complement...
+    cmp.b   d1, d0
+    beq.s   @SumUp
+    
+    move.l  a0, a2
+    move.l  a1, a3
+    moveq   #20-1, d7
+@Compare:
+    move.b  (a3)+, d2
+    cmp.b   (a2)+, d2
+    bgt     @Difference
+    blt     @ReverseDiff
+    dbf     d7, @Compare
+    bra     @Zeroed
+
+;----------------------------------------------------------------------------
+
+@SumUp:
+    move.b  d0, 10(a5)                  ; Result's sign will match the
+                                        ; sign of the operands
+    
+    lea     20(a0), a0                  ; Add up all digits
+    lea     20(a1), a1
+    moveq   #0, d0
+    moveq   #10, d1
+    moveq   #20-1, d7
+@SumLoop:
+    move.b  -(a0), d6
+    add.b   -(a1), d6
+    add.b   d0, d6
+    moveq   #0, d0
+    cmp.b   d1, d6
+    blo.s   @NoCarry
+    sub.b   d1, d6
+    moveq   #1, d0
+@NoCarry:
+    move.b  d6, (a1)
+    dbf     d7, @SumLoop
+    
+    tst.b   d0                          ; Did it overflow?
+    beq.s   @SumOk
+    st.b    (Errored)
+    bra     @End
+@SumOk:
+    bra     @FindComma
+
+;----------------------------------------------------------------------------
+
+@ReverseDiff:
+    exg.l   a0, a1
+    not.b   10(a5)
+
+@Difference:
+    lea     20(a0), a0
+    lea     20(a1), a1
+    moveq   #0, d0
+    moveq   #10, d1
+    moveq   #20-1, d7
+@DiffLoop:
+    move.b  -(a1), d6
+    sub.b   -(a0), d6
+    sub.b   d0, d6
+    moveq   #0, d0
+    tst.b   d6
+    bge.s   @NoBorrow
+    moveq   #1, d0
+    add.b   d1, d6
+@NoBorrow:
+    move.b  d6, (a1)
+    dbf     d7, @DiffLoop
+    
+    bra     @FindComma
+
+;----------------------------------------------------------------------------
+
+@Zeroed:
+    moveq   #0, d0                      ; The easy case: result is just 0
+    move.l  d0, (a5)+
+    move.l  d0, (a5)+
+    move.l  d0, (a5)+
+
+;----------------------------------------------------------------------------
+
+@FindComma:
+    moveq   #0, d0                      ; Find where the comma is
+    moveq   #9-1, d1
+@CommaLoop:
+    tst.b   (a1)
+    bne.s   @CommaFound
+    addq.b  #1, d0
+    addq.w  #1, a1
+    dbf     d1, @CommaLoop
+@CommaFound:
+    move.b  d0, 11(a5)
+    
+    move.b  (a1)+, (a5)+                ; Store result's digits
+    move.b  (a1)+, (a5)+
+    move.b  (a1)+, (a5)+
+    move.b  (a1)+, (a5)+
+    move.b  (a1)+, (a5)+
+    move.b  (a1)+, (a5)+
+    move.b  (a1)+, (a5)+
+    move.b  (a1)+, (a5)+
+    move.b  (a1)+, (a5)+
+    move.b  (a1)+, (a5)+
+
+@End:
+    lea     40(sp), sp                  ; Get rid of buffers
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; Substract
+; Code for the substraction (-) operation.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to source number
+; input a5.l ... Pointer to destination number
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+Substract:
+    not.b   10(a6)                      ; Flip the sign of the source value
+    bra     Add                         ; and just do an addition
+
+;****************************************************************************
+; Multiply
+; Code for the multiplication (×) operation.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to source number
+; input a5.l ... Pointer to destination number
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+Multiply:
+    moveq   #0, d0                      ; Allocate buffer
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    
+    lea     22(sp), a0                  ; Perform multiplication the old
+    lea     10(a6), a1                  ; fashioned way... (thankfully, we
+    moveq   #10-1, d6                   ; can ignore sign and comma here)
+@YLoop:
+    moveq   #0, d0
+    move.b  -(a1), d0
+    lea     10(a5), a2
+    moveq   #0, d2
+    moveq   #10-1, d7
+@XLoop:
+    moveq   #0, d1
+    move.b  -(a2), d1
+    mulu.w  d0, d1
+    add.b   d2, d1
+    add.b   -(a0), d1
+    move.l  d1, d5
+    divu.w  #10, d5
+    move.b  d5, d2
+    swap    d5
+    move.b  d5, (a0)
+    dbf     d7, @XLoop
+    move.b  d2, -(a0)
+    lea     10(a0), a0
+    dbf     d6, @YLoop
+    
+    move.l  sp, a0                      ; Check how many digits are there
+    moveq   #22, d0
+@CountLoop:
+    tst.b   (a0)+
+    bne.s   @CountDone
+    subq.b  #1, d0
+    bne.s   @CountLoop
+    bra     @Zeroed
+@CountDone:
+    
+    move.b  11(a6), d1                  ; Check where the comma would go
+    add.b   11(a5), d1
+    move.b  d1, d7
+    sub.b   d0, d7
+    add.b   #10, d7
+    bmi     @Error
+    cmp.b   #9, d7
+    bls.s   @NotTiny
+    sub.b   #9, d7
+    add.b   d7, d0
+    moveq   #9, d7
+@NotTiny:
+    move.b  d7, 11(a5)
+    
+    move.b  10(a6), d7                  ; Apply signs rule
+    move.b  10(a5), d6
+    eor.b   d6, d7
+    move.b  d7, 10(a5)
+    
+    neg.w   d0                          ; Store result's digits
+    lea     22(sp,d0.w), a0
+    move.b  (a0)+, (a5)+
+    move.b  (a0)+, (a5)+
+    move.b  (a0)+, (a5)+
+    move.b  (a0)+, (a5)+
+    move.b  (a0)+, (a5)+
+    move.b  (a0)+, (a5)+
+    move.b  (a0)+, (a5)+
+    move.b  (a0)+, (a5)+
+    move.b  (a0)+, (a5)+
+    move.b  (a0)+, (a5)+
+    
+@End:
+    lea     32(sp), sp                  ; Get rid of buffer
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Error:
+    st.b    (Errored)                   ; Whoops!
+    bra.s   @End
+
+;----------------------------------------------------------------------------
+
+@Zeroed:
+    moveq   #0, d0                      ; For when the result becomes so
+    move.l  d0, (a5)+                   ; small it rounds down to zero
+    move.l  d0, (a5)+
+    st.b    d0
+    move.l  d0, (a5)+
+    bra.s   @End
+
+;****************************************************************************
+; Divide
+; Code for the division (÷) operation.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to source number
+; input a5.l ... Pointer to destination number
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+Divide:
+    move.l  (a6), d7                    ; Ensure we aren't dividing by zero
+    or.w    4(a6), d7
+    or.l    6(a6), d7
+    bne.s   @NotByZero
+    st.b    (Errored)
+    rts
+@NotByZero:
+    
+    move.l  (a5), d7                    ; If the dividend is 0 then the
+    or.w    4(a5), d7                   ; result is 0 (we shortcircuit this
+    or.l    6(a5), d7                   ; here because then it lets us
+    bne.s   @NotZero                    ; assume there's at least a non-zero
+    moveq   #0, d0                      ; digit in the dividend)
+    move.l  d0, (a5)+
+    move.l  d0, (a5)+
+    st.b    d0
+    move.l  d0, (a5)+
+    rts
+@NotZero:
+    
+    moveq   #0, d0                      ; Make room for dividend
+    lea     10(a5), a0
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    move.w  d0, -(sp)
+    move.l  -(a0), -(sp)
+    move.l  -(a0), -(sp)
+    move.w  -(a0), -(sp)
+    move.l  d0, -(sp)
+    move.l  d0, -(sp)
+    move.w  d0, -(sp)
+    
+    lea     10(a6), a0                  ; Copy divisor into buffer
+    move.l  -(a0), -(sp)
+    move.l  -(a0), -(sp)
+    move.w  -(a0), -(sp)
+    
+    move.l  a5, a0                      ; Clear the incomplete result
+    move.l  d0, (a0)+
+    move.l  d0, (a0)+
+    move.w  d0, (a0)+
+    
+    moveq   #0, d2                      ; Assume no comma yet
+    
+    lea     20(sp), a0                  ; Find the first significant digit
+@SkipLeading:                           ; of the dividend and put it at the
+    tst.b   (a0)+                       ; end of the window (so only one
+    bne.s   @LeadingEnd                 ; digit is within the window)
+    addq.b  #1, d2
+    bra.s   @SkipLeading
+@LeadingEnd:
+    lea     -10(a0), a0
+    
+    moveq   #0, d3                      ; Flag used to ensure that leading
+                                        ; zeroes are not included
+    
+    moveq   #10-1, d1                   ; Go compute all 10 positions
+    move.l  a5, a4
+@Loop:
+    moveq   #0, d0                      ; Start with a count of 0
+    
+@Compare:
+    move.l  a0, a1                      ; Check if we can substract the
+    move.l  sp, a2                      ; value in the window from the
+    moveq   #10-1, d7                   ; divisor
+@CompareLoop:
+    move.b  (a1)+, d6
+    cmp.b   (a2)+, d6
+    blo.s   @CompareLow
+    bhi.s   @CompareHigh
+    dbf     d7, @CompareLoop
+@CompareHigh:
+    
+    addq.b  #1, d0                      ; Increase the digit
+    
+    lea     10(a0), a1                  ; Substract divisor from the window
+    lea     10(sp), a2
+    moveq   #10, d4
+    moveq   #0, d5
+    moveq   #10-1, d7
+@Substract:
+    move.b  -(a1), d6
+    sub.b   -(a2), d6
+    sub.b   d5, d6
+    moveq   #0, d5
+    tst.b   d6
+    bpl.s   @NoBorrow
+    add.b   d4, d6
+    moveq   #1, d5
+@NoBorrow:
+    move.b  d6, (a1)
+    dbf     d7, @Substract
+    
+    bra.s   @Compare                    ; See if we can keep substracting
+@CompareLow:
+    
+    or.b    d0, d3                      ; Store resulting digit, if any
+    beq.s   @NoDigit
+    move.b  d0, (a4)+
+    bra.s   @DigitOk
+@NoDigit:
+    addq.b  #1, d2
+    addq.w  #1, d1
+@DigitOk:
+    
+    addq.w  #1, a0                      ; Go compute next digit
+    dbf     d1, @Loop
+    
+    move.b  10(a6), d7                  ; Apply signs rule
+    move.b  10(a5), d6
+    eor.b   d6, d7
+    move.b  d7, 10(a5)
+    
+    add.b   11(a5), d2                  ; Determine where the comma goes
+    sub.b   11(a6), d2
+    blt.s   @Error
+    cmp.b   #9, d2
+    bgt.s   @Tiny
+    move.b  d2, 11(a5)
+    
+@End:
+    lea     40(sp), sp                  ; Get rid of buffers
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Error:
+    st.b    (Errored)
+    bra.s   @End
+
+;----------------------------------------------------------------------------
+
+@Zeroed:
+    moveq   #0, d0
+    move.l  d0, (a5)+
+    move.l  d0, (a5)+
+    st.b    d0
+    move.l  d0, (a5)+
+    bra.s   @End
+
+;----------------------------------------------------------------------------
+
+@Tiny:
+    sub.b   #9, d2                      ; How many spaces to push?
+    cmp.b   #9, d2
+    bhi.s   @Zeroed
+    
+@TinyLoop:
+    lea     10(a5), a0                  ; Push all digits to the right
+    lea     9(a5), a1
+    moveq   #9-1, d7
+@TinyPush:
+    move.b  -(a1), -(a0)
+    dbf     d7, @TinyPush
+    clr.b   (a1)
+    
+    subq.b  #1, d2                      ; Gotta keep pushing?
+    bne.s   @TinyLoop
+    
+    move.b  #9, 11(a5)                  ; Set the comma where it should go
+    bra.s   @End                        ; We're done here

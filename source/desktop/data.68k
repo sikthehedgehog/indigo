@@ -1,0 +1,53 @@
+;****************************************************************************
+; Icon IDs
+;****************************************************************************
+
+                    rsreset
+
+ID_CALCULATOR:      rs.b 1              ; Calculator
+ID_TERMINAL:        rs.b 1              ; Terminal
+ID_SETTINGS:        rs.b 1              ; Settings
+
+;****************************************************************************
+; Desktop layout
+;****************************************************************************
+
+Layout:
+    OSUI_Button ID_CALCULATOR, 2,1, 3,3, VramCalculator
+    OSUI_Button ID_TERMINAL, 31,21, 3,3, VramTerminal
+    OSUI_Button ID_SETTINGS, 35,21, 3,3, VramSettings
+    OSUI_End
+
+;****************************************************************************
+; Program filenames
+;****************************************************************************
+
+Filenames:
+    dc.w    FileCalculator-Filenames
+    dc.w    FileTerminal-Filenames
+    dc.w    FileSettings-Filenames
+
+FileCalculator:     dc.b 'calculator.ixec', 0
+FileTerminal:       dc.b 'terminal.ixec', 0
+FileSettings:       dc.b 'settings.ixec', 0
+                    even
+
+;****************************************************************************
+; Icons
+;****************************************************************************
+
+Patterns:
+    incbin  "desktop/blob/icons.blob"
+
+;****************************************************************************
+; Pattern IDs
+;****************************************************************************
+
+                    rsreset
+
+VramCalculator:     rs.b 9*2            ; Calculator
+VramTerminal:       rs.b 9*2            ; Terminal
+VramSettings:       rs.b 9*2            ; Settings
+
+VramBg:             rs.b 1              ; Background
+NumPatterns:        rs.b 0              ; Number of patterns

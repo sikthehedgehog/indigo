@@ -1,0 +1,26 @@
+;***************************************************************************
+; BuildTaskbar
+; Adds the widgets for the taskbar.
+;---------------------------------------------------------------------------
+; input a6.l .... Pointer to widget list
+;---------------------------------------------------------------------------
+; output a6.l ... Pointer to first free widget
+;---------------------------------------------------------------------------
+; breaks: d5-d7, a4, a6
+;***************************************************************************
+
+BuildTaskbar:
+    move.b  #WTYPE_QUIT, WIDGET_TYPE(a5)    ; Add "Apps" button
+    move.b  #WSHAPE_TASKAPPS, WIDGET_SHAPE(a5)
+    move.b  #-1, WIDGET_ID(a5)
+    move.b  #-1, WIDGET_VALUE(a5)
+    
+    move.b  #1, WIDGET_X1(a5)
+    move.b  #25, WIDGET_Y1(a5)
+    move.b  #6, WIDGET_X2(a5)
+    move.b  #28, WIDGET_Y2(a5)
+    move.w  #$8000+VramApps, WIDGET_GFX1(a5)
+    move.w  #$800F+VramApps, WIDGET_GFX2(a5)
+    
+    lea     WIDGET_SIZE(a5), a5
+    rts                                     ; End of subroutine

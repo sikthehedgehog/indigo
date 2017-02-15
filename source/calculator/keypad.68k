@@ -1,0 +1,230 @@
+;****************************************************************************
+; AddDigit
+; Adds a digit to the number being entered.
+;----------------------------------------------------------------------------
+; input d6.b ... Digit
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+AddDigit:
+    move.b  d6, -(sp)
+    bsr     EraseIfNeeded               ; Remove leftovers if needed
+    move.b  (sp)+, d6
+    
+    tst.b   (Operand1)                  ; Check if there's room for a digit
+    bne.s   @NoRoom
+    cmpi.b  #9,(Operand1+11)
+    bne.s   @HasRoom
+@NoRoom:
+    rts
+@HasRoom:
+    
+    lea     (Operand1), a6              ; Make room for new digit
+    lea     1(a6), a5
+    moveq   #9-1, d7
+@Loop:
+    move.b  (a5)+, (a6)+
+    dbf     d7, @Loop
+    
+    move.b  d6, (Operand1+9)            ; Store new digit
+    
+    tst.b   (Operand1+11)               ; Push comma leftwards if present
+    bmi.s   @NoCommaPush
+    addq.b  #1, (Operand1+11)
+@NoCommaPush:
+    
+    lea     (Operand1), a6              ; Refresh the display
+    bra     ShowNumber
+
+;****************************************************************************
+; AddComma
+; Adds the comma to the number being entered.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+AddComma:
+    bsr     EraseIfNeeded               ; Remove leftovers if needed
+    
+    tst.b   (Operand1+11)               ; Add comma if needed
+    bpl.s   @AlreadyThere
+    clr.b   (Operand1+11)
+@AlreadyThere:
+    
+    lea     (Operand1), a6              ; Refresh the display
+    bra     ShowNumber
+
+;****************************************************************************
+; FlipSign
+; Flips the sign of the number being entered.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+FlipSign:
+    bsr     EraseIfNeeded               ; Remove leftovers if needed
+    
+    not.b   (Operand1+10)               ; Flip the sign
+    lea     (Operand1), a6              ; Refresh display
+    bra     ShowNumber
+
+;****************************************************************************
+; Backspace
+; Removes a character from the number being entered.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+Backspace:
+    bsr     EraseIfNeeded               ; Remove leftovers if needed
+    
+    tst.b   (Operand1+11)               ; Remove comma?
+    bne.s   @NoComma
+    st.b    (Operand1+11)
+    bra.s   @End
+@NoComma:
+    
+    move.l  (Operand1), d7              ; Remove sign?
+    or.w    (Operand1+4), d7
+    or.l    (Operand1+6), d7
+    bne.s   @HasDigits
+    tst.b   (Operand1+11)
+    bpl.s   @HasDigits
+    clr.b   (Operand1+10)
+    bra.s   @End
+@HasDigits:
+    
+    lea     (Operand1+9), a6            ; Remove last digit
+    lea     1(a6), a5
+    moveq   #9-1, d7
+@Loop:
+    move.b  -(a6), -(a5)
+    dbf     d7, @Loop
+    clr.b   (Operand1)
+    
+    tst.b   (Operand1+11)               ; Push comma rightwards
+    bmi.s   @NoCommaPush
+    subq.b  #1, (Operand1+11)
+@NoCommaPush:
+    
+@End:
+    lea     (Operand1), a6              ; Refresh display
+    bra     ShowNumber
+
+;****************************************************************************
+; AllClear
+; Resets the calculator to its initial state (memory aside).
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+AllClear:
+    moveq   #0, d7                      ; Clear both operands
+    moveq   #0, d6
+    st.b    d6
+    lea     (Operand1), a6
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d6, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d6, (a6)+
+    
+    move.b  #ID_EQU-ID_ADD, (NextOper)  ; Default operation
+    st.b    (ToErase)                   ; Just in case
+    
+    lea     (Operand1), a6              ; Write "0"
+    bra     ShowNumber
+
+;****************************************************************************
+; EraseIfNeeded
+; Erases the first operand if needed.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+EraseIfNeeded:
+    tst.b   (ToErase)                   ; Should we erase?
+    bne.s   @DoErase
+    rts
+@DoErase:
+    
+    lea     (Operand1), a6              ; Replace 1st operand with 0
+    moveq   #0, d7
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    st.b    d7
+    move.l  d7, (a6)+
+    
+    lea     -12(a6), a6                 ; Make sure display shows 0 too
+    bsr     ShowNumber
+    
+    clr.b   (ToErase)                   ; Erased already
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; DoOperation
+; Performs a math operation.
+;----------------------------------------------------------------------------
+; input d6.b ... Relevant button
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DoOperation:
+    sub.b   #ID_ADD, d6                 ; Convert button ID into something
+    and.w   #$FF, d6                    ; more coherent (starting from 0)
+    move.w  d6, -(sp)
+    
+    moveq   #OSCURSOR_BUSY, d7          ; Some operations may be slow
+    syscall OS_SETCURSOR
+    
+    clr.b   (Errored)                   ; No error yet
+    
+    lea     (Operand1), a6              ; Normalize the operands
+    bsr     Normalize
+    lea     (Operand2), a6
+    bsr     Normalize
+    
+    lea     (Operand1), a6              ; Pointers to operands
+    lea     (Operand2), a5
+    
+    move.w  (sp)+, d6                   ; Execute pending operation
+    moveq   #0, d7
+    move.b  (NextOper), d7
+    cmp.b   #ID_EQU-ID_ADD, d6
+    beq.s   @DontChangeOper
+    move.b  d6, (NextOper)
+@DontChangeOper:
+    lsl.w   #2, d7
+    lea     @Handlers(pc), a0
+    jsr     (a0,d7.w)
+    
+    tst.b   (Errored)                   ; Did something go wrong?
+    beq.s   @NoError
+    bsr     AllClear
+    bra     ShowError
+@NoError:
+    
+    st.b    (ToErase)                   ; To let next operand be entered
+                                        ; without having to clear it first
+    
+    lea     (Operand2), a6              ; Normalize result
+    bsr     Normalize
+    lea     (Operand2), a6
+    tst.b   11(a6)
+    bne.s   @CommaOk
+    st.b    11(a6)
+@CommaOk:
+    
+    bra     ShowNumber                  ; Show result
+
+;----------------------------------------------------------------------------
+
+@Handlers:
+    bra.w   Add                         ; ID_ADD
+    bra.w   Substract                   ; ID_SUB
+    bra.w   Multiply                    ; ID_MUL
+    bra.w   Divide                      ; ID_DIV
+    bra.w   Equal                       ; ID_EQU

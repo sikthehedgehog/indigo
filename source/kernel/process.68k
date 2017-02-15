@@ -1,0 +1,81 @@
+;****************************************************************************
+; LoadProcess
+; Loads a new process.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to filename
+;----------------------------------------------------------------------------
+; notes: doesn't return
+;****************************************************************************
+
+LoadProcess:
+    move.l  ($0000).w, sp               ; Crunch the stack!
+    move.l  a6, -(sp)                   ; We'll need this later
+    
+    move.b  #CURSOR_BUSY, (CursorShape) ; Show that we're busy
+    
+    bsr     ClearScreen                 ; Remove any screen leftovers
+    bsr     ResetSprites
+    
+    moveq   #0, d7                      ; Reset scrolling
+    moveq   #0, d6
+    move.w  #0, a6
+    move.w  #0, a5
+    bsr     SetScroll
+    
+    moveq   #0, d7                      ; Ensure blank tile is blank
+    lea     ($C00000), a6
+    st.b    (DontDraw)
+    move.l  #$7FE00003, 4(a6)
+    move.l  d7, (a6)
+    move.l  d7, (a6)
+    move.l  d7, (a6)
+    move.l  d7, (a6)
+    move.l  d7, (a6)
+    move.l  d7, (a6)
+    move.l  d7, (a6)
+    move.l  d7, (a6)
+    clr.b   (DontDraw)
+    
+    lea     (TaskbarGfx), a6            ; Load taskbar graphics
+    move.w  #VramTaskbar, d7
+    moveq   #39, d6
+    bsr     LoadPatterns
+    
+    moveq   #0, d7                      ; Load default GUI palette
+    lea     (Palette), a6
+    bsr     LoadPalette
+    
+    bsr     ResetGuiStates              ; Reset all GUI states
+    
+    move.l  (sp)+, a5                   ; Check if the program exists
+    lea     (RomFilesystem), a6         ; If not proceed to crash Indigo
+    bsr     ScanForFile
+    cmp.w   #$FFFF, d7
+    bne.s   @ProgramOk
+    illegal
+@ProgramOk:
+    
+    and.l   #$FFFF, d6                  ; Start running the program!
+    lsl.l   #5, d6
+    lea     (RomFilesystem), a6
+    lea     (a6,d6.l), a6
+    jmp     (a6)
+
+;****************************************************************************
+; QuitProcess
+; Quits the current process.
+;----------------------------------------------------------------------------
+; notes: doesn't return
+;****************************************************************************
+
+QuitProcess:
+    lea     (@Default), a6              ; We can't actually "quit" the
+    bra     LoadProcess                 ; running process, instead what we
+                                        ; do is load the default process
+                                        ; (which is the desktop)
+
+;----------------------------------------------------------------------------
+
+@Default:
+    dc.b    'desktop.ixec', 0
+    even

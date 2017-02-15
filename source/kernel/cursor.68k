@@ -1,0 +1,149 @@
+;****************************************************************************
+; Possible cursor shapes
+;****************************************************************************
+
+                    rsreset
+CURSOR_ARROW:       rs.b 1
+CURSOR_HAND:        rs.b 1
+CURSOR_BUSY:        rs.b 1
+CURSOR_IBEAM:       rs.b 1
+
+MAX_CURSOR:         rs.b 0
+
+;****************************************************************************
+; InitCursor
+; Initializes the cursor.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+InitCursor:
+    move.w  #160, (CursorX)             ; Put cursor in the center
+    move.w  #112, (CursorY)
+    clr.b   (CursorHeld)                ; No clicking yet
+    clr.b   (CursorClick)
+    
+    move.b  #CURSOR_ARROW,(CursorShape) ; Default shape
+    move.b  #-1, (CursorOldShape)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; UpdateCursor
+; Updates the state of the cursor based on user input.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+UpdateCursor:
+    tst.b   (HasMouse)                  ; Is the mouse connected?
+    bne.s   @MouseOk
+    rts
+@MouseOk:
+    
+    move.w  (CursorX), d7               ; Get current cursor position
+    move.w  (CursorY), d6
+    add.w   (MouseX), d7                ; Apply mouse motion
+    add.w   (MouseY), d6
+    
+    tst.w   d7                          ; Ensure cursor stays inbounds
+    bge.s   @LeftOk
+    moveq   #0, d7
+@LeftOk:
+    tst.w   d6
+    bge.s   @TopOk
+    moveq   #0, d6
+@TopOk:
+    cmp.w   #319, d7
+    ble.s   @RightOk
+    move.w  #319, d7
+@RightOk:
+    cmp.w   #223, d6
+    ble.s   @BottomOk
+    move.w  #223, d6
+@BottomOk:
+    
+    move.w  d7, (CursorX)               ; Store new position
+    move.w  d6, (CursorY)
+    
+    move.b  (MouseButtons), d7          ; Get cursor clicks
+    move.b  (CursorHeld), d6
+    move.b  d7, (CursorHeld)
+    not.b   d6
+    and.b   d6, d7
+    move.b  d7, (CursorClick)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; RedrawCursor
+; Updates the cursor sprite on screen.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+RedrawCursor:
+    tst.b   (DontDraw)                  ; Can we touch the VDP?
+    beq.s   @CanDraw
+    rts
+@CanDraw:
+    
+    moveq   #0, d7                      ; Load new cursor shape?
+    move.b  (CursorShape), d7
+    cmp.b   (CursorOldShape), d7
+    beq.s   @SameShape
+    move.b  d7, (CursorOldShape)
+    lsl.w   #7, d7
+    lea     (CursorGfx), a6
+    lea     (a6,d7.w), a6
+    move.w  #VramCursor, d7
+    moveq   #4, d6
+    bsr     LoadPatterns
+@SameShape:
+    
+    move.w  (CursorX), d7               ; Get sprite base coordinates
+    move.w  (CursorY), d6
+    add.w   #$80, d7
+    add.w   #$80, d6
+    
+    moveq   #0, d5                      ; Apply offset for hotspot
+    move.b  (CursorShape), d5
+    lsl.w   #2, d5
+    lea     @Hotspots(pc), a6
+    lea     (a6,d5.w), a6
+    sub.w   (a6)+, d7
+    sub.w   (a6)+, d6
+    
+    lea     ($C00000), a6               ; Update sprite
+    move.l  #$78000003, 4(a6)
+    move.w  d6, (a6)
+    move.l  #$78060003, 4(a6)
+    move.w  d7, (a6)
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Hotspots:
+    dc.w    0,0                         ; CURSOR_ARROW
+    dc.w    7,1                         ; ARROW_HAND
+    dc.w    8,8                         ; ARROW_BUSY
+    dc.w    8,8                         ; ARROW_IBEAM
+
+;****************************************************************************
+; SetCursorShape
+; Changes the cursor shape
+;----------------------------------------------------------------------------
+; input d7.b ... Cursor shape
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+SetCursorShape:
+    cmp.b   #MAX_CURSOR, d7             ; Check that the shape is valid
+    blo.s   @ShapeOk
+    moveq   #CURSOR_ARROW, d7
+@ShapeOk:
+    
+    move.b  d7, (CursorShape)           ; Store new shape
+    rts                                 ; End of subroutine

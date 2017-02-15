@@ -1,0 +1,209 @@
+NUM_COLS:           equ 48              ; Width in columns
+NUM_ROWS:           equ 32              ; Height in rows
+
+;****************************************************************************
+; RenderText
+; Renders the buffered line and loads it into VRAM.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+RenderText:
+    lea     -36*$20(sp), sp             ; Allocate room for patterns
+    
+    move.l  sp, a0                      ; Where patterns are stored
+    lea     (TextBuffer), a1            ; Text to be rendered
+    lea     FontData(pc), a2            ; Glyph graphics
+    lea     @Offsets(pc), a3            ; Offsets between each column
+    
+    moveq   #NUM_COLS-1, d7
+@Loop:
+    moveq   #0, d0                      ; Get next character
+    move.b  (a1)+, d0
+    
+    sub.b   #$20, d0                    ; Get glyph index
+    cmp.b   #$5F, d0                    ; Replace invalid characters with
+    bls.s   @Valid                      ; the placeholder glyph
+    move.b  #$5F, d0
+@Valid:
+    
+    lsl.w   #5, d0                      ; Get pointer to glyph
+    lea     (a2,d0.w), a6
+    
+    moveq   #0, d5                      ; Draw glyph
+    moveq   #3-1, d6
+@GlyphLoop:
+    move.b  (a6)+, (a0)
+    move.b  (a6)+, 4(a0)
+    move.b  (a6)+, 8(a0)
+    move.b  (a6)+, 12(a0)
+    move.b  (a6)+, 16(a0)
+    move.b  (a6)+, 20(a0)
+    move.b  (a6)+, 24(a0)
+    move.b  (a6)+, 28(a0)
+    move.b  (a3)+, d5
+    lea     (a0,d5.w), a0
+    dbf     d6, @GlyphLoop
+    
+    dbf     d7, @Loop                   ; Go for next character
+    
+    moveq   #0, d7                      ; Determine which row to overwrite
+    move.b  (CursorY), d7
+    mulu.w  #36, d7
+    add.w   #VramScreen, d7
+    
+    move.l  sp, a6                      ; Load the new patterns
+    moveq   #36, d6
+    syscall OS_LOADPATTERNS
+    
+    lea     36*$20(sp), sp              ; Done with the patterns
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Offsets:
+    dcb.l   36, $0101011D
+
+;****************************************************************************
+; ClearBuffer
+; Clears the text buffer.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+ClearBuffer:
+    move.l  #$20202020, d7              ; Fill buffer with spaces
+    lea     (TextBuffer), a6
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; AddText
+; Adds a string to the buffer.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to string
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+AddText:
+    moveq   #0, d7                      ; Just copy the string where the
+    move.b  (CursorX), d7               ; cursor is (though make sure it
+    moveq   #NUM_COLS, d6               ; won't overflow the buffer)
+    lea     (TextBuffer), a5
+    lea     (a5,d7.w), a5
+@Loop:
+    cmp.b   d6, d7
+    beq.s   @LoopEnd
+    move.b  (a6)+, d5
+    beq.s   @LoopEnd
+    move.b  d5, (a5)+
+    addq.b  #1, d7
+    bra.s   @Loop
+@LoopEnd:
+    
+    move.b  d7, (CursorX)               ; Store new cursor position
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; FlushLine
+; Renders the buffered text and advances to the next line. The cursor is
+; returned back to the 1st column too.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+FlushLine:
+    bsr     RenderText                  ; Render the line!
+    
+    move.b  (CursorY), d7               ; Advance line
+    addq.b  #1, d7
+    and.b   #$1F, d7
+    move.b  d7, (CursorY)
+    clr.b   (CursorX)
+    
+    moveq   #0, d7                      ; Scroll screen to this row
+    move.b  (CursorY), d7
+    lsl.w   #3, d7
+    sub.w   #22*8, d7
+    
+    move.w  d7, a5
+    moveq   #0, d7
+    moveq   #0, d6
+    move.w  d6, a6
+    syscall OS_SETSCROLL
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; PrintLine
+; Prints a line on screen.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to string
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+PrintLine:
+    move.l  a6, -(sp)                   ; Remove any leftover text
+    bsr     ClearBuffer
+    move.l  (sp)+, a6
+    
+    clr.b   (CursorX)                   ; Text must go on 1st column
+    bsr     AddText                     ; Insert the text
+    
+    bra     FlushLine                   ; Show and advance line
+    
+;****************************************************************************
+; PrintBlank
+; Outputs a blank line.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+PrintBlank:
+    bsr     ClearBuffer                 ; Load an empty line
+    bsr     RenderText
+    
+    bra     FlushLine                   ; Show and advance line
+
+;****************************************************************************
+; UpdateCursor
+; Updates the cursor sprite.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+UpdateCursor:
+    moveq   #0, d6                      ; Get horizontal position
+    move.b  (CursorX), d6
+    add.w   d6, d6
+    move.w  d6, d5
+    add.w   d6, d6
+    add.w   d5, d6
+    add.w   #8*2, d6
+    
+    moveq   #-8, d5                     ; Move cursor away when blinking,
+    tst.b   (CursorBlink)               ; put it at the bottom when visible
+    bne.s   @Blink                      ; (we're being cheap, OK?)
+    move.w  #8*22, d5
+@Blink:
+    
+    move.b  (CursorSprite), d7          ; Update the sprite
+    move.w  #VramCursor+$A000, a6
+    move.w  #%0000, a5
+    syscall OS_SETSPRITE
+    
+    rts                                 ; End of subroutine

@@ -1,0 +1,76 @@
+;****************************************************************************
+; EntryPoint
+; Where the kernel boots.
+;****************************************************************************
+
+EntryPoint:
+    move.w  #$2700, sr                  ; Disable interrupts
+    
+    move.b  ($A10001), d7               ; Disable TMSS
+    and.b   #$0F, d7
+    beq.s   @NoTmss
+    move.l  #'SEGA', ($A14000)
+@NoTmss:
+    
+    if 0
+    move.w  #$A000, ($A130F0)           ; Set up the Mega Everdrive mapper
+    move.w  #$01, ($A130F2)             ; in a way that will let us get 2MB
+    move.w  #$02, ($A130F4)             ; ROM and 2MB RAM (the latter will be
+    move.w  #$03, ($A130F6)             ; volatile, but there's a SD card)
+    move.w  #$04, ($A130F8)
+    move.w  #$05, ($A130FA)
+    move.w  #$06, ($A130FC)
+    move.w  #$07, ($A130FE)
+@NoMegaEverdrive:
+    endc
+    
+    moveq   #1, d0                      ; Determine how much RAM is installed
+    lea     ($FF0000), a6
+    lea     ($FE0000), a5
+    lea     ($10000), a4
+    moveq   #$20-1, d7
+@ProbeRam:
+    move.l  #$87654321, (a5)
+    move.l  #$12345678, (a6)
+    move.l  (a5), d6
+    cmpi.l  #$87654321, (a5)
+    bne.s   @ProbeRamEnd
+    suba.l  a4, a5
+    addq.b  #1, d0
+    dbf     d7, @ProbeRam
+@ProbeRamEnd:
+    move.b  d0, (RamSize)
+    
+    bsr     InitMouse                   ; Set up system
+    bsr     InitVideo
+    bsr     InitCursor
+    
+    move.w  #$8174, ($C00004)           ; Turn on screen
+    move.w  #$2000, sr                  ; Enable interrupts
+    
+    moveq   #0, d7                      ; Draw taskbar
+    moveq   #32+25, d6
+    moveq   #0, d5
+    move.w  #38, a6
+    move.w  #1, a5
+    move.w  #VramTaskbar+$8000, a4
+    bsr     FillFrame
+    
+    bra     QuitProcess                 ; Load desktop
+
+;****************************************************************************
+; Interrupt
+; Handler for the vblank interrupt (used for timing and for things we want
+; to be done periodically regardless of what the program is doing).
+;****************************************************************************
+
+Interrupt:
+    movem.l d5-d7/a4-a6, -(sp)          ; Save registers
+    
+    bsr     UpdateMouse                 ; Handle the cursor
+    bsr     UpdateCursor
+    bsr     RedrawCursor
+    
+    st.b    (NewFrame)                  ; Mark that a new frame started
+    movem.l (sp)+, d5-d7/a4-a6          ; Restore registers
+    rte                                 ; End of interrupt

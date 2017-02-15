@@ -1,0 +1,81 @@
+;****************************************************************************
+; ShowVersion
+; Prints the OS version.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ShowVersion:
+    subq.w  #8, sp                      ; Retrieve the version from the
+    move.l  sp, a5                      ; header (we grab some spaces too
+    lea     ($138).w, a6                ; but eh, won't be visible)
+    move.l  (a6)+, (a5)+
+    move.l  (a6)+, (a5)+
+    clr.b   -(a5)
+    
+    bsr     ClearBuffer                 ; Show version on screen
+    lea     @Indigo(pc), a6
+    bsr     AddText
+    move.l  sp, a6
+    bsr     AddText
+    bsr     FlushLine
+    
+    bsr     PrintBlank                  ; Blank line for spacing
+    
+    addq.w  #8, sp                      ; Get rid of buffer
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Indigo:            dc.b 'Indigo operating system ver. ', 0
+                    even
+
+;****************************************************************************
+; ShowMemory
+; Prints the amount of memory.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ShowMemory:
+    lea     -12(sp), sp                 ; Buffer to render numbers
+    
+    syscall OS_GETRAMSIZE               ; Get amount of RAM in KB
+    and.w   #$FFFF, d7
+    move.l  sp, a6
+    syscall OS_UINT2ASCII
+    
+    bsr     ClearBuffer                 ; Show amount of RAM
+    lea     @TextRam(pc), a6
+    bsr     AddText
+    move.l  sp, a6
+    bsr     AddText
+    lea     @TextKb(pc), a6
+    bsr     AddText
+    bsr     FlushLine
+    
+    syscall OS_GETVRAMSIZE              ; Get amount of VRAM in KB
+    and.w   #$FFFF, d7
+    move.l  sp, a6
+    syscall OS_UINT2ASCII
+    
+    bsr     ClearBuffer                 ; Show amount of VRAM
+    lea     @TextVram(pc), a6
+    bsr     AddText
+    move.l  sp, a6
+    bsr     AddText
+    lea     @TextKb(pc), a6
+    bsr     AddText
+    bsr     FlushLine
+    
+    bsr     PrintBlank                  ; Blank line for spacing
+    
+    lea     12(sp), sp                  ; Get rid of buffer
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@TextRam:           dc.b 'RAM size .... ', 0
+@TextVram:          dc.b 'VRAM size ... ', 0
+@TextKb:            dc.b ' KB', 0
+                    even

@@ -1,0 +1,18 @@
+output "kernel/blob/cursors.blob"
+layout sprite
+input "kernel/data/cursor_arrow.png"
+tiles 0 0 2 2
+input "kernel/data/cursor_hand.png"
+tiles 0 0 2 2
+input "kernel/data/cursor_busy.png"
+tiles 0 0 2 2
+input "kernel/data/cursor_ibeam.png"
+tiles 0 0 2 2
+
+output "kernel/blob/taskbar.blob"
+layout tilemap
+input "kernel/data/taskbar.png"
+tiles 0 0 3 3
+input "kernel/data/taskbar_apps.png"
+tiles 0 0 5 3
+tiles 0 3 5 3

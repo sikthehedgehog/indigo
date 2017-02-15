@@ -1,0 +1,153 @@
+;****************************************************************************
+; Macro to invoke a syscall
+;****************************************************************************
+
+syscall:    macro call
+    jsr     $200+(call)*6
+    endm
+
+;****************************************************************************
+; Names for each API call
+;****************************************************************************
+
+OS_LOADPROCESS:         equ 10      ; Load new process
+OS_QUITPROCESS:         equ 11      ; Quit current process
+
+OS_PARSELAYOUT:         equ 6       ; Parse GUI layout
+OS_GUILOOP:             equ 7       ; Run GUI main loop
+OS_GETSTATE:            equ 14      ; Retrieve a GUI state value
+OS_SETSTATE:            equ 15      ; Change a GUI state value
+
+OS_LOADPATTERNS:        equ 0       ; Loads patterns into VRAM
+OS_FILLPATTERNS:        equ 13      ; Fills patterns with a solid color
+OS_RENDERTEXT:          equ 17      ; Renders text into patterns
+OS_LOADTEXTLIST:        equ 18      ; Renders and loads a list of text
+OS_LOADPALETTE:         equ 4       ; Loads a palette into CRAM
+
+OS_DRAWTILES:           equ 1       ; Draws tiles with consecutive patterns
+OS_FILLTILES:           equ 2       ; Fills tiles with a single pattern
+OS_ERASETILES:          equ 3       ; Fills tiles with a blank pattern
+OS_FILLFRAME:           equ 8       ; Fills tiles with a frame
+OS_DRAWTILEMAP:         equ 5       ; Draws tiles using the given mappings
+OS_DRAWLABELS:          equ 16      ; Draws a bunch of labels
+OS_FILLBACKGROUND:      equ 9       ; Fills plane B with 2×2 tiles
+
+OS_SETSCROLL:           equ 12      ; Set scroll positions
+
+OS_ALLOCSPRITE:         equ 26      ; Allocate a new sprite
+OS_SETSPRITE:           equ 27      ; Set a sprite's properties
+
+OS_GETMOUSESWAP:        equ 21      ; Retrieves the mouse swap setting
+OS_SETMOUSESWAP:        equ 22      ; Changes the mouse swap setting
+OS_GETMOUSETYPE:        equ 19      ; Retrieves the mouse type
+OS_SETMOUSETYPE:        equ 20      ; Changes the mouse type
+OS_GETMOUSESPEED:       equ 28      ; Retrieves the mouse sensivity
+OS_SETMOUSESPEED:       equ 29      ; Changes the mouse sensivity
+OS_GETRAMSIZE:          equ 23      ; Gets the amount of RAM in KB
+OS_GETVRAMSIZE:         equ 24      ; Gets the amount of VRAM in KB
+
+OS_SETCURSOR:           equ 31      ; Sets the cursor shape
+
+OS_INT2ASCII:           equ 25      ; Convert int32 into string
+OS_UINT2ASCII:          equ 30      ; Convert uint32 into string
+
+;****************************************************************************
+; Macros for building the GUI layouts
+;****************************************************************************
+
+
+;----------------------------------------------------------------------------
+; Standard button
+;----------------------------------------------------------------------------
+
+OSUI_Button: macro id, x,y,width,height, gfx
+    dc.b    $00
+    dc.b    x,y,width,height
+    dc.b    (gfx)>>8, (gfx)&$FF
+    dc.b    id
+    endm
+
+;----------------------------------------------------------------------------
+; Choice widget (e.g. radio button)
+;----------------------------------------------------------------------------
+
+OSUI_Select: macro id,value, x,y,width,height, gfx
+    dc.b    $01
+    dc.b    x,y,width,height
+    dc.b    (gfx)>>8, (gfx)&$FF
+    dc.b    id,value
+    endm
+
+;----------------------------------------------------------------------------
+; Toggeable widget (e.g. checkbox)
+;----------------------------------------------------------------------------
+
+OSUI_Toggle: macro id, x,y,width,height, gfx
+    dc.b    $02
+    dc.b    x,y,width,height
+    dc.b    (gfx)>>8, (gfx)&$FF
+    dc.b    id
+    endm
+
+;----------------------------------------------------------------------------
+; Button that constantly fires
+;----------------------------------------------------------------------------
+
+OSUI_Hold: macro id, x,y,width,height, gfx
+    dc.b    $03
+    dc.b    x,y,width,height
+    dc.b    (gfx)>>8, (gfx)&$FF
+    dc.b    id
+    endm
+
+;----------------------------------------------------------------------------
+; Horizontal scroller
+;----------------------------------------------------------------------------
+
+OSUI_HScroll: macro id, x,y,width, fg,bg
+    dc.b    $04
+    dc.b    x,y,width
+    dc.b    (fg)>>8, (fg)&$FF
+    dc.b    (bg)>>8, (bg)&$FF
+    dc.b    id
+    endm
+
+;----------------------------------------------------------------------------
+; Vertical scroller
+;----------------------------------------------------------------------------
+
+OSUI_VScroll: macro id, x,y,height, fg,bg
+    dc.b    $05
+    dc.b    x,y,height
+    dc.b    (fg)>>8, (fg)&$FF
+    dc.b    (bg)>>8, (bg)&$FF
+    dc.b    id
+    endm
+
+;----------------------------------------------------------------------------
+; Timer
+;----------------------------------------------------------------------------
+
+OSUI_Timer: macro id,delay
+    dc.b    $06
+    dc.b    (delay)>>8, (delay)&$FF
+    dc.b    id
+    endm
+
+;----------------------------------------------------------------------------
+; End of layout
+;----------------------------------------------------------------------------
+
+OSUI_End: macro
+    dc.b    $FF
+    even
+    endm
+
+;****************************************************************************
+; Possible cursor shapes
+;****************************************************************************
+
+OSCURSOR_ARROW:     equ 0               ; Arrow
+OSCURSOR_HAND:      equ 1               ; Hand
+OSCURSOR_BUSY:      equ 2               ; Hourglass
+OSCURSOR_IBEAM:     equ 3               ; I-beam

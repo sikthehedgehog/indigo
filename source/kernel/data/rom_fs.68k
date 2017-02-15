@@ -1,0 +1,40 @@
+Dir_0:
+    dc.w    $4000
+    dc.w    File_0>>5
+    dc.l    FileEnd_0-File_0
+    dc.b    'calculator.ixec'
+    dcb.b   $08-(*&$07), $00
+    dc.w    $4000
+    dc.w    File_1>>5
+    dc.l    FileEnd_1-File_1
+    dc.b    'terminal.ixec'
+    dcb.b   $08-(*&$07), $00
+    dc.w    $4000
+    dc.w    File_2>>5
+    dc.l    FileEnd_2-File_2
+    dc.b    'settings.ixec'
+    dcb.b   $08-(*&$07), $00
+    dc.w    $4000
+    dc.w    File_3>>5
+    dc.l    FileEnd_3-File_3
+    dc.b    'desktop.ixec'
+    dcb.b   $08-(*&$07), $00
+    dc.w    $FFFF
+DirEnd_0:
+    dcb.b   $20-(*&$1F), $FF
+File_0:
+    incbin  "./rom/./calculator.ixec"
+FileEnd_0:
+    dcb.b   $20-(*&$1F), $FF
+File_1:
+    incbin  "./rom/./terminal.ixec"
+FileEnd_1:
+    dcb.b   $20-(*&$1F), $FF
+File_2:
+    incbin  "./rom/./settings.ixec"
+FileEnd_2:
+    dcb.b   $20-(*&$1F), $FF
+File_3:
+    incbin  "./rom/./desktop.ixec"
+FileEnd_3:
+    dcb.b   $20-(*&$1F), $FF

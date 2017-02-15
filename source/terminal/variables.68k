@@ -1,0 +1,7 @@
+                    rsset $FF0000
+
+TextBuffer:         rs.b NUM_COLS       ; Entered text
+CursorX:            rs.b 1              ; Current column
+CursorY:            rs.b 1              ; Current row
+CursorSprite:       rs.b 1              ; Cursor sprite ID
+CursorBlink:        rs.b 1              ; Used to make cursor blink

@@ -1,0 +1,36 @@
+;****************************************************************************
+; GetRamSize
+; Returns the 68000 RAM size.
+;----------------------------------------------------------------------------
+; output d7.w ... RAM size in KB
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a6
+;----------------------------------------------------------------------------
+; notes: RAM size is calculated before hardware init in EntryPoint.
+;****************************************************************************
+
+GetRamSize:
+    moveq   #0, d7                      ; Check how many 64KB chunks of
+    move.b  (RamSize), d7               ; RAM are installed
+    lsl.w   #6, d7
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; GetVramSize
+; Returns the VRAM size.
+;----------------------------------------------------------------------------
+; output d7.w ... VRAM size in KB
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a6
+;----------------------------------------------------------------------------
+; notes: VRAM size is calculated near the end of InitVideo.
+;****************************************************************************
+
+GetVramSize:
+    moveq   #0, d7                      ; Determine the size in KB from the
+    move.b  (VramSize), d7              ; flag (0 = 64KB, 1 = 128KB)
+    addq.b  #1, d7
+    lsl.w   #6, d7
+    
+    rts                                 ; End of subroutine

@@ -1,0 +1,44 @@
+;****************************************************************************
+; 68000 vectors
+;****************************************************************************
+
+    dc.l    $FFC000, EntryPoint, ErrorInt, ErrorInt
+    dc.l    ErrorInt, ErrorInt, ErrorInt, ErrorInt
+    dc.l    ErrorInt, ErrorInt, ErrorInt, ErrorInt
+    dc.l    ErrorInt, ErrorInt, ErrorInt, ErrorInt
+    
+    dc.l    ErrorInt, ErrorInt, ErrorInt, ErrorInt
+    dc.l    ErrorInt, ErrorInt, ErrorInt, ErrorInt
+    dc.l    ErrorInt, ErrorInt, ErrorInt, ErrorInt
+    dc.l    ErrorInt, ErrorInt, Interrupt, ErrorInt
+    
+    dc.l    ErrorInt, ErrorInt, ErrorInt, ErrorInt
+    dc.l    ErrorInt, ErrorInt, ErrorInt, ErrorInt
+    dc.l    ErrorInt, ErrorInt, ErrorInt, ErrorInt
+    dc.l    ErrorInt, ErrorInt, ErrorInt, ErrorInt
+    
+    dc.l    ErrorInt, ErrorInt, ErrorInt, ErrorInt
+    dc.l    ErrorInt, ErrorInt, ErrorInt, ErrorInt
+    dc.l    ErrorInt, ErrorInt, ErrorInt, ErrorInt
+    dc.l    ErrorInt, ErrorInt, ErrorInt, ErrorInt
+
+;****************************************************************************
+; Mega Drive header
+;****************************************************************************
+
+    dc.b    'SEGA MEGA DRIVE '
+    dc.b    '(C) SIK 20XX.XXX'
+    dc.b    'INDIGO OPERATING SYSTEM 0.10'
+    dcb.b   $150-*, $20
+    dc.b    'INDIGO OPERATING SYSTEM 0.10'
+    dcb.b   $180-*, $20
+    dc.b    'OS SIK-INDI-XX'
+    dc.w    $0000
+    dcb.b   $1A0-*, $20
+    dc.l    $000000, $1FFFFF
+    dc.l    $FF0000, $FFFFFF
+    dc.b    'RA', $E0, $20
+    dc.l    $200000, $3FFFFF
+    dcb.b   $1F0-*, $20
+    dc.b    'JUE'
+    dcb.b   $200-*, $20

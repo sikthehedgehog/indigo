@@ -1,0 +1,8 @@
+output "terminal/blob/ui.blob"
+input "terminal/data/cursor.png"
+tiles 0 0 1 1
+input "terminal/data/border.png"
+tiles 0 0 1 1
+layout tilemap
+input "terminal/data/frame.png"
+tiles 0 0 3 3

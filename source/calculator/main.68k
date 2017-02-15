@@ -1,0 +1,85 @@
+EntryPoint:
+    moveq   #0, d7                      ; Load graphics
+    move.w  #NumPatterns, d6
+    lea     Patterns(pc), a6
+    syscall OS_LOADPATTERNS
+    moveq   #1, d7
+    lea     AltPalette(pc), a6
+    syscall OS_LOADPALETTE
+    
+    lea     Layout(pc), a6              ; Load interface
+    syscall OS_PARSELAYOUT
+    
+    bsr     AllClear                    ; Initialize calculator
+    bsr     ClearMemory
+    
+    lea     (Operand1), a6              ; Show "0" first
+    bsr     ShowNumber
+
+;----------------------------------------------------------------------------
+
+    move.w  #VramBg+$2000, d7           ; Draw table(?)
+    move.w  #VramBg+$2800, d6
+    move.w  #VramBg+$3000, a6
+    move.w  #VramBg+$3800, a5
+    syscall OS_FILLBACKGROUND
+    
+    moveq   #11, d7                     ; Draw calculator frame
+    moveq   #2, d6
+    moveq   #1, d5
+    move.w  #16, a6
+    move.w  #19, a5
+    move.w  #VramFrame+$2000, a4
+    syscall OS_FILLFRAME
+    
+    moveq   #LCD_X-1, d7                ; Draw LCD frame
+    moveq   #LCD_Y-1, d6
+    moveq   #1, d5
+    move.w  #LCD_LEN, a6
+    move.w  #2, a5
+    move.w  #VramLcdFrame+$2000, a4
+    syscall OS_FILLFRAME
+
+;----------------------------------------------------------------------------
+
+@MainLoop:
+    bsr     DrawLcd                     ; Redraw LCD screen
+    syscall OS_GUILOOP                  ; Handle the GUI
+    
+    move.b  d7, d6                      ; Handle this button
+    and.w   #$FF, d7
+    lsl.w   #2, d7
+    lea     @Handlers(pc), a6
+    jsr     (a6,d7.w)
+    
+    bra.s   @MainLoop                   ; Keep going
+
+;----------------------------------------------------------------------------
+
+@Handlers:
+    bra.w   AddDigit                    ; ID_NUM0
+    bra.w   AddDigit                    ; ID_NUM1
+    bra.w   AddDigit                    ; ID_NUM2
+    bra.w   AddDigit                    ; ID_NUM3
+    bra.w   AddDigit                    ; ID_NUM4
+    bra.w   AddDigit                    ; ID_NUM5
+    bra.w   AddDigit                    ; ID_NUM6
+    bra.w   AddDigit                    ; ID_NUM7
+    bra.w   AddDigit                    ; ID_NUM8
+    bra.w   AddDigit                    ; ID_NUM9
+    bra.w   AddComma                    ; ID_DEC
+    bra.w   DoOperation                 ; ID_ADD
+    bra.w   DoOperation                 ; ID_SUB
+    bra.w   DoOperation                 ; ID_MUL
+    bra.w   DoOperation                 ; ID_DIV
+    bra.w   DoOperation                 ; ID_EQU
+    bra.w   FlipSign                    ; ID_SIGN
+    bra.w   AllClear                    ; ID_CLR
+    bra.w   Backspace                   ; ID_BACK
+    bra.w   AddMemory                   ; ID_MADD
+    bra.w   SaveMemory                  ; ID_MSAV
+    bra.w   RestoreMemory               ; ID_MRES
+    bra.w   ClearMemory                 ; ID_MCLR
+
+@Dummy:
+    rts

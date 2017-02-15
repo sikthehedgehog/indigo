@@ -1,0 +1,121 @@
+;****************************************************************************
+; Button IDs
+;****************************************************************************
+
+                    rsreset
+
+ID_NUM0:            rs.b 1              ; All digits
+ID_NUM1:            rs.b 1
+ID_NUM2:            rs.b 1
+ID_NUM3:            rs.b 1
+ID_NUM4:            rs.b 1
+ID_NUM5:            rs.b 1
+ID_NUM6:            rs.b 1
+ID_NUM7:            rs.b 1
+ID_NUM8:            rs.b 1
+ID_NUM9:            rs.b 1
+ID_DEC:             rs.b 1              ; Comma
+ID_ADD:             rs.b 1              ; Add
+ID_SUB:             rs.b 1              ; Substract
+ID_MUL:             rs.b 1              ; Multiply
+ID_DIV:             rs.b 1              ; Divide
+ID_EQU:             rs.b 1              ; Equals
+ID_SIGN:            rs.b 1              ; Sign
+ID_CLR:             rs.b 1              ; All Clear
+ID_BACK:            rs.b 1              ; Backspace
+ID_MADD:            rs.b 1              ; Memory add
+ID_MSAV:            rs.b 1              ; Memory save
+ID_MRES:            rs.b 1              ; Memory restore
+ID_MCLR:            rs.b 1              ; Memory clear
+
+;****************************************************************************
+; Interface layout
+;****************************************************************************
+
+Layout:
+@KeypadX: equ 12
+@KeypadY: equ 9
+@MemX: equ @KeypadX
+@MemY: equ @KeypadY
+@NumX: equ @KeypadX
+@NumY: equ @KeypadY+3
+@OperX: equ @KeypadX+10
+@OperY: equ @KeypadY+3
+
+    OSUI_Button     ID_NUM0, @NumX+0,@NumY+6, 6,2, VramNum0
+    OSUI_Button     ID_NUM1, @NumX+0,@NumY+4, 3,2, VramNum1
+    OSUI_Button     ID_NUM2, @NumX+3,@NumY+4, 3,2, VramNum2
+    OSUI_Button     ID_NUM3, @NumX+6,@NumY+4, 3,2, VramNum3
+    OSUI_Button     ID_NUM4, @NumX+0,@NumY+2, 3,2, VramNum4
+    OSUI_Button     ID_NUM5, @NumX+3,@NumY+2, 3,2, VramNum5
+    OSUI_Button     ID_NUM6, @NumX+6,@NumY+2, 3,2, VramNum6
+    OSUI_Button     ID_NUM7, @NumX+0,@NumY+0, 3,2, VramNum7
+    OSUI_Button     ID_NUM8, @NumX+3,@NumY+0, 3,2, VramNum8
+    OSUI_Button     ID_NUM9, @NumX+6,@NumY+0, 3,2, VramNum9
+    OSUI_Button     ID_DEC, @NumX+6,@NumY+6, 3,2, VramDec
+    
+    OSUI_Button     ID_ADD, @OperX+0,@OperY+6, 3,2, VramAdd
+    OSUI_Button     ID_SUB, @OperX+0,@OperY+4, 3,2, VramSub
+    OSUI_Button     ID_MUL, @OperX+0,@OperY+2, 3,2, VramMul
+    OSUI_Button     ID_DIV, @OperX+0,@OperY+0, 3,2, VramDiv
+    OSUI_Button     ID_EQU, @OperX+3,@OperY+4, 3,4, VramEqu
+    OSUI_Button     ID_SIGN, @OperX+3,@OperY+2, 3,2, VramSign
+    OSUI_Button     ID_CLR, @OperX+3,@MemY, 3,2, VramClr+$2000
+    OSUI_Button     ID_BACK, @OperX+3,@OperY+0, 3,2, VramBack
+    
+    OSUI_Button     ID_MADD, @MemX+0,@MemY,3,2, VramMAdd+$2000
+    OSUI_Button     ID_MSAV, @MemX+3,@MemY,3,2, VramMSav+$2000
+    OSUI_Button     ID_MRES, @MemX+6,@MemY,3,2, VramMRes+$2000
+    OSUI_Button     ID_MCLR, @MemX+9,@MemY,3,2, VramMClr+$2000
+    
+    OSUI_End
+
+;****************************************************************************
+; Interface graphics
+;****************************************************************************
+
+Patterns:
+    incbin  "calculator/blob/ui.blob"
+
+AltPalette:
+    dc.w    $000,$8EC,$286,$EEE,$26E,$04E,$02C,$00A
+    dc.w    $008,$006,$0CE,$866,$644,$422,$200,$000
+
+;****************************************************************************
+; Pattern IDs
+;****************************************************************************
+
+                    rsreset
+
+VramNum0:           rs.b 12*2           ; 0 button
+VramNum1:           rs.b 6*2            ; 1 button
+VramNum2:           rs.b 6*2            ; 2 button
+VramNum3:           rs.b 6*2            ; 3 button
+VramNum4:           rs.b 6*2            ; 4 button
+VramNum5:           rs.b 6*2            ; 5 button
+VramNum6:           rs.b 6*2            ; 6 button
+VramNum7:           rs.b 6*2            ; 7 button
+VramNum8:           rs.b 6*2            ; 8 button
+VramNum9:           rs.b 6*2            ; 9 button
+VramDec:            rs.b 6*2            ; · button
+
+VramAdd:            rs.b 6*2            ; + button
+VramSub:            rs.b 6*2            ; - button
+VramMul:            rs.b 6*2            ; × button
+VramDiv:            rs.b 6*2            ; ÷ button
+VramEqu:            rs.b 12*2           ; = button
+VramSign:           rs.b 6*2            ; ± button
+VramClr:            rs.b 6*2            ; AC button
+VramBack:           rs.b 6*2            ; → button
+
+VramMAdd:           rs.b 6*2            ; M+ button
+VramMSav:           rs.b 6*2            ; MS button
+VramMRes:           rs.b 6*2            ; MR button
+VramMClr:           rs.b 6*2            ; MC button
+
+VramLcd:            rs.b 2*16           ; LCD screen
+VramLcdFrame:       rs.b 3*3            ; LCD screen frame
+VramFrame:          rs.b 3*3            ; Calculator frame
+VramBg:             rs.b 1              ; Background pattern
+
+NumPatterns:        rs.b 0              ; Number of patterns

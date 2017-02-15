@@ -1,0 +1,8 @@
+    include "os_api.68k"
+    include "calculator/main.68k"
+    include "calculator/lcd.68k"
+    include "calculator/keypad.68k"
+    include "calculator/memory.68k"
+    include "calculator/math.68k"
+    include "calculator/data.68k"
+    include "calculator/variables.68k"

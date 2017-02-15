@@ -1,0 +1,86 @@
+output "calculator/blob/ui.blob"
+
+layout tilemap
+input "calculator/data/num_0.png"
+tiles 0 0 6 2
+tiles 0 2 6 2
+input "calculator/data/num_1.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/num_2.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/num_3.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/num_4.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/num_5.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/num_6.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/num_7.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/num_8.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/num_9.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/dec.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+
+input "calculator/data/add.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/sub.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/mul.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/div.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/equ.png"
+tiles 0 0 3 4
+tiles 3 0 3 4
+input "calculator/data/sign.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/clr.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/back.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+
+input "calculator/data/madd.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/msav.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/mres.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+input "calculator/data/mclr.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+
+layout sprite
+input "calculator/data/lcd.png"
+tiles 0 0 8 2
+tiles 0 2 8 2
+layout tilemap
+input "calculator/data/lcd_frame.png"
+tiles 0 0 3 3
+input "calculator/data/frame.png"
+tiles 0 0 3 3
+input "calculator/data/bg.png"
+tiles 0 0 1 1

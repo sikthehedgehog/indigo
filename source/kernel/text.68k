@@ -1,0 +1,293 @@
+;****************************************************************************
+; RenderText
+; Renders text into patterns using the system fonts.
+;----------------------------------------------------------------------------
+; input a6.l .... Pointer to string
+; input a5.l .... Pointer to output buffer
+; input d7.w .... Width in patterns
+;----------------------------------------------------------------------------
+; output a6.l ... Pointer to end of string
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a5
+;****************************************************************************
+
+RenderText:
+    movem.l d0-d4/a0-a3, -(sp)          ; Save registers
+    
+    lea     (Font), a0                  ; Pointer to default font
+    lea     @Offsets(pc), a1            ; Offsets between each column
+    
+    lsl.w   #2, d7                      ; Convert width into columns
+    
+@Loop:
+    moveq   #0, d0                      ; Get next character
+    move.b  (a6)+, d0
+    beq     @CleanUp
+    
+    sub.b   #$20, d0                    ; Control character?
+    blt     @Control
+    cmp.b   #$5F, d0                    ; Check that it's a printable glyph
+    blo.s   @GlyphOk                    ; (replace it with a placeholder if
+    move.b  #$5F, d0                    ; not the case)
+@GlyphOk:
+    
+    add.w   d0, d0                      ; Get glyph properties
+    move.w  (a0,d0.w), d0               ; d0 = width
+    move.w  d0, d1                      ; d1 = offset
+    and.w   #$0007, d0
+    and.w   #$FFF8, d1
+    
+    addq.w  #1, d0                      ; Is there any space left?
+    cmp.w   d0, d7
+    blo     @CleanUp
+    sub.w   d0, d7
+    subq.w  #1, d0
+    
+    lea     (a0,d1.w), a2               ; Draw glyph
+    moveq   #0, d1
+@GlyphLoop:
+    move.b  (a2)+, (a5)
+    move.b  (a2)+, 4(a5)
+    move.b  (a2)+, 8(a5)
+    move.b  (a2)+, 12(a5)
+    move.b  (a2)+, 16(a5)
+    move.b  (a2)+, 20(a5)
+    move.b  (a2)+, 24(a5)
+    move.b  (a2)+, 28(a5)
+    move.b  (a1)+, d1
+    lea     (a5,d1.w), a5
+    dbf     d0, @GlyphLoop
+    
+    bra     @Loop                       ; Try next glyph
+
+;----------------------------------------------------------------------------
+
+@CleanUp:
+    subq.w  #1, a6                      ; Ensure we're at the end of the
+@NulLoop:                               ; string (makes things easier)
+    tst.b   (a6)+
+    bne.s   @NulLoop
+    
+    tst.w   d7                          ; Any columns to clean?
+    beq.s   @End
+    
+    subq.w  #1, d7                      ; Fill remaining columns with 0
+    moveq   #0, d0
+    moveq   #0, d1
+@CleanLoop:
+    move.b  d0, (a5)
+    move.b  d0, 4(a5)
+    move.b  d0, 8(a5)
+    move.b  d0, 12(a5)
+    move.b  d0, 16(a5)
+    move.b  d0, 20(a5)
+    move.b  d0, 24(a5)
+    move.b  d0, 28(a5)
+    move.b  (a1)+, d1
+    lea     (a5,d1.w), a5
+    dbf     d7, @CleanLoop
+    
+@End:
+    movem.l (sp)+, d0-d4/a0-a3          ; Restore registers
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Control:
+    cmp.b   #$EE, d0                    ; SI = emphasis on
+    beq.s   @EmphasisOn
+    cmp.b   #$EF, d0                    ; SO = emphasis off
+    beq.s   @EmphasisOff
+    
+    moveq   #$5F, d0                    ; Unrecognized...?
+    bra     @GlyphOk
+
+@EmphasisOn:
+    lea     (FontBold), a0
+    bra     @Loop
+@EmphasisOff:
+    lea     (Font), a0
+    bra     @Loop
+
+;----------------------------------------------------------------------------
+
+@Offsets:
+    dcb.l   64, $0101011D
+
+;****************************************************************************
+; LoadTextList
+; Renders and loads a list of strings.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to list
+; input d7.w ... First pattern ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;----------------------------------------------------------------------------
+; Each entry in the list looks like this:
+;   dc.b numpatterns
+;   dc.b string, 0
+;
+; The end of the list is like this:
+;   dc.b 0
+;   even
+;****************************************************************************
+
+LoadTextList:
+@Loop:
+    moveq   #0, d6                      ; Get length in tiles
+    move.b  (a6)+, d6
+    beq.s   @End
+    
+    move.w  d6, d5                      ; Allocate buffer
+    lsl.w   #5, d5
+    suba.w  d5, sp
+    
+    move.w  d5, -(sp)                   ; Render the text
+    move.w  d6, -(sp)
+    move.w  d7, -(sp)
+    move.w  d6, d7
+    lea     6(sp), a5
+    bsr     RenderText
+    
+    move.w  (sp), d7                    ; Load text into VRAM
+    move.w  2(sp), d6
+    move.l  a6, -(sp)
+    lea     10(sp), a6
+    bsr     LoadPatterns
+    
+    move.l  (sp)+, a6                   ; Get back our variables
+    move.w  (sp)+, d7
+    move.w  (sp)+, d6
+    
+    move.w  (sp)+, d5                   ; Deallocate buffer
+    adda.w  d5, sp
+    
+    add.w   d6, d7                      ; Go for next text
+    bra.s   @Loop
+    
+@End:
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; IntToAscii, UintToAscii
+; Converts a 32-bit integer into a nul-terminated ASCII string.
+; IntToAscii is signed, UintToAscii is unsigned.
+;----------------------------------------------------------------------------
+; input d7.l ... 32-bit integer
+; input a6.l ... Pointer to buffer
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;----------------------------------------------------------------------------
+; notes: 12 bytes are needed in the buffer.
+;****************************************************************************
+
+IntToAscii:
+    tst.l   d7                          ; Is the value negative?
+    bpl.s   UintToAscii
+    move.b  #'-', (a6)+
+    neg.l   d7
+
+;----------------------------------------------------------------------------
+
+UintToAscii:
+    movem.l d0-d3, -(sp)                ; Save registers
+    
+    moveq   #0, d6                      ; The ugly part: converting from
+    move.l  d6, -(sp)                   ; binary into BCD
+    move.w  d6, -(sp)
+    lea     1(sp), a5                   ; The way this algorithm works is
+    lea     @Table(pc), a4              ; that we have BCD values 1, 2, 4...
+    moveq   #32-1, d6                   ; every power of 2. Then we scan
+@Loop:                                  ; through each bit and sum up the
+    lsr.l   #1, d7                      ; corresponding BCD values.
+    bcc.s   @Zero
+    and.b   #$00, ccr                   ; Definitely faster than doing many
+    addq.w  #5, a4                      ; 32-bit divisions (worse than it
+    addq.w  #5, a5                      ; sounds since 68000 can only give
+    abcd.b  -(a4), -(a5)                ; 16-bit quotients, uuuugh). Still
+    abcd.b  -(a4), -(a5)                ; could be optimized further by
+    abcd.b  -(a4), -(a5)                ; handling several bits at a time
+    abcd.b  -(a4), -(a5)                ; (and the fact that not all digits
+    abcd.b  -(a4), -(a5)                ; need to be added early on).
+@Zero:
+    addq.w  #5, a4
+    dbf     d6, @Loop
+    move.b  1(sp), d3
+    move.l  2(sp), d2
+    addq.w  #6, sp
+    
+    tst.b   d3                          ; Convert the first two digits
+    beq.s   @No1stTwo                   ; (if any, that is)
+    move.b  d3, d7
+    lsr.b   #4, d7
+    beq.s   @No1stOne
+    add.b   #'0', d7
+    move.b  d7, (a6)+
+@No1stOne:
+    and.b   #$0F, d3
+    add.b   #'0', d3
+    move.b  d3, (a6)+
+    moveq   #7-1, d6
+    rol.l   #4, d2
+    bra.s   @NoZeroSkip
+@No1stTwo:
+    
+    moveq   #7-1, d6                    ; Skip leading zeroes
+@ZeroSkip:
+    rol.l   #4, d2
+    move.b  d2, d5
+    and.b   #$0F, d5
+    bne.s   @NoZeroSkip
+    dbf     d6, @ZeroSkip
+@NoZeroSkip:
+    
+    addq.w  #1, d6                      ; Convert remaining digits
+@DigitLoop:
+    move.b  d2, d5
+    and.b   #$0F, d5
+    add.b   #'0', d5
+    move.b  d5, (a6)+
+    rol.l   #4, d2
+    dbf     d6, @DigitLoop
+    
+@Done:
+    clr.b   (a6)                        ; End the string here
+    
+    movem.l (sp)+, d0-d3                ; Restore registers
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Table:
+    dc.b    $00,$00,$00,$00,$01
+    dc.b    $00,$00,$00,$00,$02
+    dc.b    $00,$00,$00,$00,$04
+    dc.b    $00,$00,$00,$00,$08
+    dc.b    $00,$00,$00,$00,$16
+    dc.b    $00,$00,$00,$00,$32
+    dc.b    $00,$00,$00,$00,$64
+    dc.b    $00,$00,$00,$01,$28
+    dc.b    $00,$00,$00,$02,$56
+    dc.b    $00,$00,$00,$05,$12
+    dc.b    $00,$00,$00,$10,$24
+    dc.b    $00,$00,$00,$20,$48
+    dc.b    $00,$00,$00,$40,$96
+    dc.b    $00,$00,$00,$81,$92
+    dc.b    $00,$00,$01,$63,$84
+    dc.b    $00,$00,$03,$27,$68
+    dc.b    $00,$00,$06,$55,$36
+    dc.b    $00,$00,$13,$10,$72
+    dc.b    $00,$00,$26,$21,$44
+    dc.b    $00,$00,$52,$42,$88
+    dc.b    $00,$01,$04,$85,$76
+    dc.b    $00,$02,$09,$71,$52
+    dc.b    $00,$04,$19,$43,$04
+    dc.b    $00,$08,$38,$86,$08
+    dc.b    $00,$16,$77,$72,$16
+    dc.b    $00,$33,$55,$44,$32
+    dc.b    $00,$67,$10,$88,$64
+    dc.b    $01,$34,$21,$77,$28
+    dc.b    $02,$68,$43,$54,$56
+    dc.b    $05,$36,$87,$09,$12
+    dc.b    $10,$73,$74,$18,$24
+    dc.b    $21,$47,$48,$36,$48

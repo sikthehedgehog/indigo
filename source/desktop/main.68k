@@ -1,0 +1,25 @@
+EntryPoint:
+    moveq   #0, d7                      ; Load graphics
+    move.w  #NumPatterns, d6
+    lea     Patterns(pc), a6
+    syscall OS_LOADPATTERNS
+    
+    lea     Layout(pc), a6              ; Load interface
+    syscall OS_PARSELAYOUT
+    
+    move.w  #VramBg+$0000, d7           ; Draw desktop(?)
+    move.w  #VramBg+$0800, d6
+    move.w  #VramBg+$1000, a6
+    move.w  #VramBg+$1800, a5
+    syscall OS_FILLBACKGROUND
+
+;----------------------------------------------------------------------------
+
+    syscall OS_GUILOOP                  ; Wait for an icon to be clicked
+    
+    and.w   #$FF, d7                    ; Boot the program
+    add.w   d7, d7
+    lea     Filenames(pc), a6
+    move.w  (a6,d7.w), d7
+    lea     (a6,d7.w), a6
+    syscall OS_LOADPROCESS

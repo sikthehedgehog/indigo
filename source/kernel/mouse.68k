@@ -1,0 +1,239 @@
+;****************************************************************************
+; InitMouse
+; Initializes the mouse.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+InitMouse:
+    move.b  #$60, ($A1000B)             ; Set up hardware
+    move.b  #$60, ($A10005)
+    
+    clr.b   (HasMouse)                  ; No mouse detected yet
+    clr.w   (MouseX)
+    clr.w   (MouseY)
+    clr.b   (MouseButtons)
+    
+    move.b  ($A10001), d0               ; Take a rough guess as to whether
+    and.b   #$C0, d0                    ; it's a Mega or Sega mouse based
+    cmp.b   #$80, d0                    ; on the region
+    sne.b   d0
+    and.b   #1, d0
+    
+    clr.b   (MouseSwap)                 ; Default mouse settings
+    move.b  d0, (MouseType)
+    move.b  #32, (MouseSpeed)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; UpdateMouse
+; Reads the mouse and updates its status.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+UpdateMouse:
+    lea     -10(sp), sp                 ; Make room for the data
+    lea     ($A10005), a6               ; Mouse port
+    
+    move.b  (a6), d7                    ; Check if mouse is there
+    and.b   #$0F, d7
+    bne     @Error
+    
+    lea     @Pattern(pc), a5            ; Read all nibbles
+    move.l  sp, a4
+    moveq   #9-1, d6
+@Loop:
+    move.b  (a5)+, (a6)
+    moveq   #$7F, d5
+@Wait:
+    move.b  (a6), d7
+    and.b   #$10, d7
+    cmp.b   (a5), d7
+    beq.s   @ReadOk
+    dbf     d5, @Wait
+    bra     @Error
+@ReadOk:
+    addq.w  #1, a5
+    move.b  (a6), d7
+    and.b   #$0F, d7
+    move.b  d7, (a4)+
+    dbf     d6, @Loop
+    
+    move.b  #$60, (a6)                  ; Leave mouse alone
+    
+    move.l  (sp), d7                    ; Check if it's actually a mouse
+    and.l   #$0F0F0F00, d7
+    cmp.l   #$0B0F0F00, d7
+    bne     @Error
+    
+    st.b    (HasMouse)                  ; Mouse available!
+    
+    moveq   #0, d7                      ; Get motion
+    move.b  5(sp), d7
+    lsl.b   #4, d7
+    or.b    6(sp), d7
+    moveq   #0, d6
+    move.b  7(sp), d6
+    lsl.b   #4, d6
+    or.b    8(sp), d6
+    
+    move.b  3(sp), d5                   ; Apply sign extension
+    btst.l  #0, d5
+    beq.s   @PositiveX
+    tst.w   d7
+    beq.s   @PositiveX
+    or.w    #$FF00, d7
+@PositiveX:
+    btst.l  #1, d5
+    beq.s   @PositiveY
+    tst.w   d6
+    beq.s   @PositiveY
+    or.w    #$FF00, d6
+@PositiveY:
+    
+    tst.b   (MouseType)                 ; American mouse has the Y axis
+    bne.s   @NoYFlip                    ; upwards, so flip it
+    neg.w   d6
+@NoYFlip:
+    
+    moveq   #$20, d5                    ; Apply sensivity
+    add.b   (MouseSpeed), d5
+    muls.w  d5, d7
+    muls.w  d5, d6
+    add.w   #$40, d7
+    add.w   #$40, d6
+    asr.w   #7, d7
+    asr.w   #7, d6
+    
+    move.w  d7, (MouseX)                ; Store mouse motion
+    move.w  d6, (MouseY)
+    
+    move.b  4(sp), d7                   ; Get mouse buttons
+    and.b   #$0F, d7
+    
+    tst.b   (MouseSwap)                 ; Swap left and right buttons?
+    beq.s   @NoSwap
+    roxr.b  #1, d7
+    ror.b   #1, d7
+    roxl.b  #2, d7
+@NoSwap:
+    
+    move.b  d7, (MouseButtons)          ; Store button status
+    
+    lea     10(sp), sp                  ; Get rid of the buffer
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Error:
+    move.b  #$60, (a6)                  ; Leave mouse alone
+    
+    clr.b   (HasMouse)                  ; No mouse present!
+    clr.w   (MouseX)                    ; Reset mouse status just in case
+    clr.w   (MouseY)
+    
+    lea     10(sp), sp                  ; Get rid of the buffer
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Pattern:
+    dc.w    $2010,$0000,$2010,$0000,$2010,$0000,$2010,$0000,$2010
+
+;****************************************************************************
+; GetMouseType
+; Retrieves the current mouse type.
+;----------------------------------------------------------------------------
+; output d7.b ... 0 = Mega Mouse, 1 = Sega Mouse
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a6
+;****************************************************************************
+
+GetMouseType:
+    moveq   #0, d7
+    move.b  (MouseType), d7             ; Just get the current type
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; SetMouseType
+; Changes the mouse type.
+;----------------------------------------------------------------------------
+; input d7.b ... 0 = Mega Mouse, 1 = Sega Mouse
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+SetMouseType:
+    tst.b   d7                          ; Normalize to 0 or 1
+    sne.b   d7
+    and.b   #$01, d7
+    move.b  d7, (MouseType)             ; Store new mouse type
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; GetMouseSwap
+; Retrieves the current mouse swap setting.
+;----------------------------------------------------------------------------
+; output d7.b ... 0 = right handed, 1 = left handed
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a6
+;****************************************************************************
+
+GetMouseSwap:
+    moveq   #0, d7
+    move.b  (MouseSwap), d7             ; Just get the current setting
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; SetMouseSwap
+; Changes the mouse swap setting.
+;----------------------------------------------------------------------------
+; input d7.b ... 0 = right handed, 1 = left handed
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+SetMouseSwap:
+    tst.b   d7                          ; Normalize to 0 or 1
+    sne.b   d7
+    and.b   #$01, d7
+    move.b  d7, (MouseSwap)             ; Store new setting
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; GetMouseSpeed
+; Retrieves the current mouse sensivity.
+;----------------------------------------------------------------------------
+; output d7.b ... Mouse sensivity (0..64)
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a6
+;****************************************************************************
+
+GetMouseSpeed:
+    moveq   #0, d7
+    move.b  (MouseSpeed), d7            ; Just get the current setting
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; SetMouseSpeed
+; Changes the mouse sensivity.
+;----------------------------------------------------------------------------
+; input d7.b ... Mouse sensivity (0..64)
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+SetMouseSpeed:
+    tst.b   d7                          ; Check that it's within range
+    bge.s   @MinOk
+    clr.b   d7
+@MinOk:
+    cmp.b   #$40, d7
+    ble.s   @MaxOk
+    move.b  #$40, d7
+@MaxOk:
+    
+    move.b  d7, (MouseSpeed)            ; Store new setting
+    rts                                 ; End of subroutine

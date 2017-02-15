@@ -1,0 +1,820 @@
+;****************************************************************************
+; InitVideo
+; Initializes the video hardware.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+InitVideo:
+    lea     ($C00004), a0               ; VDP control port
+    lea     ($C00000), a1               ; VDP data port
+    moveq   #0, d0                      ; Zeroes for clearing
+    
+    tst.w   (a0)                        ; Cancel any pending commands
+    
+    move.w  #$8004, (a0)                ; Set up VDP registers
+    move.w  #$8134, (a0)
+    move.w  #$8230, (a0)
+    move.w  #$8334, (a0)
+    move.w  #$8407, (a0)
+    move.w  #$857C, (a0)
+    move.w  #$8700, (a0)
+    move.w  #$8AFF, (a0)
+    move.w  #$8B00, (a0)
+    move.w  #$8C81, (a0)
+    move.w  #$8D3C, (a0)
+    move.w  #$8F02, (a0)
+    move.w  #$9001, (a0)
+    move.w  #$9100, (a0)
+    move.w  #$9299, (a0)
+    
+    move.l  #$78000003, (a0)            ; Set up sprites
+    move.l  #$00000501, (a1)
+    move.l  #(VramCursor+$8000)<<16, (a1)
+    bsr     ResetSprites
+
+;----------------------------------------------------------------------------
+
+    move.w  #$81B4, (a0)                ; Switch to 128k mode for probing
+    
+    move.l  #$7FE00003, (a0)            ; Write some stuff
+    move.l  #$01234567, (a1)
+    move.l  #$89ABCDEF, (a1)
+    
+    move.l  #$3FE00003, (a0)            ; See if the writes were successful
+    move.l  (a1), d7                    ; If not then it's 64k of VRAM (on
+    move.l  (a2), d6                    ; hardware that supports 128k)
+    cmp.l   #$01234567, d7
+    bne.s   @Vram64k
+    cmp.l   #$89ABCDEF, d7
+    bne.s   @Vram64k
+    
+    move.w  #$8134, (a0)                ; Switch back to 64k mode
+    
+    move.l  #$3FE00003, (a0)            ; Retry the reads in 64k mode now
+    move.l  (a1), d7                    ; If we get the same result then it's
+    move.l  (a2), d6                    ; either an emulator or a clone that
+    cmp.l   #$01234567, d7              ; doesn't support 128k
+    bne.s   @Vram128k
+    cmp.l   #$89ABCDEF, d7
+    beq.s   @Vram64k
+    
+@Vram128k:
+    st.b    (VramSize)                  ; Store detected VRAM size
+    bra.s   @VramProbed
+@Vram64k:
+    clr.b   (VramSize)
+    move.w  #$8134, (a0)
+@VramProbed:
+
+;----------------------------------------------------------------------------
+
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; LoadPatterns
+; Loads patterns for tiles in video memory.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to patterns
+; input d7.w ... First pattern ID
+; input d6.w ... Number of patterns
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+LoadPatterns:
+    lsl.w   #4, d6                      ; Convert length into words
+    
+    move.l  a6, d5                      ; Check if the 128K wraparound
+    lsr.l   #1, d5                      ; problem would happen
+    add.w   d6, d5
+    bcc.s   @DmaOk
+    
+    illegal                             ; Temp
+
+;----------------------------------------------------------------------------
+
+@DmaOk:
+    and.l   #$07FF, d7                  ; Destination command
+    lsl.l   #7, d7
+    lsr.w   #2, d7
+    swap    d7
+    or.l    #$40000080, d7
+    
+    move.l  a6, d5                      ; Adjust source (length was adjusted
+    lsr.w   #1, d5                      ; during the 128K boundary check)
+    and.l   #$7FFFFF, d5
+    
+    lea     -14(sp), sp                 ; Store all commands
+    move.l  sp, a6
+    move.l  #$94009300, (a6)+
+    move.l  #$97009600, (a6)+
+    move.w  #$9500, (a6)+
+    movep.l d5, -7(a6)
+    movep.w d6, -9(a6)
+    move.l  d7, (a6)+
+    
+    lea     ($C00004), a6               ; Execute the DMA
+    st.b    (DontDraw)
+    move.l  (sp)+, (a6)
+    move.l  (sp)+, (a6)
+    move.l  (sp)+, (a6)
+    move.w  (sp)+, (a6)
+    clr.b   (DontDraw)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; FillPatterns
+; Fills patterns with a solid color.
+;----------------------------------------------------------------------------
+; input d7.w ... First pattern ID
+; input d6.w ... Number of patterns
+; input d5.b ... Color index (0..15)
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+FillPatterns:
+    exg.l   d7, a6
+    and.w   #$000F, d5                  ; Repeat color index to fill the
+    move.w  d5, d7                      ; entire word
+    lsl.w   #4, d5
+    or.w    d7, d5
+    move.w  d5, d7
+    lsl.w   #8, d5
+    or.w    d7, d5
+    exg.l   d7, a6
+    
+    and.l   #$07FF, d7                  ; Destination command
+    lsl.l   #7, d7
+    lsr.w   #2, d7
+    swap    d7
+    or.l    #$40000080, d7
+    
+    lsl.w   #5, d6                      ; Adjust length
+    
+    lea     -12(sp), sp                 ; Store all commands
+    move.l  sp, a6
+    move.l  #$97808F01, (a6)+
+    move.l  #$94009300, (a6)+
+    movep.w d6, -3(a6)
+    move.l  d7, (a6)+
+    
+    lea     ($C00004), a6               ; Start the DMA
+    st.b    (DontDraw)
+    move.l  (sp)+, (a6)
+    move.l  (sp)+, (a6)
+    move.l  (sp)+, (a6)
+    move.w  d5, -4(a6)
+    
+    nop                                 ; Wait for DMA to be over
+    nop                                 ; Not sure if the NOPs are needed but
+@Wait:                                  ; I don't trust the DMA hardware
+    btst.b  #1, 1(a6)                   ; enough to set the flag immediately
+    bne.s   @Wait
+    
+    move.w  #$8F02, (a6)                ; Restore autoincrement
+    clr.b   (DontDraw)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; ClearPlane
+; Fills a plane with blank tiles.
+;----------------------------------------------------------------------------
+; input d7.w ... Plane ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+ClearPlane:
+    and.l   #1, d7                      ; Get VRAM address
+    ror.w   #3, d7
+    swap    d7
+    or.l    #$40000003, d7
+    
+    move.l  #$07FF07FF, d6              ; Pattern to fill with
+    
+    lea     ($C00000), a6               ; Fill plane with blank tiles
+    st.b    (DontDraw)
+    move.l  d7, 4(a6)
+    move.w  #$40*$20/$10-1, d7
+@Loop:
+    move.l  d6, (a6)
+    move.l  d6, (a6)
+    move.l  d6, (a6)
+    move.l  d6, (a6)
+    move.l  d6, (a6)
+    move.l  d6, (a6)
+    move.l  d6, (a6)
+    move.l  d6, (a6)
+    dbf     d7, @Loop
+    clr.b   (DontDraw)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; ClearScreen
+; Fills both planes with blank tiles.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+ClearScreen:
+    moveq   #0, d7                      ; Clear plane A
+    bsr     ClearPlane
+    moveq   #1, d7                      ; Clear plane B
+    bra     ClearPlane
+
+;****************************************************************************
+; DrawTiles
+; Draws a block of tiles with consecutive patterns.
+;----------------------------------------------------------------------------
+; input d7.w ... X coordinate
+; input d6.w ... Y coordinate
+; input d5.w ... Plane ID
+; input a6.w ... Width
+; input a5.w ... Height
+; input a4.w ... First pattern ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+DrawTiles:
+    lsl.w   #6, d6                      ; Get VRAM address
+    add.w   d6, d7
+    add.w   d7, d7
+    ror.w   #3, d5
+    add.w   d5, d7
+    or.w    #$4000, d7
+    swap    d7
+    move.w  #$0003, d7
+    
+    move.w  a5, d6                      ; Put dimensions where they can be
+    move.w  a6, d5                      ; used for looping with DBF
+    subq.w  #1, d6
+    subq.w  #1, d5
+    move.w  d5, a5
+    
+    lea     ($C00000), a6               ; Write tiles into the tilemap
+    st.b    (DontDraw)
+@YLoop:
+    move.l  d7, 4(a6)
+    move.w  a5, d5
+@XLoop:
+    move.w  a4, (a6)
+    addq.w  #1, a4
+    dbf     d5, @XLoop
+    add.l   #$800000, d7
+    dbf     d6, @YLoop
+    clr.b   (DontDraw)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; EraseTiles
+; Fills a block of tiles with a blank pattern.
+;----------------------------------------------------------------------------
+; input d7.w ... X coordinate
+; input d6.w ... Y coordinate
+; input d5.w ... Plane ID
+; input a6.w ... Width
+; input a5.w ... Height
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+EraseTiles:
+    move.w  #$7FF, a4                   ; Just run FillTiles using the blank
+                                        ; pattern as the filler
+
+;****************************************************************************
+; FillTiles
+; Fills a block of tiles with a given pattern.
+;----------------------------------------------------------------------------
+; input d7.w ... X coordinate
+; input d6.w ... Y coordinate
+; input d5.w ... Plane ID
+; input a6.w ... Width
+; input a5.w ... Height
+; input a4.w ... Pattern ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+FillTiles:
+    lsl.w   #6, d6                      ; Get VRAM address
+    add.w   d6, d7
+    add.w   d7, d7
+    ror.w   #3, d5
+    add.w   d5, d7
+    or.w    #$4000, d7
+    swap    d7
+    move.w  #$0003, d7
+    
+    move.w  a5, d6                      ; Put dimensions where they can be
+    move.w  a6, d5                      ; used for looping with DBF
+    subq.w  #1, d6
+    subq.w  #1, d5
+    move.w  d5, a5
+    
+    lea     ($C00000), a6               ; Write tiles into the tilemap
+    st.b    (DontDraw)
+@YLoop:
+    move.l  d7, 4(a6)
+    move.w  a5, d5
+@XLoop:
+    move.w  a4, (a6)
+    dbf     d5, @XLoop
+    add.l   #$800000, d7
+    dbf     d6, @YLoop
+    clr.b   (DontDraw)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; FillFrame
+; Fills a block of tiles with a frame (9 patterns are used).
+;----------------------------------------------------------------------------
+; input d7.w ... X coordinate
+; input d6.w ... Y coordinate
+; input d5.w ... Plane ID
+; input a6.w ... Width (inner area)
+; input a5.w ... Height (inner area)
+; input a4.w ... Base pattern ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+FillFrame:
+    lsl.w   #6, d6                      ; Get VRAM address
+    add.w   d6, d7
+    add.w   d7, d7
+    ror.w   #3, d5
+    add.w   d5, d7
+    or.w    #$4000, d7
+    swap    d7
+    move.w  #$0003, d7
+    
+    move.w  a5, d6                      ; Put dimensions where they can be
+    move.w  a6, d5                      ; used for looping with DBF
+    subq.w  #1, d6
+    subq.w  #1, d5
+    move.w  d5, a5
+    
+    lea     ($C00000), a6               ; Acquire VDP
+    st.b    (DontDraw)
+    
+    move.l  d7, 4(a6)                   ; Draw top of the frame
+    move.w  a4, (a6)
+    addq.w  #1, a4
+    tst.w   d5
+    bmi.s   @NoTopX
+@TopLoop:
+    move.w  a4, (a6)
+    dbf     d5, @TopLoop
+@NoTopX:
+    addq.w  #1, a4
+    move.w  a4, (a6)
+    addq.w  #1, a4
+    
+    tst.w   d6                          ; Draw inner portion of the frame
+    bmi.s   @NoInnerY
+@InnerLoopY:
+    add.l   #$800000, d7
+    move.l  d7, 4(a6)
+    move.w  a4, (a6)
+    addq.w  #1, a4
+    move.w  a5, d5
+    bmi.s   @NoInnerX
+@InnerLoopX:
+    move.w  a4, (a6)
+    dbf     d5, @InnerLoopX
+@NoInnerX:
+    addq.w  #1, a4
+    move.w  a4, (a6)
+    subq.w  #2, a4
+    dbf     d6, @InnerLoopY
+@NoInnerY:
+    
+    add.l   #$800000, d7                ; Draw bottom of the frame
+    move.l  d7, 4(a6)
+    addq.w  #3, a4
+    move.w  a4, (a6)
+    addq.w  #1, a4
+    move.w  a5, d5
+    bmi.s   @NoBottomX
+@BottomLoop:
+    move.w  a4, (a6)
+    dbf     d5, @BottomLoop
+@NoBottomX:
+    addq.w  #1, a4
+    move.w  a4, (a6)
+    
+    clr.b   (DontDraw)                  ; Release VDP
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; DrawHBar
+; Draws a horizontal bar like for the scrollers (6 patterns are used).
+;----------------------------------------------------------------------------
+; input d7.w ... X coordinate
+; input d6.w ... Y coordinate
+; input d5.w ... Plane ID
+; input a6.w ... Width (inner area)
+; input a4.w ... Base pattern ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+DrawHBar:
+    lsl.w   #6, d6                      ; Get VRAM address
+    add.w   d6, d7
+    add.w   d7, d7
+    ror.w   #3, d5
+    add.w   d5, d7
+    or.w    #$4000, d7
+    swap    d7
+    move.w  #$0003, d7
+    
+    move.w  a6, d5                      ; Put dimensions where they can be
+    subq.w  #1, d5                      ; used for looping with DBF
+    move.w  d5, a5
+    
+    lea     ($C00000), a6               ; Acquire VDP
+    st.b    (DontDraw)
+    
+    move.l  d7, 4(a6)                   ; Draw top of the bar
+    move.w  a4, (a6)
+    addq.w  #1, a4
+    tst.w   d5
+    bmi.s   @NoTopX
+@TopLoop:
+    move.w  a4, (a6)
+    dbf     d5, @TopLoop
+@NoTopX:
+    addq.w  #1, a4
+    move.w  a4, (a6)
+    addq.w  #1, a4
+    
+    add.l   #$800000, d7                ; Draw bottom of the bar
+    move.l  d7, 4(a6)
+    move.w  a4, (a6)
+    addq.w  #1, a4
+    move.w  a5, d5
+    bmi.s   @NoBottomX
+@BottomLoop:
+    move.w  a4, (a6)
+    dbf     d5, @BottomLoop
+@NoBottomX:
+    addq.w  #1, a4
+    move.w  a4, (a6)
+    
+    clr.b   (DontDraw)                  ; Release VDP
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; DrawVBar
+; Draws a vertical bar like for the scrollers (6 patterns are used).
+;----------------------------------------------------------------------------
+; input d7.w ... X coordinate
+; input d6.w ... Y coordinate
+; input d5.w ... Plane ID
+; input a5.w ... Height (inner area)
+; input a4.w ... Base pattern ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;----------------------------------------------------------------------------
+; TO-DO: optimize this to draw tiles vertically (with autoincrement), this
+; was just a quick hack to get it working for release.
+;****************************************************************************
+
+DrawVBar:
+    lsl.w   #6, d6                      ; Get VRAM address
+    add.w   d6, d7
+    add.w   d7, d7
+    ror.w   #3, d5
+    add.w   d5, d7
+    or.w    #$4000, d7
+    swap    d7
+    move.w  #$0003, d7
+    
+    move.w  a5, d6                      ; Put length where it can be
+    subq.w  #1, d6                      ; used for looping with DBF
+    
+    lea     ($C00000), a6               ; Acquire VDP
+    st.b    (DontDraw)
+    
+    move.l  d7, 4(a6)                   ; Draw top of the bar
+    move.w  a4, (a6)
+    addq.w  #3, a4
+    move.w  a4, (a6)
+    subq.w  #2, a4
+    
+    tst.w   d6                          ; Draw inner portion of the bar
+    bmi.s   @NoInnerY
+@InnerLoopY:
+    add.l   #$800000, d7
+    move.l  d7, 4(a6)
+    move.w  a4, (a6)
+    addq.w  #3, a4
+    move.w  a4, (a6)
+    subq.w  #3, a4
+    dbf     d6, @InnerLoopY
+@NoInnerY:
+    
+    add.l   #$800000, d7                ; Draw bottom of the bar
+    move.l  d7, 4(a6)
+    addq.w  #1, a4
+    move.w  a4, (a6)
+    addq.w  #3, a4
+    move.w  a4, (a6)
+    
+    clr.b   (DontDraw)                  ; Release VDP
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; DrawTilemap
+; Draws a block of tiles using the given mappings.
+;----------------------------------------------------------------------------
+; input d7.w ... X coordinate
+; input d6.w ... Y coordinate
+; input d5.w ... Plane ID
+; input a6.w ... Width
+; input a5.w ... Height
+; input a4.l ... Pointer to mappings
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+DrawTilemap:
+    lsl.w   #6, d6                      ; Get VRAM address
+    add.w   d6, d7
+    add.w   d7, d7
+    ror.w   #3, d5
+    add.w   d5, d7
+    or.w    #$4000, d7
+    swap    d7
+    move.w  #$0003, d7
+    
+    move.w  a5, d6                      ; Put dimensions where they can be
+    move.w  a6, d5                      ; used for looping with DBF
+    subq.w  #1, d6
+    subq.w  #1, d5
+    move.w  d5, a5
+    
+    lea     ($C00000), a6               ; Write tiles into the tilemap
+    st.b    (DontDraw)
+@YLoop:
+    move.l  d7, 4(a6)
+    move.w  a5, d5
+@XLoop:
+    move.w  (a4)+, (a6)
+    dbf     d5, @XLoop
+    add.l   #$800000, d7
+    dbf     d6, @YLoop
+    clr.b   (DontDraw)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; DrawLabelList
+; Draws a list of labels.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to label list
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;----------------------------------------------------------------------------
+; Each entry in the list looks like this:
+;   dc.b x
+;   dc.b y
+;   dc.b plane
+;   dc.b width
+;   dc.w tile
+;
+; The end of the list is like this:
+;   dc.w $FFFF
+;****************************************************************************
+
+DrawLabelList:
+@Loop:
+    moveq   #0, d7
+    moveq   #0, d6
+    moveq   #0, d5
+    
+    move.b  (a6)+, d7
+    bmi.s   @End
+    move.b  (a6)+, d6
+    move.b  (a6)+, d5
+    swap    d5
+    move.b  (a6)+, d5
+    move.w  (a6)+, a4
+    move.l  a6, -(sp)
+    move.w  d5, a6
+    move.w  #1, a5
+    swap    d5
+    bsr     DrawTiles
+    move.l  (sp)+, a6
+    
+    bra.s   @Loop
+    
+@End:
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; FillBackground
+; Fills plane B using a 2×2 tile pattern.
+;----------------------------------------------------------------------------
+; input d7.w ... 1st pattern ID
+; input d6.w ... 2nd pattern ID
+; input a6.w ... 3rd pattern ID
+; input a5.w ... 4th pattern ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+FillBackground:
+    swap    d7                          ; Rearrange the pattern IDs in a way
+    move.w  d6, d7                      ; that's easier to write
+    move.w  a6, d6
+    swap    d6
+    move.w  a5, d6
+    move.l  d7, a6
+    move.l  d6, a5
+    
+    lea     ($C00000), a4               ; Just fill plane B with them
+    move.l  #$60000003, d7              ; We alternate between two sets of
+    moveq   #25-1, d6                   ; patterns each row
+    st.b    (DontDraw)
+@Loop:
+    move.l  d7, 4(a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    move.l  a6, (a4)
+    exg.l   a6, a5
+    add.l   #$800000, d7
+    dbf     d6, @Loop
+    clr.b   (DontDraw)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; LoadPalette
+; Loads a palette into color memory.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to palette
+; input d7.w ... Palette ID
+;****************************************************************************
+
+LoadPalette:
+    and.l   #$0003, d7                  ; Get CRAM address
+    lsl.w   #5, d7
+    or.w    #$C000, d7
+    swap    d7
+    
+    lea     ($C00000), a5               ; Copy palette into CRAM
+    st.b    (DontDraw)
+    move.l  d7, 4(a5)
+    move.l  (a6)+, (a5)
+    move.l  (a6)+, (a5)
+    move.l  (a6)+, (a5)
+    move.l  (a6)+, (a5)
+    move.l  (a6)+, (a5)
+    move.l  (a6)+, (a5)
+    move.l  (a6)+, (a5)
+    move.l  (a6)+, (a5)
+    clr.b   (DontDraw)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; SetScroll
+; Sets the scroll position for each plane.
+;----------------------------------------------------------------------------
+; input d7.w ... X scroll for plane A
+; input d6.w ... X scroll for plane B
+; input a6.w ... Y scroll for plane A
+; input a5.w ... Y scroll for plane B
+;****************************************************************************
+
+SetScroll:
+    neg.w   d7                          ; Horizontal scroll is reversed
+    neg.w   d6
+    
+    lea     ($C00000), a4               ; Load new scroll values
+    st.b    (DontDraw)
+    move.l  #$70000003, 4(a4)
+    move.w  d7, (a4)
+    move.w  d6, (a4)
+    move.l  #$40000010, 4(a4)
+    move.w  a6, (a4)
+    move.w  a5, (a4)
+    clr.b   (DontDraw)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; ResetSprites
+; Resets the sprite manager.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+ResetSprites:
+    lea     ($C00000), a6               ; Wipe the sprite table
+    moveq   #0, d5
+    moveq   #2, d6
+    moveq   #79-1, d7
+    st.b    (DontDraw)
+    move.l  #$78080003, 4(a6)
+@Loop:
+    move.w  d5, (a6)
+    move.w  d6, (a6)
+    move.l  d5, (a6)
+    addq.b  #1, d6
+    dbf     d7, @Loop
+    clr.b   (DontDraw)
+    
+    move.b  #1, (NumSprites)            ; Reset the sprite count
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; AllocSprite
+; Allocates a new sprite.
+;----------------------------------------------------------------------------
+; output d7.b ... Sprite ID (-1 if too many)
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a6
+;****************************************************************************
+
+AllocSprite:
+    moveq   #0, d7                      ; Check if there's enough room
+    move.b  (NumSprites), d7            ; for more sprites
+    cmp.b   #80, d7
+    blo.s   @Enough
+    moveq   #-1, d7
+@Enough:
+    
+    move.b  d7, d6                      ; Increase sprite count
+    addq.b  #1, d6
+    move.b  d6, (NumSprites)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; SetSprite
+; Changes the position and graphic of a sprite.
+;----------------------------------------------------------------------------
+; input d7.b ... Sprite ID
+; input d6.w ... X coordinate
+; input d5.w ... Y coordinate
+; input a6.w ... Pattern ID
+; input a5.w ... Sprite size
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+SetSprite:
+    add.w   #$80, d6                    ; Coordinates are offset by 128
+    add.w   #$80, d5
+    exg.l   d6, a6
+    exg.l   d5, a5
+    
+    move.b  d5, -(sp)                   ; Add link to the sprite size
+    move.w  (sp)+, d5
+    move.b  d7, d5
+    addq.b  #1, d5
+    
+    and.l   #$7F, d7                    ; Get VRAM address
+    lsl.w   #3, d7
+    swap    d7
+    or.l    #$78000003, d7
+    
+    lea     ($C00000), a4               ; Store new values
+    st.b    (DontDraw)
+    move.l  d7, 4(a4)
+    move.w  a5, (a4)
+    move.w  d5, (a4)
+    move.w  d6, (a4)
+    move.w  a6, (a4)
+    clr.b   (DontDraw)
+    
+    rts                                 ; End of subroutine

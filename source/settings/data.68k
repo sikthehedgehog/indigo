@@ -1,0 +1,104 @@
+;****************************************************************************
+; Button IDs
+;****************************************************************************
+
+                    rsreset
+ID_MOUSESWAP:       rs.b 1              ; Swap mouse buttons
+ID_MOUSETYPE:       rs.b 1              ; Mouse type (US/JP)
+ID_MOUSESENS:       rs.b 1              ; Mouse sensivity
+ID_MOUSESENS_D:     rs.b 1                ; (less)
+ID_MOUSESENS_U:     rs.b 1                ; (more)
+ID_TEST:            rs.b 1              ; For testing
+
+;****************************************************************************
+; Interface layout
+;****************************************************************************
+
+Layout:
+    OSUI_Select ID_MOUSESWAP,0, 2,3,2,2, VramRadio
+    OSUI_Select ID_MOUSESWAP,1, 2,5,2,2, VramRadio
+    
+    OSUI_Select ID_MOUSETYPE,0, 2,10,2,2, VramRadio
+    OSUI_Select ID_MOUSETYPE,1, 2,12,2,2, VramRadio
+    
+    OSUI_HScroll ID_MOUSESENS, 4,17,8, VramScroller,VramHScrollBg
+    OSUI_Hold ID_MOUSESENS_D, 2,17,2,2, VramLess
+    OSUI_Hold ID_MOUSESENS_U, 14,17,2,2, VramMore
+    OSUI_End
+
+;----------------------------------------------------------------------------
+; Some stuff that was used for debugging
+; It's hidden by that OSUI_End above
+;----------------------------------------------------------------------------
+
+    OSUI_VScroll ID_MOUSESENS, 20,2,8, VramScroller,VramVScrollBg
+    
+    OSUI_Button ID_TEST, 36,1,2,2, VramWarning
+    OSUI_Toggle ID_MOUSESWAP, 34,22,2,2, VramRadio
+    OSUI_Toggle ID_MOUSETYPE, 36,22,2,2, VramRadio
+    OSUI_End
+
+;****************************************************************************
+; Labels
+;****************************************************************************
+
+LabelText:
+    dc.b    10, 'Mouse buttons:',0
+    dc.b    9, 'Right handed',0
+    dc.b    9, 'Left handed',0
+    dc.b    8, 'Mouse type:',0
+    dc.b    8, 'Mega Mouse',0
+    dc.b    8, 'Sega Mouse',0
+    dc.b    11, 'Mouse sensivity:',0
+    dc.b    0
+    even
+
+LabelList:
+    dc.b    2,1,0,10
+    dc.w    VramMouseButtons
+    dc.b    4,3,1,9
+    dc.w    VramRightHanded
+    dc.b    4,5,1,9
+    dc.w    VramLeftHanded
+    
+    dc.b    2,8,0,8
+    dc.w    VramMouseType
+    dc.b    4,10,1,8
+    dc.w    VramMegaMouse
+    dc.b    4,12,1,8
+    dc.w    VramSegaMouse
+    
+    dc.b    2,15,0,11
+    dc.w    VramMouseSensivity
+    
+    dc.w    $FFFF
+
+;****************************************************************************
+; Interface graphics
+;****************************************************************************
+
+Patterns:
+    incbin  "settings/blob/ui.blob"
+
+;****************************************************************************
+; Pattern IDs
+;****************************************************************************
+
+                    rsreset
+
+VramRadio:          rs.b 4*2            ; Radio button
+VramLess:           rs.b 4*2            ; - button
+VramMore:           rs.b 4*2            ; + button
+VramScroller:       rs.b 4              ; Scrollbar cursor
+VramHScrollBg:      rs.b 6              ; Scrollbar background (hor.)
+VramVScrollBg:      rs.b 6              ; Scrollbar background (ver.)
+VramWarning:        rs.b 4*2            ; Warning button
+NumPatterns:        rs.b 0              ; Number of patterns
+
+VramMouseButtons:   rs.b 10             ; "Mouse buttons:"
+VramRightHanded:    rs.b 9              ; "Right handed"
+VramLeftHanded:     rs.b 9              ; "Left handed"
+VramMouseType:      rs.b 8              ; "Mouse type:"
+VramMegaMouse:      rs.b 8              ; "Mega Mouse"
+VramSegaMouse:      rs.b 8              ; "Sega Mouse"
+VramMouseSensivity: rs.b 11             ; "Mouse sensivity:"

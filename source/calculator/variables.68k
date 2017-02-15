@@ -1,0 +1,12 @@
+                    rsset $FF0000
+
+Display:            rs.b LCD_LEN        ; LCD display output
+                    rs.b 2              ; (padding, don't ask)
+
+Operand1:           rs.b 12             ; 1st operand
+Operand2:           rs.b 12             ; 2nd operand
+Memory:             rs.b 12             ; Value in memory
+NextOper:           rs.b 1              ; Operation to be executed next
+Errored:            rs.b 1              ; Set when there was an error
+ToErase:            rs.b 1              ; Erase 1st operand on key press?
+                    rs.b 1

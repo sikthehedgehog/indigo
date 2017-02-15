@@ -1,0 +1,6 @@
+    include "os_api.68k"
+    include "terminal/main.68k"
+    include "terminal/display.68k"
+    include "terminal/system.68k"
+    include "terminal/data.68k"
+    include "terminal/variables.68k"

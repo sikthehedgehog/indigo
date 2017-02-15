@@ -1,0 +1,864 @@
+MAX_WIDGETS:        equ $20             ; How many widgets we allow
+
+;****************************************************************************
+; Data for a widget
+;****************************************************************************
+
+                    rsreset
+
+WIDGET_TYPE:        rs.b 1              ; Widget behavior (see WTYPE_*)
+WIDGET_SHAPE:       rs.b 1              ; Widget shape (see WSHAPE_*)
+WIDGET_ID:          rs.b 1              ; Associated action
+WIDGET_VALUE:       rs.b 1              ; Associated value
+
+WIDGET_X1:          rs.b 1              ; Left coordinate (inclusive)
+WIDGET_Y1:          rs.b 1              ; Top coordinate (inclusive)
+WIDGET_X2:          rs.b 1              ; Right coordinate (exclusive)
+WIDGET_Y2:          rs.b 1              ; Bottom coordinate (exclusive)
+WIDGET_GFX1:        rs.w 1              ; Graphic used when disabled
+WIDGET_GFX2:        rs.w 1              ; Graphic used when enabled
+
+WIDGET_SIZE:        rs.b 0              ; Size of widget data
+
+;****************************************************************************
+; Widget behavior types
+;****************************************************************************
+
+                    rsreset
+
+                    rs.b 1              ; Free slot
+WTYPE_FIRE:         rs.b 1              ; Just fires the event
+WTYPE_SET:          rs.b 1              ; Sets state to widget value
+WTYPE_TOGGLE:       rs.b 1              ; Toggles state between 0 and 1
+WTYPE_HSCROLL:      rs.b 1              ; Horizontal scroller
+WTYPE_VSCROLL:      rs.b 1              ; Vertical scroller
+WTYPE_QUIT:         rs.b 1              ; Causes process to quit
+
+;****************************************************************************
+; Widget shapes
+;****************************************************************************
+
+                    rsreset
+
+                    rs.b 1              ; Don't draw
+WSHAPE_ANY:         rs.b 1              ; Arbitrary shape
+WSHAPE_HCURSOR:     rs.b 1              ; Horizontal scroller
+WSHAPE_VCURSOR:     rs.b 1              ; Vertical scroller
+WSHAPE_TASKAPPS:    rs.b 1              ; Taskbar "Apps" button
+
+;****************************************************************************
+; RemoveAllWidgets
+; Removes all widgets.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+RemoveAllWidgets:
+    lea     (Widgets), a6               ; Scan all slots
+    moveq   #MAX_WIDGETS-1, d7
+@Loop:
+    clr.b   WIDGET_TYPE(a6)             ; Free up the slot
+    clr.b   WIDGET_SHAPE(a6)            ; Don't draw (just in case)
+    
+    move.b  #$FF, WIDGET_X1(a6)         ; Get collision out of the way
+    move.b  #$FF, WIDGET_Y1(a6)
+    move.b  #$FF, WIDGET_X2(a6)
+    move.b  #$FF, WIDGET_Y2(a6)
+    
+    lea     WIDGET_SIZE(a6), a6         ; Go for next slot
+    dbf     d7, @Loop
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; ParseGuiLayout
+; Parses a GUI layout and generates the widgets from it.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to layout
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+ParseGuiLayout:
+    move.l  a6, -(sp)                   ; Remove all existing widgets first
+    bsr     RemoveAllWidgets
+    bsr     ClearScreen
+    move.l  (sp)+, a6
+    
+    clr.b   (TimerSet)                  ; No timer attached yet
+    
+    lea     (Widgets), a5               ; Rebuild taskbar first
+    bsr     (BuildTaskbar)
+    
+@Loop:                                  ; Scan through entire layout
+    moveq   #0, d7                      ; Get next widget type
+    move.b  (a6)+, d7                   ; $FF terminates the layout
+    cmp.b   #$FF, d7
+    beq.s   @End
+    
+    lsl.w   #2, d7                      ; Go to the handler for this type
+    lea     @Handlers(pc), a4
+    move.l  (a4,d7.w), a4
+    jsr     (a4)
+    
+    bra.s   @Loop                       ; Go for next widget
+    
+@End:
+    clr.l   (Interacting)               ; Not interacting with anything yet
+    bsr     DrawAllWidgets              ; Draw all the widgets
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Handlers:
+    dc.l    ParseGuiLayout_Button       ; OSUI_Button
+    dc.l    ParseGuiLayout_Select       ; OSUI_Select
+    dc.l    ParseGuiLayout_Toggle       ; OSUI_Toggle
+    dc.l    ParseGuiLayout_Hold         ; OSUI_Hold
+    dc.l    ParseGuiLayout_HScroll      ; OSUI_HScroll
+    dc.l    ParseGuiLayout_VScroll      ; OSUI_VScroll
+    dc.l    ParseGuiLayout_Timer        ; OSUI_Timer
+
+;----------------------------------------------------------------------------
+; OSUI_Button
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_Button:
+    move.b  #WTYPE_FIRE, WIDGET_TYPE(a5)        ; Widget behavior
+    move.b  #WSHAPE_ANY, WIDGET_SHAPE(a5)
+    move.b  #1, WIDGET_VALUE(a5)
+    
+    moveq   #0, d7                      ; Get widget coordinates
+    moveq   #0, d6
+    move.b  (a6)+, d7
+    move.b  (a6)+, d6
+    move.b  d7, WIDGET_X1(a5)
+    move.b  d6, WIDGET_Y1(a5)
+    add.b   (a6)+, d7
+    add.b   (a6)+, d6
+    move.b  d7, WIDGET_X2(a5)
+    move.b  d6, WIDGET_Y2(a5)
+    
+    move.b  (a6)+, -(sp)                ; Get released graphic
+    move.w  (sp)+, d5
+    move.b  (a6)+, d5
+    move.w  d5, WIDGET_GFX1(a5)
+    
+    sub.b   WIDGET_X1(a5), d7           ; Get pressed graphic
+    sub.b   WIDGET_Y1(a5), d6
+    mulu.w  d6, d7
+    add.w   d7, d5
+    move.w  d5, WIDGET_GFX2(a5)
+    
+    move.b  (a6)+, WIDGET_ID(a5)        ; Get widget action
+    
+    lea     WIDGET_SIZE(a5), a5         ; Go for next widget
+    rts
+
+;----------------------------------------------------------------------------
+; OSUI_Select
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_Select:
+    bsr     ParseGuiLayout_Button
+    move.b  #WTYPE_SET, WIDGET_TYPE-WIDGET_SIZE(a5)
+    move.b  (a6)+, WIDGET_VALUE-WIDGET_SIZE(a5)
+    rts
+
+;----------------------------------------------------------------------------
+; OSUI_Toggle
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_Toggle:
+    bsr     ParseGuiLayout_Button
+    move.b  #WTYPE_TOGGLE, WIDGET_TYPE-WIDGET_SIZE(a5)
+    rts
+
+;----------------------------------------------------------------------------
+; OSUI_Hold
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_Hold:
+    bsr     ParseGuiLayout_Button
+    move.b  #$80|WTYPE_FIRE, WIDGET_TYPE-WIDGET_SIZE(a5)
+    rts
+
+;----------------------------------------------------------------------------
+; OSUI_HScroll
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_HScroll:
+    move.b  #$80|WTYPE_HSCROLL, WIDGET_TYPE(a5)     ; Widget behavior
+    move.b  #WSHAPE_HCURSOR, WIDGET_SHAPE(a5)
+    
+    move.b  (a6)+, d7                   ; Get widget coordinates
+    move.b  (a6)+, d6
+    move.b  d7, WIDGET_X1(a5)
+    move.b  d6, WIDGET_Y1(a5)
+    add.b   (a6)+, d7
+    addq.b  #2, d7
+    addq.b  #2, d6
+    move.b  d7, WIDGET_X2(a5)
+    move.b  d6, WIDGET_Y2(a5)
+    
+    move.b  (a6)+, -(sp)                ; Get scrolller graphic
+    move.w  (sp)+, d5
+    move.b  (a6)+, d5
+    move.w  d5, WIDGET_GFX1(a5)
+    move.l  a6, -(sp)
+    move.l  a5, -(sp)
+    bsr     AllocSprite
+    move.l  (sp)+, a5
+    move.l  (sp)+, a6
+    move.w  d7, WIDGET_GFX2(a5)
+    
+    move.b  (a6)+, -(sp)                ; Draw scrollbar background
+    move.w  (sp)+, d5
+    move.b  (a6)+, d5
+    move.w  d5, a4
+    moveq   #0, d5
+    move.b  WIDGET_X1(a5), d7
+    move.b  WIDGET_Y1(a5), d6
+    move.b  WIDGET_X2(a5), d5
+    sub.b   d7, d5
+    subq.b  #2, d5
+    move.l  a5, -(sp)
+    move.l  a6, -(sp)
+    move.w  d5, a6
+    moveq   #0, d5
+    bsr     DrawHBar
+    move.l  (sp)+, a6
+    move.l  (sp)+, a5
+    
+    move.b  (a6)+, WIDGET_ID(a5)        ; Get widget action
+    
+    lea     WIDGET_SIZE(a5), a5         ; Go for next widget
+    rts
+
+;----------------------------------------------------------------------------
+; OSUI_VScroll
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_VScroll:
+    move.b  #$80|WTYPE_VSCROLL, WIDGET_TYPE(a5)     ; Widget behavior
+    move.b  #WSHAPE_VCURSOR, WIDGET_SHAPE(a5)
+    
+    move.b  (a6)+, d7                   ; Get widget coordinates
+    move.b  (a6)+, d6
+    move.b  d7, WIDGET_X1(a5)
+    move.b  d6, WIDGET_Y1(a5)
+    add.b   (a6)+, d6
+    addq.b  #2, d7
+    addq.b  #2, d6
+    move.b  d7, WIDGET_X2(a5)
+    move.b  d6, WIDGET_Y2(a5)
+    
+    move.b  (a6)+, -(sp)                ; Get scrolller graphic
+    move.w  (sp)+, d5
+    move.b  (a6)+, d5
+    move.w  d5, WIDGET_GFX1(a5)
+    move.l  a6, -(sp)
+    move.l  a5, -(sp)
+    bsr     AllocSprite
+    move.l  (sp)+, a5
+    move.l  (sp)+, a6
+    move.w  d7, WIDGET_GFX2(a5)
+    
+    move.b  (a6)+, -(sp)                ; Draw scrollbar background
+    move.w  (sp)+, d5
+    move.b  (a6)+, d5
+    move.w  d5, a4
+    moveq   #0, d5
+    move.b  WIDGET_X1(a5), d7
+    move.b  WIDGET_Y1(a5), d6
+    move.b  WIDGET_Y2(a5), d5
+    sub.b   d6, d5
+    subq.b  #2, d5
+    move.l  a5, -(sp)
+    move.l  a6, -(sp)
+    move.w  d5, a5
+    moveq   #0, d5
+    bsr     DrawVBar
+    move.l  (sp)+, a6
+    move.l  (sp)+, a5
+    
+    move.b  (a6)+, WIDGET_ID(a5)        ; Get widget action
+    
+    lea     WIDGET_SIZE(a5), a5         ; Go for next widget
+    rts
+
+;----------------------------------------------------------------------------
+; OSUI_Timer
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_Timer:
+    st.b    (TimerSet)                  ; Enable the timer
+    
+    move.b  (a6)+, -(sp)                ; Get delay between triggers
+    move.w  (sp)+, d7
+    move.b  (a6)+, d7
+    move.w  d7, (TimerLen)
+    move.w  d7, (TimerCount)
+    
+    move.b  (a6)+, (TimerId)            ; Get timer action
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; RunGuiLoop
+; Runs the GUI main loop, parsing user input and handling the widgets as
+; needed. It'll return whenever an event is fired.
+;----------------------------------------------------------------------------
+; output d7.b ... Action ID
+; output d6.b ... Action state
+;----------------------------------------------------------------------------
+; breaks: d5, a4-a6
+;****************************************************************************
+
+RunGuiLoop:
+    movem.l d0-d4/a0-a3, -(sp)          ; Save registers
+
+;----------------------------------------------------------------------------
+
+@MainLoop:
+    clr.b   (NewFrame)                  ; Wait for next frame
+@WaitFrame:
+    tst.b   (NewFrame)
+    beq.s   @WaitFrame
+    
+    tst.b   (TimerSet)                  ; Check if the timer needs to fire
+    beq.s   @NoTimer
+    subq.w  #1, (TimerCount)
+    bne.s   @NoTimer
+    move.w  (TimerLen), (TimerCount)
+    moveq   #0, d7
+    move.b  (TimerId), d7
+    lea     (GuiStates), a6
+    move.b  (a6,d7.w), d6
+    movem.l (sp)+, d0-d4/a0-a3
+    rts
+@NoTimer:
+    
+    bsr     CheckHover                  ; Check if a widget is being hovered
+    move.l  a6, (Hovering)
+    
+    btst.b  #0, (CursorClick)           ; Start interaction?
+    beq.s   @NoInteractStart
+    tst.l   (Interacting)
+    bne.s   @NoInteractStart
+    move.l  (Hovering), (Interacting)
+@NoInteractStart:
+    
+    btst.b  #0, (CursorHeld)            ; Stop interaction?
+    bne.s   @NoInteractStop
+    move.l  (Interacting), d2
+    bne     @Trigger
+@NoInteractStop:
+    
+    moveq   #CURSOR_ARROW, d0           ; Which cursor to show?
+    move.l  (Hovering), d1
+    beq.s   @NoHand
+    move.l  (Interacting), d2
+    beq.s   @YesHand
+    cmp.l   d2, d1
+    bne.s   @NoHand
+@YesHand:
+    moveq   #CURSOR_HAND, d0
+@NoHand:
+    move.b  d0, (CursorShape)
+    
+    move.l  (Interacting), d7           ; Check if the widget retriggers
+    beq.s   @NoConstantTrigger          ; on every frame
+    cmp.l   (Hovering), d7
+    bne.s   @NoConstantTrigger
+    tst.b   WIDGET_TYPE(a6)
+    bpl.s   @NoConstantTrigger
+    bra     @ConstantTrigger
+@NoConstantTrigger:
+    
+    move.l  (Interacting), d7           ; Constantly refresh the widget we're
+    beq.s   @NoRefreshNeeded            ; interacting with
+    move.l  d7, a6
+    bsr     DrawWidget
+@NoRefreshNeeded:
+    
+    bra     @MainLoop
+
+;----------------------------------------------------------------------------
+
+@Trigger:
+    clr.l   (Interacting)               ; Done interacting with it
+    
+    move.l  d2, a0                      ; Redraw widget
+    move.l  a0, a6
+    bsr     DrawWidget
+    
+    cmp.l   (Hovering), d2              ; Did the user cancel the action?
+    bne     @NoInteractStop
+    
+@Return:
+    move.l  a0, a6                      ; Perform the widget's behavior
+    bsr     TriggerWidget
+    
+    moveq   #0, d7                      ; Get event action ID and state
+    move.b  WIDGET_ID(a0), d7
+    lea     (GuiStates), a6
+    move.b  (a6,d7.w), d6
+    
+    movem.l (sp)+, d0-d4/a0-a3          ; Restore registers
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@ConstantTrigger:
+    move.l  d7, a0                      ; Redraw widget
+    move.l  a0, a6
+    bsr     DrawWidget
+    
+    bra     @Return                     ; Let the widget trigger as usual
+                                        ; (we skip the part that stops
+                                        ; interaction with it)
+
+;****************************************************************************
+; TriggerWidget
+; Triggers a widget's behavior.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to widget
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+TriggerWidget:
+    move.b  WIDGET_TYPE(a6), d7         ; Call the handler for widget type
+    and.w   #$7F, d7
+    lsl.w   #2, d7
+    lea     @Handlers(pc), a5
+    move.l  (a5,d7.w), a5
+    move.l  a6, -(sp)
+    jsr     (a5)
+    move.l  (sp)+, a6
+    
+    move.b  WIDGET_ID(a6), d7           ; Redraw any affected widgets
+    bra     DrawWidgetsById
+
+;----------------------------------------------------------------------------
+
+@Handlers:
+    dc.l    @Dummy
+    dc.l    @Dummy                      ; WTYPE_FIRE
+    dc.l    TriggerWidget_Set           ; WTYPE_SET
+    dc.l    TriggerWidget_Toggle        ; WTYPE_TOGGLE
+    dc.l    TriggerWidget_HScroll       ; WTYPE_HSCROLL
+    dc.l    TriggerWidget_VScroll       ; WTYPE_VSCROLL
+    dc.l    TriggerWidget_Quit          ; WTYPE_QUIT
+
+@Dummy:
+    rts
+
+;----------------------------------------------------------------------------
+; WTYPE_SET
+;----------------------------------------------------------------------------
+
+TriggerWidget_Set:
+    move.b  WIDGET_ID(a6), d7           ; Just set state to our value
+    move.b  WIDGET_VALUE(a6), d6
+    bra     SetGuiState
+
+;----------------------------------------------------------------------------
+; WTYPE_TOGGLE
+;----------------------------------------------------------------------------
+
+TriggerWidget_Toggle:
+    moveq   #0, d7                      ; Get pointer to state
+    move.b  WIDGET_ID(a6), d7
+    lea     (GuiStates), a5
+    lea     (a5,d7.w), a5
+    
+    move.b  (a5), d7                    ; Toggle between 0 and 1
+    seq.b   d7
+    and.b   #$01, d7
+    move.b  d7, (a5)
+    
+    rts                                 ; End of handler
+
+;----------------------------------------------------------------------------
+; WTYPE_HSCROLL, WTYPE_VSCROLL
+;----------------------------------------------------------------------------
+
+TriggerWidget_HScroll:
+    move.w  (CursorX), d7
+    move.b  WIDGET_X1(a6), d6
+    move.b  WIDGET_X2(a6), d5
+    bra.s   TriggerWidget_Scroll
+
+TriggerWidget_VScroll:
+    move.w  (CursorY), d7
+    move.b  WIDGET_Y1(a6), d6
+    move.b  WIDGET_Y2(a6), d5
+
+;----------------------------------------------------------------------------
+    
+TriggerWidget_Scroll:
+    subq.w  #8, d7                      ; Offset the cursor position to make
+                                        ; the slider centered on it
+    
+    ext.w   d6                          ; Convert hitbox into pixels
+    ext.w   d5
+    subq.b  #2, d5
+    lsl.w   #3, d6
+    lsl.w   #3, d5
+    
+    cmp.w   d6, d7                      ; Clamp cursor position to the valid
+    bge.s   @MinOk                      ; range we can handle
+    move.w  d6, d7
+@MinOk:
+    cmp.w   d5, d7
+    ble.s   @MaxOk
+    move.w  d5, d7
+@MaxOk:
+    
+    sub.w   d6, d7                      ; Store new state
+    moveq   #0, d5
+    move.b  WIDGET_ID(a6), d5
+    lea     (GuiStates), a5
+    move.b  d7, (a5,d5.w)
+    
+    rts                                 ; End of handler
+
+;----------------------------------------------------------------------------
+; WTYPE_QUIT
+;----------------------------------------------------------------------------
+
+TriggerWidget_Quit:
+    bra     QuitProcess
+
+;****************************************************************************
+; CheckHover
+; Checks over which widget the cursor is.
+;----------------------------------------------------------------------------
+; output a6.l ... Pointer to widget (0 if none)
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+CheckHover:
+    move.l  (CursorX), d0               ; Get cursor position
+    move.w  d0, d1
+    swap    d0
+    
+    cmp.w   #200, d1                    ; No widgets in this area
+    blo.s   @HoverOk                    ; (hack for the taskbar)
+    cmp.w   #220, d1
+    bhs.s   @HoverNotOk
+    cmp.w   #204, d1
+    bhs.s   @HoverOk
+@HoverNotOk:
+    move.w  #0, a6
+    rts
+@HoverOk:
+    
+    lea     (Widgets), a6               ; Check all widgets
+    moveq   #MAX_WIDGETS-1, d2
+@Loop:
+    tst.b   WIDGET_TYPE(a6)             ; Does this widget exist?
+    beq.s   @Skip
+    
+    moveq   #0, d7                      ; Check left boundary
+    move.b  WIDGET_X1(a6), d7
+    lsl.w   #3, d7
+    cmp.w   d7, d0
+    blt.s   @Skip
+    
+    moveq   #0, d7                      ; Check right boundary
+    move.b  WIDGET_X2(a6), d7
+    lsl.w   #3, d7
+    cmp.w   d7, d0
+    bge.s   @Skip
+    
+    moveq   #0, d7                      ; Check top boundary
+    move.b  WIDGET_Y1(a6), d7
+    lsl.w   #3, d7
+    cmp.w   d7, d1
+    blt.s   @Skip
+    
+    moveq   #0, d7                      ; Check bottom boundary
+    move.b  WIDGET_Y2(a6), d7
+    lsl.w   #3, d7
+    cmp.w   d7, d1
+    bgt.s   @Skip
+    
+    rts                                 ; Hovering over this widget!
+    
+@Skip:
+    lea     WIDGET_SIZE(a6), a6         ; Try next widget
+    dbf     d2, @Loop
+    
+    move.w  #0, a6                      ; No widget benig hovered
+    rts
+
+;****************************************************************************
+; DrawWidget
+; Draws a widget on screen.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to widget
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+DrawWidget:
+    moveq   #0, d7                      ; Jump to the relevant handler for
+    move.b  WIDGET_SHAPE(a6), d7        ; this widget's shape
+    lsl.w   #2, d7
+    lea     @Handlers(pc), a5
+    move.l  (a5,d7.w), a5
+    jmp     (a5)
+
+;----------------------------------------------------------------------------
+
+@Handlers:
+    dc.l    DrawWidget_None
+    dc.l    DrawWidget_Any              ; WSHAPE_ANY
+    dc.l    DrawWidget_HorCursor        ; WSHAPE_HCURSOR
+    dc.l    DrawWidget_VerCursor        ; WSHAPE_VCURSOR
+    dc.l    DrawWidget_TaskApps         ; WSHAPE_TASKAPPS
+
+;----------------------------------------------------------------------------
+; No shape defined
+;----------------------------------------------------------------------------
+
+DrawWidget_None:
+    rts                                 ; Draw nothing
+
+;----------------------------------------------------------------------------
+; WSHAPE_ANY
+;----------------------------------------------------------------------------
+
+DrawWidget_Any:
+    bsr     IsWidgetSet                 ; Get graphic to show
+    add.w   d7, d7
+    lea     WIDGET_GFX1(a6), a4
+    move.w  (a4,d7.w), a4
+    
+    moveq   #0, d7                      ; Get position and dimensions
+    moveq   #0, d6
+    move.w  WIDGET_X1(a6), -(sp)
+    move.b  WIDGET_X2(a6), d7
+    move.b  WIDGET_Y2(a6), d6
+    sub.b   (sp), d7
+    sub.b   1(sp), d6
+    move.w  d7, a6
+    move.w  d6, a5
+    move.b  (sp), d7
+    move.b  1(sp), d6
+    addq.w  #2, sp
+    
+    moveq   #0, d5                      ; Draw the widget
+    bra     DrawTiles
+
+;----------------------------------------------------------------------------
+; WSHAPE_HCURSOR
+;----------------------------------------------------------------------------
+
+DrawWidget_HorCursor:
+    moveq   #0, d6                      ; Get sprite position
+    moveq   #0, d5
+    move.b  WIDGET_X1(a6), d6
+    move.b  WIDGET_Y1(a6), d5
+    lsl.w   #3, d6
+    lsl.w   #3, d5
+    
+    moveq   #0, d7                      ; Offset sprite by state's value
+    move.b  WIDGET_ID(a6), d7
+    lea     (GuiStates), a5
+    move.b  (a5,d7.w), d7
+    add.w   d7, d6
+    
+    move.l  a6, a4                      ; Get sprite grahic
+    move.w  WIDGET_GFX1(a4), a6
+    move.w  WIDGET_GFX2(a4), d7
+    move.w  #%0101, a5
+    
+    bra     SetSprite                   ; Move the sprite!
+
+;----------------------------------------------------------------------------
+; WSHAPE_VCURSOR
+;----------------------------------------------------------------------------
+
+DrawWidget_VerCursor:
+    moveq   #0, d6                      ; Get sprite position
+    moveq   #0, d5
+    move.b  WIDGET_X1(a6), d6
+    move.b  WIDGET_Y1(a6), d5
+    lsl.w   #3, d6
+    lsl.w   #3, d5
+    
+    moveq   #0, d7                      ; Offset sprite by state's value
+    move.b  WIDGET_ID(a6), d7
+    lea     (GuiStates), a5
+    move.b  (a5,d7.w), d7
+    add.w   d7, d5
+    
+    move.l  a6, a4                      ; Get sprite grahic
+    move.w  WIDGET_GFX1(a4), a6
+    move.w  WIDGET_GFX2(a4), d7
+    move.w  #%0101, a5
+    
+    bra     SetSprite                   ; Move the sprite!
+
+;----------------------------------------------------------------------------
+; WSHAPE_TASKAPPS
+;----------------------------------------------------------------------------
+
+DrawWidget_TaskApps:
+    bsr     IsWidgetSet                 ; Get graphic to show
+    add.w   d7, d7
+    lea     WIDGET_GFX1(a6), a4
+    move.w  (a4,d7.w), a4
+    
+    moveq   #1, d7                      ; Draw button
+    moveq   #25+32, d6
+    moveq   #0, d5
+    move.w  #5, a6
+    move.w  #3, a5
+    bra     DrawTiles
+
+;****************************************************************************
+; DrawAllWidgets
+; Draws all the widgets.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+DrawAllWidgets:
+    lea     (Widgets), a6               ; Scan every widget slot
+    moveq   #MAX_WIDGETS-1, d7
+@Loop:
+    tst.b   WIDGET_TYPE(a6)             ; Does the widget exist?
+    beq.s   @Missing
+    
+    move.w  d7, -(sp)                   ; Draw it if so
+    move.l  a6, -(sp)
+    bsr     DrawWidget
+    move.l  (sp)+, a6
+    move.w  (sp)+, d7
+    
+@Missing:
+    lea     WIDGET_SIZE(a6), a6         ; Check next widget
+    dbf     d7, @Loop
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; DrawWidgetsById
+; Draws all widgets with the associated action.
+;----------------------------------------------------------------------------
+; input d7.b ... Action ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+DrawWidgetsById:
+    lea     (Widgets), a6               ; Scan all widget slots
+    moveq   #MAX_WIDGETS-1, d6
+@Loop:
+    tst.b   WIDGET_TYPE(a6)             ; Does the widget exist?
+    beq.s   @Skip
+    cmp.b   WIDGET_ID(a6), d7           ; Is it associated to the action
+    bne.s   @Skip                       ; we're looking for?
+    
+    movem.l d6-d7/a6, -(sp)             ; Draw it if so
+    bsr     DrawWidget
+    movem.l (sp)+, d6-d7/a6
+    
+@Skip:
+    lea     WIDGET_SIZE(a6), a6         ; Check next widget
+    dbf     d6, @Loop
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; IsWidgetSet
+; Determines whether a widget should look "set" (e.g. pressed).
+;----------------------------------------------------------------------------
+; input a6.l .... Pointer to widget
+;----------------------------------------------------------------------------
+; output d7.w ... 0 = unset, 1 = set
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a5
+;****************************************************************************
+
+IsWidgetSet:
+    cmpa.l  (Interacting), a6           ; Interacting with this widget?
+    bne.s   @NotInteracting
+    cmpa.l  (Hovering), a6
+    bne.s   @NotInteracting
+    moveq   #1, d7
+    rts
+@NotInteracting:
+    
+    moveq   #0, d7                      ; Check if the state matches the
+    move.b  WIDGET_ID(a6), d7           ; widget's value
+    lea     (GuiStates), a5
+    move.b  (a5,d7.w), d7
+    cmp.b   WIDGET_VALUE(a6), d7
+    bne.s   @NotSet
+    moveq   #1, d7
+    rts
+@NotSet:
+    
+    moveq   #0, d7                      ; Widget isn't set
+    rts
+
+;****************************************************************************
+; ResetGuiStates
+; Sets all GUI states to 0.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a5
+;****************************************************************************
+
+ResetGuiStates:
+    lea     (GuiStates), a6             ; Set all GUI states to 0
+    moveq   #0, d6
+    moveq   #$100/8-1, d7
+@Loop:
+    move.l  d6, (a6)+
+    move.l  d6, (a6)+
+    move.l  d6, (a6)+
+    move.l  d6, (a6)+
+    dbf     d7, @Loop
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; GetGuiState
+; Retrieves the current value of a GUI state.
+;----------------------------------------------------------------------------
+; input d7.b .... State ID
+;----------------------------------------------------------------------------
+; output d7.b ... Current value
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a5
+;****************************************************************************
+
+GetGuiState:
+    and.w   #$FF, d7                    ; Get current value
+    lea     (GuiStates), a6
+    move.b  (a6,d7.w), d7
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; SetGuiState
+; Sets a new value for a GUI state.
+;----------------------------------------------------------------------------
+; input d7.b ... State ID
+; input d6.b ... New value
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a5
+;****************************************************************************
+
+SetGuiState:
+    and.w   #$FF, d7                    ; Store new state
+    lea     (GuiStates), a6
+    move.b  d6, (a6,d7.w)
+    
+    bra     DrawWidgetsById             ; Redraw any affected widgets

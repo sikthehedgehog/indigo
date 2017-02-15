@@ -1,0 +1,87 @@
+;****************************************************************************
+; AddMemory
+; Adds the current number to the memory.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+AddMemory:
+    lea     (Operand1), a6              ; Add operand to memory
+    bsr     Normalize
+    lea     (Memory), a6
+    bsr     Normalize
+    lea     (Operand1), a6
+    lea     (Memory), a5
+    bsr     Add
+    lea     (Memory), a6
+    bsr     Normalize
+    
+    lea     (Memory), a6                ; Remove spurious commas
+    tst.b   11(a6)
+    bne.s   @CommaOk
+    st.b    11(a6)
+@CommaOk:
+    
+    lea     (Operand1), a5              ; Transfer memory back to operand
+    move.l  (a6)+, (a5)+
+    move.l  (a6)+, (a5)+
+    move.l  (a6)+, (a5)+
+    
+    st.b    (ToErase)                   ; To let next operand be entered
+                                        ; without having to clear it first
+    
+    lea     (Memory), a6                ; Show the resulting number
+    bra     ShowNumber
+
+;****************************************************************************
+; SaveMemory
+; Saves the current number into memory.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+SaveMemory:
+    lea     (Operand1), a6              ; Copy number into memory
+    lea     (Memory), a5
+    move.l  (a6)+, (a5)+
+    move.l  (a6)+, (a5)+
+    move.l  (a6)+, (a5)+
+    
+    st.b    (ToErase)                   ; To let next operand be entered
+                                        ; without having to clear it first
+    
+    lea     (Memory), a6                ; Show the recorded number
+    bra     ShowNumber
+
+;****************************************************************************
+; RestoreMemory
+; Loads the current number from memory.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+RestoreMemory:
+    lea     (Memory), a6                ; Copy memory into number
+    lea     (Operand1), a5
+    move.l  (a6)+, (a5)+
+    move.l  (a6)+, (a5)+
+    move.l  (a6)+, (a5)+
+    
+    st.b    (ToErase)                   ; To let next operand be entered
+                                        ; without having to clear it first
+    
+    lea     (Operand1), a6              ; Show the restored number
+    bra     ShowNumber
+
+;****************************************************************************
+; ClearMemory
+; Clears the number in memory.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ClearMemory:
+    move.l  #0, (Memory)
+    move.l  #0, (Memory+4)
+    move.l  #$FF, (Memory+8)
+    rts
