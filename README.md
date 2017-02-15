@@ -40,6 +40,8 @@ put the tools (or if they need different arguments).
 
 ## Troubleshooting
 
+### How do I quit a program?
+
 Click the **Apps** button to go back to the desktop.
 
 ### The mouse doesn't work
