@@ -3,6 +3,11 @@
 - Running programs
    - [`OS_LOADPROCESS`](#os_loadprocess-since-010): run another program
    - [`OS_QUITPROCESS`](#os_quitprocess-since-010): return to desktop
+- User interface
+   - [`OS_PARSELAYOUT`](#os_parselayout-since-010): parses a new GUI layout
+   - [`OS_GUILOOP`](#os_guiloop-since-010): runs the GUI loop
+   - [`OS_GETSTATE`](#os_getstate-since-010): gets the value of a GUI state
+   - [`OS_SETSTATE`](#os_setstate-since-010): changes the value of a GUI state
 - Loading graphics
    - [`OS_LOADPATTERNS`](#os_loadpatterns-since-010): load patterns into VRAM
    - [`OS_FILLPATTERNS`](#os_fillpatterns-since-010): fill patterns with a solid color
@@ -53,6 +58,64 @@ the program doesn't exist, Indigo will crash with a bluescreen).
 Quits the current program and returns back to the desktop. Normally there
 isn't a real need for this since you can just click the *Apps* button for
 the same effect.
+
+## User interface
+
+### `OS_PARSELAYOUT` (since 0.10)
+
+Parses a GUI layout and places new widgets on screen (getting rid of the
+existing ones). The screen is also cleared in the process. The format of the
+GUI layout is documented in `gui_layout.md`.
+
+**Input:**
+
+- `a6.l` ← Pointer to layout
+
+**Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
+
+### `OS_GUILOOP` (since 0.10)
+
+Runs the GUI loop, responsible for making the GUI work. It keeps running
+until an event happens, when then it returns back to the program with
+information of the relevant event (usually a widget). After the program is
+done with whatever it needs, it should go back to this syscall again to keep
+the GUI running.
+
+For more information on how the GUI works see `gui.md`.
+
+**Output:**
+
+- `d7.b` → GUI action ID
+- `d6.b` → GUI state value
+
+**Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
+
+### `OS_GETSTATE` (since 0.10)
+
+Retrieves the current value of a GUI state.
+
+**Input:**
+
+- `d7.b` ← GUI state ID
+
+**Output:**
+
+- `d7.b` → Current value
+
+**Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
+
+### `OS_SETSTATE` (since 0.10)
+
+Changes the value of a GUI state. Note that if you call this before
+`OS_PARSELAYOUT`, you will effectively change the default value of the
+relevant widgets.
+
+**Input:**
+
+- `d7.b` ← GUI state ID
+- `d6.b` ← New value
+
+**Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
 
 ## Loading graphics
 
