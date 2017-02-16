@@ -26,6 +26,9 @@
    - [`OS_SETMOUSESPEED`](#os_setmousespeed-since-010): changes mouse sensivity
    - [`OS_GETRAMSIZE`](#os_getramsize-since-010): gets RAM size in KB
    - [`OS_GETVRAMSIZE`](#os_getvramsize-since-010): gets VRAM size in KB
+- String functions
+   - [`OS_INT2ASCII`](#os_int2ascii-since-010): turns an int32 into a string
+   - [`OS_UINT2ASCII`](#os_uint2ascii-since-010): turns an uint32 into a string
 
 ## Running programs
 
@@ -366,5 +369,31 @@ A stock Mega Drive will have 64KB of VRAM, while a Tera Drive will have
 **Output:**
 
 - `d7.w` → VRAM size in KB
+
+**Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
+
+## String functions
+
+### `OS_INT2ASCII` (since 0.10)
+
+Converts a signed 32-bit integer and turns it into an nul-terminated ASCII
+string. The string is stored into the given buffer (you need to reserve at
+least 12 bytes to ensure every value may fit).
+
+**Input:**
+
+- `d7.l` ← Integer value
+- `a6.l` ← Pointer to output buffer
+
+**Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
+
+### `OS_UINT2ASCII` (since 0.10)
+
+Like `OS_INT2ASCII`, but takes an unsigned 32-bit integer.
+
+**Input:**
+
+- `d7.l` ← Integer value
+- `a6.l` ← Pointer to output buffer
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
