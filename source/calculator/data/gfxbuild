@@ -83,4 +83,4 @@ tiles 0 0 3 3
 input "calculator/data/frame.png"
 tiles 0 0 3 3
 input "calculator/data/bg.png"
-tiles 0 0 2 2
+tiles 0 0 1 1

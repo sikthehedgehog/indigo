@@ -18,10 +18,10 @@ EntryPoint:
 
 ;----------------------------------------------------------------------------
 
-    move.w  #VramBg+$2000, d7           ; Draw table(?)
-    move.w  #VramBg+$2001, d6
-    move.w  #VramBg+$2002, a6
-    move.w  #VramBg+$2003, a5
+    move.w  #VramBg+$2000, d7           ; Draw background
+    move.w  #VramBg+$2800, d6
+    move.w  #VramBg+$3000, a6
+    move.w  #VramBg+$3800, a5
     syscall OS_FILLBACKGROUND
     
     moveq   #11, d7                     ; Draw calculator frame

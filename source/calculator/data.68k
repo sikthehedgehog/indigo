@@ -116,6 +116,6 @@ VramMClr:           rs.b 6*2            ; MC button
 VramLcd:            rs.b 2*16           ; LCD screen
 VramLcdFrame:       rs.b 3*3            ; LCD screen frame
 VramFrame:          rs.b 3*3            ; Calculator frame
-VramBg:             rs.b 4              ; Background pattern
+VramBg:             rs.b 1              ; Background pattern
 
 NumPatterns:        rs.b 0              ; Number of patterns
