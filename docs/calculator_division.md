@@ -3,7 +3,10 @@
 The calculator does decimal arithmetic with ten digits. Most of the
 algorithms were rather straightforward (if annoying to implement) but the
 division was particularly awful. Just going to leave here an example of how
-it's working to give an idea...
+it's working to give an idea... In hindsight, I think it's just long
+division.
+
+Sign and comma are handled separately, this only computes the digits.
 
 ```
 12345 / 25 = 493.8
