@@ -29,7 +29,7 @@
 
 ## Running programs
 
-### `OS_LOADPROCESS`
+### `OS_LOADPROCESS` (since 0.10)
 
 Quits the current program and loads the one specified by the filename (if
 the program doesn't exist, Indigo will crash with a bluescreen).
@@ -38,7 +38,7 @@ the program doesn't exist, Indigo will crash with a bluescreen).
 
 - `a6.l` ← Pointer to filename
 
-### `OS_QUITPROCESS`
+### `OS_QUITPROCESS` (since 0.10)
 
 Quits the current program and returns back to the desktop. Normally there
 isn't a real need for this since you can just click the *Apps* button for
@@ -46,7 +46,7 @@ the same effect.
 
 ## Loading graphics
 
-### `OS_LOADPATTERNS`
+### `OS_LOADPATTERNS` (since 0.10)
 
 Loads patterns into VRAM.
 
@@ -58,7 +58,7 @@ Loads patterns into VRAM.
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
 
-### `OS_FILLPATTERNS`
+### `OS_FILLPATTERNS` (since 0.10)
 
 Fills patterns in VRAM with a solid color. Useful to clear them with an
 initial state if you're planning to modify them later (e.g. the terminal does
@@ -72,7 +72,7 @@ this for the display itself).
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
 
-### `OS_RENDERTEXT`
+### `OS_RENDERTEXT` (since 0.10)
 
 Renders a string of text into patterns, and stores the result in RAM (so you
 can later load it wherever you want). The string is ASCII and nul-terminated
@@ -90,7 +90,7 @@ Color 0 is used for the background and color 15 is used for the foreground.
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
 
-### `OS_LOADTEXTLIST`
+### `OS_LOADTEXTLIST` (since 0.10)
 
 Helper function that's used to render a lot of strings into patterns and
 loads them into VRAM (like calling `OS_RENDERTEXT` and `OS_LOADPATTERNS` for
@@ -121,7 +121,7 @@ The end of the list is marked as follows:
     even
 ```
 
-### `OS_LOADPALETTE`
+### `OS_LOADPALETTE` (since 0.10)
 
 Loads a palette into CRAM. A palette consists of 16 words, each word being
 a color (in `xxxxBBBxGGGxRRRx` format). Note that palette 0 is the default
@@ -136,7 +136,7 @@ GUI palette, so you shouldn't touch it unless you know what you're doing.
 
 ## Drawing graphics
 
-### `OS_DRAWTILES`
+### `OS_DRAWTILES` (since 0.10)
 
 Draws a block of tiles using consecutive patterns.
 
@@ -151,7 +151,7 @@ Draws a block of tiles using consecutive patterns.
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
 
-### `OS_FILLTILES`
+### `OS_FILLTILES` (since 0.10)
 
 Fills a block of tiles using a single pattern.
 
@@ -166,7 +166,7 @@ Fills a block of tiles using a single pattern.
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
 
-### `OS_ERASETILES`
+### `OS_ERASETILES` (since 0.10)
 
 Fills a block of tiles using a blank pattern. Pretty much the same as calling
 `OS_FILLTILES` using pattern `$07FF`.
@@ -181,7 +181,7 @@ Fills a block of tiles using a blank pattern. Pretty much the same as calling
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
 
-### `OS_DRAWTILEMAP`
+### `OS_DRAWTILEMAP` (since 0.10)
 
 Draws a block of tiles using the given list of patterns (essentially, a
 tilemap).
@@ -197,7 +197,7 @@ tilemap).
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
 
-### `OS_FILLFRAME`
+### `OS_FILLFRAME` (since 0.10)
 
 Draws tiles with a filled frame (i.e. border and the inner area). The frame
 requires 9 consecutive patterns (see below). A good example would be the body
@@ -226,7 +226,7 @@ of the calculator or the screen in the terminal.
 8. Bottom inner
 9. Bottom right
 
-### `OS_DRAWLABELS`
+### `OS_DRAWLABELS` (since 0.10)
 
 Helper function used to draw a lot of labels on screen (e.g. the Settings app
 makes use of this to draw its labels). You pass in a list of all labels to be
@@ -257,7 +257,7 @@ The end of the list is marked as follows:
     dc.w    $FFFF
 ```
 
-### `OS_FILLBACKGROUND`
+### `OS_FILLBACKGROUND` (since 0.10)
 
 Used to draw the background in the desktop and the calculator. It takes four
 patterns (arranged as 2×2) and fills plane B with them.
@@ -273,7 +273,7 @@ patterns (arranged as 2×2) and fills plane B with them.
 
 ## System settings
 
-### `OS_GETMOUSESWAP`
+### `OS_GETMOUSESWAP` (since 0.10)
 
 Retrieves whether the mouse buttons are swapped or not. The value is 0 for
 a right handed configuration (left button primary), or 1 for a left handed
@@ -285,7 +285,7 @@ configuration (right button primary).
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
 
-### `OS_SETMOUSESWAP`
+### `OS_SETMOUSESWAP` (since 0.10)
 
 Changes whether the mouse buttons are swapped or not. The value is 0 for
 a right handed configuration (left button primary), or 1 for a left handed
@@ -297,7 +297,7 @@ configuration (right button primary).
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
 
-### `OS_GETMOUSETYPE`
+### `OS_GETMOUSETYPE` (since 0.10)
 
 Retrieves which kind of mouse is in use (based on the settings only). The
 value is 0 for a Mega Mouse (American, 4 buttons), or 1 for a Sega Mouse
@@ -309,7 +309,7 @@ value is 0 for a Mega Mouse (American, 4 buttons), or 1 for a Sega Mouse
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
 
-### `OS_SETMOUSETYPE`
+### `OS_SETMOUSETYPE` (since 0.10)
 
 Changes the setting for the kind of mouse in use. The value is 0 for a Mega
 Mouse (American, 4 buttons), or 1 for a Sega Mouse (Japanese, 2 buttons).
@@ -320,7 +320,7 @@ Mouse (American, 4 buttons), or 1 for a Sega Mouse (Japanese, 2 buttons).
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
 
-### `OS_GETMOUSESPEED`
+### `OS_GETMOUSESPEED` (since 0.10)
 
 Retrieves the current sensivity setting for the mouse. The sensivity ranges
 from 0 (slowest) to 64 (fastest).
@@ -331,7 +331,7 @@ from 0 (slowest) to 64 (fastest).
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
 
-### `OS_SETMOUSESPEED`
+### `OS_SETMOUSESPEED` (since 0.10)
 
 Changes the current sensivity setting for the mouse. The sensivity ranges
 from 0 (slowest) to 64 (fastest).
@@ -342,7 +342,7 @@ from 0 (slowest) to 64 (fastest).
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
 
-### `OS_GETRAMSIZE`
+### `OS_GETRAMSIZE` (since 0.10)
 
 Retrieves the RAM size in KB. Indigo doesn't make use of the extra RAM, but a
 program may detect this and make use of the extra memory on its own.
@@ -355,7 +355,7 @@ A stock Mega Drive will have 64KB of RAM, a Tera Drive may provide more.
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
 
-### `OS_GETVRAMSIZE`
+### `OS_GETVRAMSIZE` (since 0.10)
 
 Retrieves the VRAM (video memory) size in KB. Note that currently Indigo
 makes no provision for making use of the extra VRAM.
