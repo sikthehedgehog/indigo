@@ -37,6 +37,8 @@ OS_SETSCROLL:           equ 12      ; Set scroll positions
 OS_ALLOCSPRITE:         equ 26      ; Allocate a new sprite
 OS_SETSPRITE:           equ 27      ; Set a sprite's properties
 
+OS_SETCURSOR:           equ 31      ; Sets the cursor shape
+
 OS_GETMOUSESWAP:        equ 21      ; Retrieves the mouse swap setting
 OS_SETMOUSESWAP:        equ 22      ; Changes the mouse swap setting
 OS_GETMOUSETYPE:        equ 19      ; Retrieves the mouse type
@@ -45,8 +47,6 @@ OS_GETMOUSESPEED:       equ 28      ; Retrieves the mouse sensivity
 OS_SETMOUSESPEED:       equ 29      ; Changes the mouse sensivity
 OS_GETRAMSIZE:          equ 23      ; Gets the amount of RAM in KB
 OS_GETVRAMSIZE:         equ 24      ; Gets the amount of VRAM in KB
-
-OS_SETCURSOR:           equ 31      ; Sets the cursor shape
 
 OS_INT2ASCII:           equ 25      ; Convert int32 into string
 OS_UINT2ASCII:          equ 30      ; Convert uint32 into string

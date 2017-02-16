@@ -17,6 +17,13 @@
    - [`OS_FILLFRAME`](#os_fillframe-since-010): draws a filled frame
    - [`OS_DRAWLABELS`](#os_drawlabels-since-010): draws a bunch of labels
    - [`OS_FILLBACKGROUND`](#os_fillbackground-since-010): draws a background like in the desktop
+- Scrolling
+   - [`OS_SETSCROLL`](#os_setscroll-since-010): scroll both planes
+- Sprites
+   - [`OS_ALLOCSPRITE`](#os_allocsprite-since-010): allocate a new sprite
+   - [`OS_SETSPRITE`](#os_setsprite-since-010): change a sprite's properties
+- Cursor
+   - [`OS_SETCURSOR`](#os_setcursor-since-010): change cursor shape
 - System settings
    - [`OS_GETMOUSESWAP`](#os_getmouseswap-since-010): gets if mouse button are swapped
    - [`OS_SETMOUSESWAP`](#os_setmouseswap-since-010): changes if mouse button are swapped
@@ -273,6 +280,72 @@ patterns (arranged as 2×2) and fills plane B with them.
 - `a5.w` ← Bottom right pattern ID
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
+
+## Scrolling
+
+### `OS_SETSCROLL` (since 0.10)
+
+Changes the scroll position for both planes. Note that widgets make the
+assumption that plane A is not scrolled (i.e. position 0,0), so if you're
+using visible widgets then you may not want to scroll that plane.
+
+**Input:**
+
+- `d7.w` ← X scroll for plane A
+- `d6.w` ← X scroll for plane B
+- `a6.w` ← Y scroll for plane A
+- `a5.w` ← Y scroll for plane B
+
+**Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
+
+## Sprites
+
+### `OS_ALLOCSPRITE` (since 0.10)
+
+Tries to allocate a new sprite for use by the application. It returns an ID
+that can be used to reference the new sprite. If there are already too many
+sprites (i.e. can't make a new one), it'll return `$FF` instead.
+
+**Output:**
+
+- `d7.b` → Sprite ID (`$FF` if too many)
+
+**Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
+
+### `OS_SETSPRITE` (since 0.10)
+
+Changes the properties of a sprite: its position on screen, which graphic it
+uses, and its size.
+
+**Input:**
+
+- `d7.b` ← Sprite ID
+- `d6.w` ← X coordinate
+- `d5.w` ← Y coordinate
+- `a6.w` ← First pattern ID
+- `a5.w` ← Sprite size
+
+**Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
+
+## Cursor
+
+### `OS_SETCURSOR` (since 0.10)
+
+Changes the shape of the cursor. Note that it'll be overriden if you enter
+the GUI loop.
+
+**Input:**
+
+- `d7.b` ← New cursor shape (see below)
+
+**Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
+
+**Available cursor shapes:**
+
+- `OSCURSOR_ARROW`: arrow
+- `OSCURSOR_HAND`: hand
+- `OSCURSOR_BUSY`: hourglass
+- `OSCURSOR_IBEAM`: ibeam
 
 ## System settings
 
