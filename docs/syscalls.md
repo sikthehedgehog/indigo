@@ -1,31 +1,31 @@
 # Syscalls
 
 - Running programs
-   - [`OS_LOADPROCESS`](#os_loadprocess): run another program
-   - [`OS_QUITPROCESS`](#os_quitprocess): return to desktop
+   - [`OS_LOADPROCESS`](#os_loadprocess-since-010): run another program
+   - [`OS_QUITPROCESS`](#os_quitprocess-since-010): return to desktop
 - Loading graphics
-   - [`OS_LOADPATTERNS`](#os_loadpatterns): load patterns into VRAM
-   - [`OS_FILLPATTERNS`](#os_fillpatterns): fill patterns with a solid color
-   - [`OS_RENDERTEXT`](#os_rendertext): renders text into patterns
-   - [`OS_LOADTEXTLIST`](#os_loadtextlist): renders many strings into patterns and loads them
-   - [`OS_LOADPALETTE`](#os_loadpalette): load a palette into CRAM
+   - [`OS_LOADPATTERNS`](#os_loadpatterns-since-010): load patterns into VRAM
+   - [`OS_FILLPATTERNS`](#os_fillpatterns-since-010): fill patterns with a solid color
+   - [`OS_RENDERTEXT`](#os_rendertext-since-010): renders text into patterns
+   - [`OS_LOADTEXTLIST`](#os_loadtextlist-since-010): renders many strings into patterns and loads them
+   - [`OS_LOADPALETTE`](#os_loadpalette-since-010): load a palette into CRAM
 - Drawing graphics
-   - [`OS_DRAWTILES`](#os_drawtiles): draws tiles with consecutive patterns
-   - [`OS_FILLTILES`](#os_filltiles): fills tiles with a single pattern
-   - [`OS_ERASETILES`](#os_erasetiles): fills tiles with a blank pattern
-   - [`OS_DRAWTILEMAP`](#os_drawtilemap): draws tiles using a list of patterns
-   - [`OS_FILLFRAME`](#os_fillframe): draws a filled frame
-   - [`OS_DRAWLABELS`](#os_drawlabels): draws a bunch of labels
-   - [`OS_FILLBACKGROUND`](#os_fillbackground): draws a background like in the desktop
+   - [`OS_DRAWTILES`](#os_drawtiles-since-010): draws tiles with consecutive patterns
+   - [`OS_FILLTILES`](#os_filltiles-since-010): fills tiles with a single pattern
+   - [`OS_ERASETILES`](#os_erasetiles-since-010): fills tiles with a blank pattern
+   - [`OS_DRAWTILEMAP`](#os_drawtilemap-since-010): draws tiles using a list of patterns
+   - [`OS_FILLFRAME`](#os_fillframe-since-010): draws a filled frame
+   - [`OS_DRAWLABELS`](#os_drawlabels-since-010): draws a bunch of labels
+   - [`OS_FILLBACKGROUND`](#os_fillbackground-since-010): draws a background like in the desktop
 - System settings
-   - [`OS_GETMOUSESWAP`](#os_getmouseswap): gets if mouse button are swapped
-   - [`OS_SETMOUSESWAP`](#os_setmouseswap): changes if mouse button are swapped
-   - [`OS_GETMOUSETYPE`](#os_getmousetype): gets mouse type
-   - [`OS_SETMOUSETYPE`](#os_setmousetype): changes mouse type
-   - [`OS_GETMOUSESPEED`](#os_getmousespeed): gets mouse sensivity
-   - [`OS_SETMOUSESPEED`](#os_setmousespeed): changes mouse sensivity
-   - [`OS_GETRAMSIZE`](#os_getramsize): gets RAM size in KB
-   - [`OS_GETVRAMSIZE`](#os_getvramsize): gets VRAM size in KB
+   - [`OS_GETMOUSESWAP`](#os_getmouseswap-since-010): gets if mouse button are swapped
+   - [`OS_SETMOUSESWAP`](#os_setmouseswap-since-010): changes if mouse button are swapped
+   - [`OS_GETMOUSETYPE`](#os_getmousetype-since-010): gets mouse type
+   - [`OS_SETMOUSETYPE`](#os_setmousetype-since-010): changes mouse type
+   - [`OS_GETMOUSESPEED`](#os_getmousespeed-since-010): gets mouse sensivity
+   - [`OS_SETMOUSESPEED`](#os_setmousespeed-since-010): changes mouse sensivity
+   - [`OS_GETRAMSIZE`](#os_getramsize-since-010): gets RAM size in KB
+   - [`OS_GETVRAMSIZE`](#os_getvramsize-since-010): gets VRAM size in KB
 
 ## Running programs
 
