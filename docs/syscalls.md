@@ -1,5 +1,8 @@
 # Syscalls
 
+- Running programs
+   - [`OS_LOADPROCESS`](#os_loadprocess)
+   - [`OS_QUITPROCESS`](#os_quitprocess)
 - Drawing graphics
    - [`OS_DRAWTILES`](#os_drawtiles)
    - [`OS_FILLTILES`](#os_filltiles)
@@ -17,6 +20,23 @@
    - [`OS_SETMOUSESPEED`](#os_setmousespeed)
    - [`OS_GETRAMSIZE`](#os_getramsize)
    - [`OS_GETVRAMSIZE`](#os_getvramsize)
+
+## Running programs
+
+### `OS_LOADPROCESS`
+
+Quits the current program and loads the one specified by the filename (if
+the program doesn't exist, Indigo will crash with a bluescreen).
+
+**Input:**
+
+- `a6.l` ← Pointer to filename
+
+### `OS_QUITPROCESS`
+
+Quits the current program and returns back to the desktop. Normally there
+isn't a real need for this since you can just click the *Apps* button for
+the same effect.
 
 ## Drawing graphics
 
