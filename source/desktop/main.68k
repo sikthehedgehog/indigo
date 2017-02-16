@@ -3,14 +3,17 @@ EntryPoint:
     move.w  #NumPatterns, d6
     lea     Patterns(pc), a6
     syscall OS_LOADPATTERNS
+    moveq   #1, d7
+    lea     AltPalette(pc), a6
+    syscall OS_LOADPALETTE
     
     lea     Layout(pc), a6              ; Load interface
     syscall OS_PARSELAYOUT
     
-    move.w  #VramBg+$0000, d7           ; Draw desktop(?)
-    move.w  #VramBg+$0800, d6
-    move.w  #VramBg+$1000, a6
-    move.w  #VramBg+$1800, a5
+    move.w  #VramBg+$2000, d7           ; Draw background
+    move.w  #VramBg+$2800, d6
+    move.w  #VramBg+$3000, a6
+    move.w  #VramBg+$3800, a5
     syscall OS_FILLBACKGROUND
 
 ;----------------------------------------------------------------------------
