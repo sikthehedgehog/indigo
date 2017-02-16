@@ -7,6 +7,8 @@
    - [`OS_SETMOUSETYPE`](#os_setmousetype)
    - [`OS_GETMOUSESPEED`](#os_getmousespeed)
    - [`OS_SETMOUSESPEED`](#os_setmousespeed)
+   - [`OS_GETRAMSIZE`](#os_getramsize)
+   - [`OS_GETVRAMSIZE`](#os_getvramsize)
 
 ## System settings
 
@@ -76,5 +78,32 @@ from 0 (slowest) to 64 (fastest).
 **Input:**
 
 - `d7.b` ← Mouse sensivity
+
+**Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
+
+### `OS_GETRAMSIZE`
+
+Retrieves the RAM size in KB. Indigo doesn't make use of the extra RAM, but a
+program may detect this and make use of the extra memory on its own.
+
+A stock Mega Drive will have 64KB of RAM, a Tera Drive may provide more.
+
+**Output:**
+
+- `d7.w` → RAM size in KB
+
+**Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
+
+### `OS_GETVRAMSIZE`
+
+Retrieves the VRAM (video memory) size in KB. Note that currently Indigo
+makes no provision for making use of the extra VRAM.
+
+A stock Mega Drive will have 64KB of VRAM, while a Tera Drive will have
+128KB of VRAM.
+
+**Output:**
+
+- `d7.w` → VRAM size in KB
 
 **Breaks:** `d5`, `d6`, `d7`, `a4`, `a5`, `a6`
