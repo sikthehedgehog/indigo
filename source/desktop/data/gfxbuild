@@ -1,5 +1,8 @@
 output "desktop/blob/icons.blob"
 layout tilemap
+input "desktop/data/cabinet.png"
+tiles 0 0 3 3
+tiles 3 0 3 3
 input "desktop/data/calculator.png"
 tiles 0 0 3 3
 tiles 3 0 3 3

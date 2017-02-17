@@ -5,6 +5,9 @@ gfx() { ./mdtiler $1 ; }
 rm -rf rom
 mkdir -p rom
 
+gfx cabinet/data/gfxbuild
+asm cabinet/buildme.68k rom/cabinet.ixec
+
 gfx calculator/data/gfxbuild
 asm calculator/buildme.68k rom/calculator.ixec
 

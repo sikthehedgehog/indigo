@@ -216,6 +216,8 @@ ParseGuiLayout_HScroll:
     move.w  (sp)+, d5
     move.b  (a6)+, d5
     move.w  d5, a4
+    moveq   #0, d7
+    moveq   #0, d6
     moveq   #0, d5
     move.b  WIDGET_X1(a5), d7
     move.b  WIDGET_Y1(a5), d6
@@ -225,6 +227,7 @@ ParseGuiLayout_HScroll:
     move.l  a5, -(sp)
     move.l  a6, -(sp)
     move.w  d5, a6
+    move.w  a4, a5
     moveq   #0, d5
     bsr     DrawHBar
     move.l  (sp)+, a6
@@ -268,6 +271,8 @@ ParseGuiLayout_VScroll:
     move.w  (sp)+, d5
     move.b  (a6)+, d5
     move.w  d5, a4
+    moveq   #0, d7
+    moveq   #0, d6
     moveq   #0, d5
     move.b  WIDGET_X1(a5), d7
     move.b  WIDGET_Y1(a5), d6
@@ -276,7 +281,8 @@ ParseGuiLayout_VScroll:
     subq.b  #2, d5
     move.l  a5, -(sp)
     move.l  a6, -(sp)
-    move.w  d5, a5
+    move.w  d5, a6
+    move.w  a4, a5
     moveq   #0, d5
     bsr     DrawVBar
     move.l  (sp)+, a6

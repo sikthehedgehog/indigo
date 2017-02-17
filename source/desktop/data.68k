@@ -4,6 +4,7 @@
 
                     rsreset
 
+ID_CABINET:         rs.b 1              ; Cabinet
 ID_CALCULATOR:      rs.b 1              ; Calculator
 ID_TERMINAL:        rs.b 1              ; Terminal
 ID_SETTINGS:        rs.b 1              ; Settings
@@ -13,7 +14,8 @@ ID_SETTINGS:        rs.b 1              ; Settings
 ;****************************************************************************
 
 Layout:
-    OSUI_Button ID_CALCULATOR, 2,1, 3,3, VramCalculator
+    OSUI_Button ID_CABINET, 2,1, 3,3, VramCabinet
+    OSUI_Button ID_CALCULATOR, 6,1, 3,3, VramCalculator
     OSUI_Button ID_TERMINAL, 31,21, 3,3, VramTerminal
     OSUI_Button ID_SETTINGS, 35,21, 3,3, VramSettings
     OSUI_End
@@ -23,10 +25,12 @@ Layout:
 ;****************************************************************************
 
 Filenames:
+    dc.w    FileCabinet-Filenames
     dc.w    FileCalculator-Filenames
     dc.w    FileTerminal-Filenames
     dc.w    FileSettings-Filenames
 
+FileCabinet:        dc.b 'cabinet.ixec', 0
 FileCalculator:     dc.b 'calculator.ixec', 0
 FileTerminal:       dc.b 'terminal.ixec', 0
 FileSettings:       dc.b 'settings.ixec', 0
@@ -41,7 +45,7 @@ Patterns:
 
 AltPalette:
     dc.w    $000,$A60,$840,$000,$000,$000,$000,$000
-    dc.w    $000,$000,$000,$000,$000,$000,$000,$000
+    dc.w    $000,$000,$000,$000,$000,$000,$EEE,$000
 
 ;****************************************************************************
 ; Pattern IDs
@@ -49,6 +53,7 @@ AltPalette:
 
                     rsreset
 
+VramCabinet:        rs.b 9*2            ; Cabinet
 VramCalculator:     rs.b 9*2            ; Calculator
 VramTerminal:       rs.b 9*2            ; Terminal
 VramSettings:       rs.b 9*2            ; Settings

@@ -423,7 +423,7 @@ FillFrame:
 ; input d6.w ... Y coordinate
 ; input d5.w ... Plane ID
 ; input a6.w ... Width (inner area)
-; input a4.w ... Base pattern ID
+; input a5.w ... Base pattern ID
 ;----------------------------------------------------------------------------
 ; breaks: d5-d7, a4-a6
 ;****************************************************************************
@@ -438,38 +438,38 @@ DrawHBar:
     swap    d7
     move.w  #$0003, d7
     
-    move.w  a6, d5                      ; Put dimensions where they can be
-    subq.w  #1, d5                      ; used for looping with DBF
-    move.w  d5, a5
+    move.w  a6, d6                      ; Put length where it can be used
+    subq.w  #1, d6                      ; for looping with DBF
+    move.w  d6, d5
     
-    lea     ($C00000), a6               ; Acquire VDP
+    lea     ($C00000), a4               ; Acquire VDP
     st.b    (DontDraw)
     
-    move.l  d7, 4(a6)                   ; Draw top of the bar
-    move.w  a4, (a6)
-    addq.w  #1, a4
-    tst.w   d5
+    move.l  d7, 4(a4)                   ; Draw top portion of the bar
+    move.w  a5, (a4)
+    addq.w  #1, a5
+    tst.w   d6
     bmi.s   @NoTopX
 @TopLoop:
-    move.w  a4, (a6)
-    dbf     d5, @TopLoop
+    move.w  a5, (a4)
+    dbf     d6, @TopLoop
 @NoTopX:
-    addq.w  #1, a4
-    move.w  a4, (a6)
-    addq.w  #1, a4
+    addq.w  #1, a5
+    move.w  a5, (a4)
+    addq.w  #1, a5
     
-    add.l   #$800000, d7                ; Draw bottom of the bar
-    move.l  d7, 4(a6)
-    move.w  a4, (a6)
-    addq.w  #1, a4
-    move.w  a5, d5
+    add.l   #$800000, d7                ; Draw bottom portion of the bar
+    move.l  d7, 4(a4)
+    move.w  a5, (a4)
+    addq.w  #1, a5
+    tst.w   d5
     bmi.s   @NoBottomX
 @BottomLoop:
-    move.w  a4, (a6)
+    move.w  a5, (a4)
     dbf     d5, @BottomLoop
 @NoBottomX:
-    addq.w  #1, a4
-    move.w  a4, (a6)
+    addq.w  #1, a5
+    move.w  a5, (a4)
     
     clr.b   (DontDraw)                  ; Release VDP
     rts                                 ; End of subroutine
@@ -481,13 +481,10 @@ DrawHBar:
 ; input d7.w ... X coordinate
 ; input d6.w ... Y coordinate
 ; input d5.w ... Plane ID
-; input a5.w ... Height (inner area)
-; input a4.w ... Base pattern ID
+; input a6.w ... Height (inner area)
+; input a5.w ... Base pattern ID
 ;----------------------------------------------------------------------------
 ; breaks: d5-d7, a4-a6
-;----------------------------------------------------------------------------
-; TO-DO: optimize this to draw tiles vertically (with autoincrement), this
-; was just a quick hack to get it working for release.
 ;****************************************************************************
 
 DrawVBar:
@@ -500,36 +497,42 @@ DrawVBar:
     swap    d7
     move.w  #$0003, d7
     
-    move.w  a5, d6                      ; Put length where it can be
-    subq.w  #1, d6                      ; used for looping with DBF
+    move.w  a6, d6                      ; Put length where it can be used
+    subq.w  #1, d6                      ; for looping with DBF
+    move.w  d6, d5
     
-    lea     ($C00000), a6               ; Acquire VDP
+    lea     ($C00000), a4               ; Acquire VDP
     st.b    (DontDraw)
     
-    move.l  d7, 4(a6)                   ; Draw top of the bar
-    move.w  a4, (a6)
-    addq.w  #3, a4
-    move.w  a4, (a6)
-    subq.w  #2, a4
+    move.w  #$8F80, 4(a4)               ; We'll draw vertically
     
-    tst.w   d6                          ; Draw inner portion of the bar
-    bmi.s   @NoInnerY
-@InnerLoopY:
-    add.l   #$800000, d7
-    move.l  d7, 4(a6)
-    move.w  a4, (a6)
-    addq.w  #3, a4
-    move.w  a4, (a6)
-    subq.w  #3, a4
-    dbf     d6, @InnerLoopY
-@NoInnerY:
+    move.l  d7, 4(a4)                   ; Draw left portion of the bar
+    move.w  a5, (a4)
+    addq.w  #1, a5
+    tst.w   d6
+    bmi.s   @NoLeftY
+@LeftLoop:
+    move.w  a5, (a4)
+    dbf     d6, @LeftLoop
+@NoLeftY:
+    addq.w  #1, a5
+    move.w  a5, (a4)
+    addq.w  #1, a5
     
-    add.l   #$800000, d7                ; Draw bottom of the bar
-    move.l  d7, 4(a6)
-    addq.w  #1, a4
-    move.w  a4, (a6)
-    addq.w  #3, a4
-    move.w  a4, (a6)
+    add.l   #$20000, d7                 ; Draw right portion of the bar
+    move.l  d7, 4(a4)
+    move.w  a5, (a4)
+    addq.w  #1, a5
+    tst.w   d5
+    bmi.s   @NoRightY
+@RightLoop:
+    move.w  a5, (a4)
+    dbf     d5, @RightLoop
+@NoRightY:
+    addq.w  #1, a5
+    move.w  a5, (a4)
+    
+    move.w  #$8F02, 4(a4)               ; Done drawing vertically
     
     clr.b   (DontDraw)                  ; Release VDP
     rts                                 ; End of subroutine
