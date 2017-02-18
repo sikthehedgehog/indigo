@@ -1,0 +1,72 @@
+EntryPoint:
+    moveq   #0, d7                      ; Load graphics
+    move.w  #NumPatterns, d6
+    lea     Patterns(pc), a6
+    syscall OS_LOADPATTERNS
+    lea     LabelText(pc), a6
+    move.w  #VramDrives, d7
+    syscall OS_LOADTEXTLIST
+    moveq   #1, d7
+    lea     InvPalette(pc), a6
+    syscall OS_LOADPALETTE
+    moveq   #2, d7
+    lea     OpenPalette(pc), a6
+    syscall OS_LOADPALETTE
+    
+    lea     Layout(pc), a6              ; Load interface
+    syscall OS_PARSELAYOUT
+    lea     LabelList(pc), a6
+    syscall OS_DRAWLABELS
+    
+    moveq   #2, d7                      ; Draw frame for main list
+    moveq   #4, d6
+    moveq   #0, d5
+    move.w  #23, a6
+    move.w  #18, a5
+    move.w  #VramFrame+$8000, a4
+    syscall OS_FILLFRAME
+    
+    moveq   #30, d7                     ; Draw frame for drive list
+    moveq   #5, d6
+    moveq   #0, d5
+    move.w  #6, a6
+    move.w  #6, a5
+    move.w  #VramFrame+$8000, a4
+    syscall OS_FILLFRAME
+    
+    moveq   #2, d7                      ; Draw sides of the filename field
+    moveq   #1, d6
+    moveq   #0, d5
+    move.w  #1, a6
+    move.w  #2, a5
+    move.w  #VramNameLeft+$8000, a4
+    syscall OS_DRAWTILES
+    moveq   #26, d7
+    moveq   #1, d6
+    moveq   #0, d5
+    move.w  #1, a6
+    move.w  #2, a5
+    move.w  #VramNameRight+$8000, a4
+    syscall OS_DRAWTILES
+    
+    moveq   #3, d7                      ; Draw filename field itself
+    moveq   #1, d6
+    moveq   #0, d5
+    move.w  #NAMEFIELD_LEN, a6
+    move.w  #2, a5
+    move.w  #VramNameField+$8000, a4
+    syscall OS_DRAWTILES
+    bsr     BlankFilename
+    
+    lea     @Test(pc), a6
+    bsr     DrawFilename
+    bra.s   MainLoop
+
+@Test:      dc.b 'This is a test', 0
+            even
+
+;----------------------------------------------------------------------------
+
+MainLoop:
+    syscall OS_GUILOOP
+    bra.s   MainLoop

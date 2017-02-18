@@ -1,0 +1,116 @@
+NAMEFIELD_LEN:      equ 23              ; Length of filename field in tiles
+
+;****************************************************************************
+; BlankFilename
+; Makes the filename field look blank.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+BlankFilename:
+    move.l  #$EEEEEEEE, d0              ; Colors for the field
+    move.l  #$11111111, d1
+    move.l  #$33333333, d2
+    move.l  #$44444444, d3
+    
+    moveq   #NAMEFIELD_LEN-1, d7        ; Generate the patterns
+    lea     -2*NAMEFIELD_LEN*$20(sp), sp
+    move.l  sp, a0
+    lea     NAMEFIELD_LEN*$20(sp), a1
+@Fill:
+    move.l  d3, (a0)+
+    move.l  d2, (a0)+
+    move.l  d3, (a0)+
+    move.l  d0, (a0)+
+    move.l  d0, (a0)+
+    move.l  d0, (a0)+
+    move.l  d0, (a0)+
+    move.l  d0, (a0)+
+    move.l  d0, (a1)+
+    move.l  d0, (a1)+
+    move.l  d0, (a1)+
+    move.l  d0, (a1)+
+    move.l  d0, (a1)+
+    move.l  d3, (a1)+
+    move.l  d1, (a1)+
+    move.l  d0, (a1)+
+    dbf     d7, @Fill
+    
+    move.l  sp, a6                      ; Load blank field into VRAM
+    move.w  #VramNameField, d7
+    moveq   #NAMEFIELD_LEN*2, d6
+    syscall OS_LOADPATTERNS
+    
+    lea     2*NAMEFIELD_LEN*$20(sp), sp ; Done with buffer
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; DrawFilename
+; Draws a string in the filename field.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to filename
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DrawFilename:
+    moveq   #NAMEFIELD_LEN, d7          ; Render the filename
+    lea     -NAMEFIELD_LEN*$20(sp), sp
+    move.l  sp, a5
+    syscall OS_RENDERTEXT
+    
+    move.l  #$EEEEEEEE, d0              ; Colors for the field
+    move.l  #$11111111, d1
+    move.l  #$33333333, d2
+    move.l  #$44444444, d3
+    
+    move.l  sp, a0                      ; Generate the patterns
+    lea     -2*NAMEFIELD_LEN*$20(sp), sp
+    move.l  sp, a1
+    lea     NAMEFIELD_LEN*$20(sp), a2
+    moveq   #NAMEFIELD_LEN-1, d7
+@Loop:
+    move.l  d3, (a1)+                   ; Top of the field
+    move.l  d2, (a1)+
+    move.l  d3, (a1)+
+    move.l  d0, (a1)+
+    
+    move.l  (a0)+, d6
+    or.l    d0, d6
+    move.l  d6, (a1)+
+    move.l  (a0)+, d6
+    or.l    d0, d6
+    move.l  d6, (a1)+
+    move.l  (a0)+, d6
+    or.l    d0, d6
+    move.l  d6, (a1)+
+    move.l  (a0)+, d6
+    or.l    d0, d6
+    move.l  d6, (a1)+
+    
+    move.l  (a0)+, d6
+    or.l    d0, d6
+    move.l  d6, (a2)+
+    move.l  (a0)+, d6
+    or.l    d0, d6
+    move.l  d6, (a2)+
+    move.l  (a0)+, d6
+    or.l    d0, d6
+    move.l  d6, (a2)+
+    move.l  (a0)+, d6
+    or.l    d0, d6
+    move.l  d6, (a2)+
+    
+    move.l  d0, (a2)+                   ; Bottom of the field
+    move.l  d3, (a2)+
+    move.l  d1, (a2)+
+    move.l  d0, (a2)+
+    dbf     d7, @Loop
+    
+    move.l  sp, a6                      ; Load rendered field into VRAM
+    move.w  #VramNameField, d7
+    moveq   #NAMEFIELD_LEN*2, d6
+    syscall OS_LOADPATTERNS
+    
+    lea     3*NAMEFIELD_LEN*$20(sp), sp ; Done with buffers
+    rts                                 ; End of subroutine

@@ -1,0 +1,72 @@
+;****************************************************************************
+; Button IDs
+;****************************************************************************
+
+                    rsreset
+ID_SCROLL:          rs.b 1              ; Scrollbar
+ID_SCROLL_U:        rs.b 1                ; ↑ button
+ID_SCROLL_D:        rs.b 1                ; ↓ button
+ID_OPEN:            rs.b 1              ; Open button
+
+;****************************************************************************
+; Interface layout
+;****************************************************************************
+
+SCROLL_LEN: equ 14
+SCROLL_MAX: equ SCROLL_LEN*8
+
+Layout:
+    OSUI_VScroll ID_SCROLL, 27,6,SCROLL_LEN, VramScroller,VramScrollBg
+    OSUI_Button ID_SCROLL_U, 27,4, 2,2, VramUp
+    OSUI_Button ID_SCROLL_D, 27,22, 2,2, VramDown
+    
+    OSUI_Button ID_OPEN, 30,22, 8,2, VramOpen+$4000
+    OSUI_End
+
+;****************************************************************************
+; Labels
+;****************************************************************************
+
+LabelText:
+    dc.b    6, ' Drives:',0
+    dc.b    0
+    even
+
+LabelList:
+    dc.b    30,4,0,6
+    dc.w    VramDrives
+    dc.w    $FFFF
+
+;****************************************************************************
+; Interface graphics
+;****************************************************************************
+
+Patterns:
+    incbin  "cabinet/blob/ui.blob"
+
+InvPalette:
+    dc.w    $000,$022,$244,$466,$688,$8AA,$E20,$EC2
+    dc.w    $E4C,$2EC,$E60,$8E6,$E08,$04C,$000,$EEE
+OpenPalette:
+    dc.w    $000,$0E6,$0C4,$0A2,$080,$060,$040,$E66
+    dc.w    $E24,$C02,$A00,$800,$600,$000,$000,$EEE
+
+;****************************************************************************
+; Pattern IDs
+;****************************************************************************
+
+                    rsreset
+
+VramUp:             rs.b 4*2            ; Scrollbar ↑ button
+VramDown:           rs.b 4*2            ; Scrollbar ↓ button
+VramScroller:       rs.b 4              ; Scrollbar knob
+VramScrollBg:       rs.b 6              ; Scrollbar bar
+VramFrame:          rs.b 9              ; Frame for the lists
+VramNameLeft:       rs.b 2              ; Left side of filename field
+VramNameRight:      rs.b 2              ; Right side of filename field
+VramOpen:           rs.b 16*2           ; Open button
+
+NumPatterns:        rs.b 0              ; Number of patterns
+VramDrives:         rs.b 6              ; "Drives:"
+
+VramNameField:      rs.b NAMEFIELD_LEN*2    ; Filename field
