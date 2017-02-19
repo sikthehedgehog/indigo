@@ -83,29 +83,45 @@ InitVideo:
 ;****************************************************************************
 
 LoadPatterns:
-    lsl.w   #4, d6                      ; Convert length into words
+    move.l  a6, d5                      ; Adjust all values
+    lsl.w   #4, d6
+    lsr.l   #1, d5
+    lsl.w   #5, d7
+    and.l   #$7FFFFF, d5
+    move.l  d5, a6
     
-    move.l  a6, d5                      ; Check if the 128K wraparound
-    lsr.l   #1, d5                      ; problem would happen
-    add.w   d6, d5
-    bcc.s   @DmaOk
+    add.w   d6, d5                      ; Check if 128K the wraparound
+    bcc.s   @DmaOk                      ; problem would happen
+    beq.s   @DmaOk
     
-    illegal                             ; Temp
+    move.w  d6, -(sp)                   ; Load the portion before
+    move.w  d7, -(sp)                   ; the 128K boundary
+    move.l  a6, -(sp)
+    move.w  a6, d6
+    neg.w   d6
+    bsr.s   @DmaOk
+    
+    move.l  (sp)+, a6                   ; Load the portion after
+    move.w  (sp)+, d7                   ; the 128K boundary
+    move.w  (sp)+, d6
+    move.l  a6, d5
+    add.w   d5, d6                      ; (exploiting two's complement...)
+    add.w   d5, d7
+    move.w  #$FFFF, d5
+    addq.l  #1, d5
+    move.l  d5, a6
 
 ;----------------------------------------------------------------------------
 
 @DmaOk:
-    and.l   #$07FF, d7                  ; Destination command
-    lsl.l   #7, d7
+    and.l   #$FFE0, d7                  ; Destination command
+    lsl.l   #2, d7
     lsr.w   #2, d7
     swap    d7
     or.l    #$40000080, d7
     
-    move.l  a6, d5                      ; Adjust source (length was adjusted
-    lsr.l   #1, d5                      ; during the 128K boundary check)
-    and.l   #$7FFFFF, d5
-    
     lea     -14(sp), sp                 ; Store all commands
+    move.l  a6, d5
     move.l  sp, a6
     move.l  #$94009300, (a6)+
     move.l  #$97009600, (a6)+
