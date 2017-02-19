@@ -102,7 +102,7 @@ LoadPatterns:
     or.l    #$40000080, d7
     
     move.l  a6, d5                      ; Adjust source (length was adjusted
-    lsr.w   #1, d5                      ; during the 128K boundary check)
+    lsr.l   #1, d5                      ; during the 128K boundary check)
     and.l   #$7FFFFF, d5
     
     lea     -14(sp), sp                 ; Store all commands
