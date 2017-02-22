@@ -6,6 +6,7 @@
 
 ID_CABINET:         rs.b 1              ; Cabinet
 ID_CALCULATOR:      rs.b 1              ; Calculator
+ID_SOLITAIRE:       rs.b 1              ; Solitaire
 ID_TERMINAL:        rs.b 1              ; Terminal
 ID_SETTINGS:        rs.b 1              ; Settings
 
@@ -16,6 +17,7 @@ ID_SETTINGS:        rs.b 1              ; Settings
 Layout:
     OSUI_Button ID_CABINET, 2,1, 3,3, VramCabinet
     OSUI_Button ID_CALCULATOR, 6,1, 3,3, VramCalculator
+    OSUI_Button ID_SOLITAIRE, 2,5, 3,3, VramSolitaire
     OSUI_Button ID_TERMINAL, 31,21, 3,3, VramTerminal
     OSUI_Button ID_SETTINGS, 35,21, 3,3, VramSettings
     OSUI_End
@@ -27,11 +29,13 @@ Layout:
 Filenames:
     dc.w    FileCabinet-Filenames
     dc.w    FileCalculator-Filenames
+    dc.w    FileSolitaire-Filenames
     dc.w    FileTerminal-Filenames
     dc.w    FileSettings-Filenames
 
 FileCabinet:        dc.b 'cabinet.ixec', 0
 FileCalculator:     dc.b 'calculator.ixec', 0
+FileSolitaire:      dc.b 'solitaire.ixec', 0
 FileTerminal:       dc.b 'terminal.ixec', 0
 FileSettings:       dc.b 'settings.ixec', 0
                     even
@@ -55,6 +59,7 @@ AltPalette:
 
 VramCabinet:        rs.b 9*2            ; Cabinet
 VramCalculator:     rs.b 9*2            ; Calculator
+VramSolitaire:      rs.b 9*2            ; Solitaire
 VramTerminal:       rs.b 9*2            ; Terminal
 VramSettings:       rs.b 9*2            ; Settings
 

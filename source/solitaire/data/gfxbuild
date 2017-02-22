@@ -1,0 +1,117 @@
+output "solitaire/blob/ui.blob"
+
+layout tilemap
+input "solitaire/data/bg.png"
+tiles 0 0 1 1
+input "solitaire/data/free.png"
+tiles 0 0 3 3
+input "solitaire/data/reverse.png"
+tiles 0 0 3 3
+
+input "solitaire/data/hearts_a.png"
+tiles 0 0 4 6
+input "solitaire/data/hearts_2.png"
+tiles 0 0 4 6
+input "solitaire/data/hearts_3.png"
+tiles 0 0 4 6
+input "solitaire/data/hearts_4.png"
+tiles 0 0 4 6
+input "solitaire/data/hearts_5.png"
+tiles 0 0 4 6
+input "solitaire/data/hearts_6.png"
+tiles 0 0 4 6
+input "solitaire/data/hearts_7.png"
+tiles 0 0 4 6
+input "solitaire/data/hearts_8.png"
+tiles 0 0 4 6
+input "solitaire/data/hearts_9.png"
+tiles 0 0 4 6
+input "solitaire/data/hearts_10.png"
+tiles 0 0 4 6
+input "solitaire/data/hearts_j.png"
+tiles 0 0 4 6
+input "solitaire/data/hearts_q.png"
+tiles 0 0 4 6
+input "solitaire/data/hearts_k.png"
+tiles 0 0 4 6
+
+input "solitaire/data/diamonds_a.png"
+tiles 0 0 4 6
+input "solitaire/data/diamonds_2.png"
+tiles 0 0 4 6
+input "solitaire/data/diamonds_3.png"
+tiles 0 0 4 6
+input "solitaire/data/diamonds_4.png"
+tiles 0 0 4 6
+input "solitaire/data/diamonds_5.png"
+tiles 0 0 4 6
+input "solitaire/data/diamonds_6.png"
+tiles 0 0 4 6
+input "solitaire/data/diamonds_7.png"
+tiles 0 0 4 6
+input "solitaire/data/diamonds_8.png"
+tiles 0 0 4 6
+input "solitaire/data/diamonds_9.png"
+tiles 0 0 4 6
+input "solitaire/data/diamonds_10.png"
+tiles 0 0 4 6
+input "solitaire/data/diamonds_j.png"
+tiles 0 0 4 6
+input "solitaire/data/diamonds_q.png"
+tiles 0 0 4 6
+input "solitaire/data/diamonds_k.png"
+tiles 0 0 4 6
+
+input "solitaire/data/spades_a.png"
+tiles 0 0 4 6
+input "solitaire/data/spades_2.png"
+tiles 0 0 4 6
+input "solitaire/data/spades_3.png"
+tiles 0 0 4 6
+input "solitaire/data/spades_4.png"
+tiles 0 0 4 6
+input "solitaire/data/spades_5.png"
+tiles 0 0 4 6
+input "solitaire/data/spades_6.png"
+tiles 0 0 4 6
+input "solitaire/data/spades_7.png"
+tiles 0 0 4 6
+input "solitaire/data/spades_8.png"
+tiles 0 0 4 6
+input "solitaire/data/spades_9.png"
+tiles 0 0 4 6
+input "solitaire/data/spades_10.png"
+tiles 0 0 4 6
+input "solitaire/data/spades_j.png"
+tiles 0 0 4 6
+input "solitaire/data/spades_q.png"
+tiles 0 0 4 6
+input "solitaire/data/spades_k.png"
+tiles 0 0 4 6
+
+input "solitaire/data/clubs_a.png"
+tiles 0 0 4 6
+input "solitaire/data/clubs_2.png"
+tiles 0 0 4 6
+input "solitaire/data/clubs_3.png"
+tiles 0 0 4 6
+input "solitaire/data/clubs_4.png"
+tiles 0 0 4 6
+input "solitaire/data/clubs_5.png"
+tiles 0 0 4 6
+input "solitaire/data/clubs_6.png"
+tiles 0 0 4 6
+input "solitaire/data/clubs_7.png"
+tiles 0 0 4 6
+input "solitaire/data/clubs_8.png"
+tiles 0 0 4 6
+input "solitaire/data/clubs_9.png"
+tiles 0 0 4 6
+input "solitaire/data/clubs_10.png"
+tiles 0 0 4 6
+input "solitaire/data/clubs_j.png"
+tiles 0 0 4 6
+input "solitaire/data/clubs_q.png"
+tiles 0 0 4 6
+input "solitaire/data/clubs_k.png"
+tiles 0 0 4 6

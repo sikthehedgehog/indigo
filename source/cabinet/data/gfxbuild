@@ -23,6 +23,11 @@ layout tilemap
 tiles 0 0 1 2
 tiles 2 0 1 2
 
+input "cabinet/data/parent.png"
+layout tilemap
+tiles 0 0 2 2
+tiles 2 0 2 2
+
 input "cabinet/data/open.png"
 layout tilemap
 tiles 0 0 8 2

@@ -6,6 +6,7 @@
 ID_SCROLL:          rs.b 1              ; Scrollbar
 ID_SCROLL_U:        rs.b 1                ; ↑ button
 ID_SCROLL_D:        rs.b 1                ; ↓ button
+ID_PARENT:          rs.b 1              ; Parent button
 ID_OPEN:            rs.b 1              ; Open button
 
 ;****************************************************************************
@@ -19,6 +20,8 @@ Layout:
     OSUI_VScroll ID_SCROLL, 27,6,SCROLL_LEN, VramScroller,VramScrollBg
     OSUI_Button ID_SCROLL_U, 27,4, 2,2, VramUp
     OSUI_Button ID_SCROLL_D, 27,22, 2,2, VramDown
+    
+    OSUI_Button ID_PARENT, 27,1, 2,2, VramParent
     
     OSUI_Button ID_OPEN, 30,22, 8,2, VramOpen+$4000
     OSUI_End
@@ -64,6 +67,7 @@ VramScrollBg:       rs.b 6              ; Scrollbar bar
 VramFrame:          rs.b 9              ; Frame for the lists
 VramNameLeft:       rs.b 2              ; Left side of filename field
 VramNameRight:      rs.b 2              ; Right side of filename field
+VramParent:         rs.b 4*2            ; Parent button
 VramOpen:           rs.b 16*2           ; Open button
 
 NumPatterns:        rs.b 0              ; Number of patterns

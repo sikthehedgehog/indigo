@@ -1,0 +1,191 @@
+;****************************************************************************
+; Shuffle
+; Shuffles the cards when starting a new game.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+Shuffle:
+    moveq   #1, d0                      ; Fill the deck with cards
+    lea     (Deck), a0
+    moveq   #52-1, d7
+@Fill:
+    move.b  d0, (a0)+
+    addq.b  #1, d0
+    dbf     d7, @Fill
+    
+    lea     (Deck+52), a0               ; Distribute the cards among
+    lea     (Piles), a1                 ; the piles
+    moveq   #1-1, d0
+    move.b  #$80, d1
+    moveq   #7-1, d6
+@PileLoop:
+    move.l  a1, a6
+    move.w  d0, d7
+@CardLoop:
+    move.b  -(a0), d5
+    or.b    d1, d5
+    move.b  d5, (a6)+
+    dbf     d7, @CardLoop
+    lea     32(a1), a1
+    addq.w  #1, d0
+    dbf     d6, @PileLoop
+    
+    lea     (Piles), a6                 ; Make sure the topmost card of
+    moveq   #$7F, d5                    ; each pile is not flipped
+    moveq   #7-1, d7
+@UnflipLoop:
+    move.b  (a6), d6
+    and.b   d5, d6
+    move.b  d6, (a6)
+    lea     33(a6), a6
+    dbf     d7, @UnflipLoop
+    
+    lea     (DeckLen), a6               ; Set up the deck's and piles'
+    move.b  #24, (a6)+                  ; card counts
+    move.b  #1, (a6)+
+    move.b  #2, (a6)+
+    move.b  #3, (a6)+
+    move.b  #4, (a6)+
+    move.b  #5, (a6)+
+    move.b  #6, (a6)+
+    move.b  #7, (a6)+
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; DrawTable
+; Draws the table (the background).
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DrawTable:
+    move.w  #VramBg+$2000, d7           ; Draw background
+    move.w  #VramBg+$2800, d6
+    move.w  #VramBg+$3000, a6
+    move.w  #VramBg+$3800, a5
+    syscall OS_FILLBACKGROUND
+    
+    moveq   #13-1, d0                   ; Draw all the free slots
+    lea     @FreeSlots(pc), a0
+@DrawFreeSlots:
+    moveq   #0, d7
+    moveq   #0, d6
+    move.b  (a0)+, d7
+    move.b  (a0)+, d6
+    moveq   #1, d5
+    move.w  #2, a6
+    move.w  #4, a5
+    move.w  #VramFree+$2000, a4
+    syscall OS_FILLFRAME
+    dbf     d0, @DrawFreeSlots
+    
+    moveq   #7-1, d7                    ; Draw all piles
+@DrawPiles:
+    move.w  d7, -(sp)
+    bsr     DrawPile
+    move.w  (sp)+, d7
+    dbf     d7, @DrawPiles
+    
+    rts                                 ; End of subroutines
+
+;----------------------------------------------------------------------------
+
+@FreeSlots:
+    dc.b    2,1, 7,1,       19,1, 24,1, 29,1, 34,1
+    dc.b    4,8, 9,8, 14,8, 19,8, 24,8, 29,8, 34,8
+
+;****************************************************************************
+; DrawCard
+; Draws a card.
+;----------------------------------------------------------------------------
+; input d7.w ... X coordinate
+; input d6.w ... Y coordinate
+; input d5.b ... Card's value
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+DrawCard:
+    tst.b   d5                          ; Is the card reversed or not?
+    bpl.s   @Facing
+    beq.s   @Empty
+    
+    moveq   #0, d5                      ; Reversed cards just show their
+    move.w  #2, a6                      ; back (without revealing their
+    move.w  #4, a5                      ; actual value)
+    move.w  #VramReverse+$2000, a4
+    syscall OS_FILLFRAME
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Facing:
+    subq.b  #1, d5                      ; Card IDs start at 1
+    
+    and.w   #$FF, d5                    ; Determine patterns to use
+    lsl.w   #3, d5
+    move.w  d5, a4
+    add.w   d5, d5
+    add.w   a4, d5
+    add.w   #VramCards, d5
+    move.w  d5, a4
+    
+    moveq   #0, d5                      ; Draw the card
+    move.w  #4, a6
+    move.w  #6, a5
+    syscall OS_DRAWTILES
+
+;----------------------------------------------------------------------------
+
+@Empty:
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; DrawPile
+; Draws a pile.
+;----------------------------------------------------------------------------
+; input d7.b ... Which pile
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DrawPile:
+    and.w   #$FF, d7                    ; Get pile data
+    lea     (PileLen), a0
+    moveq   #0, d2
+    move.b  (a0,d7.w), d2
+    move.w  d7, d3
+    lsl.w   #5, d3
+    lea     (Piles), a0
+    lea     (a0,d3.w), a0
+    
+    and.w   #$FF, d7                    ; Determine coordinates
+    move.w  d7, d6
+    add.w   d7, d7
+    add.w   d7, d7
+    add.w   d6, d7
+    addq.w  #4, d7
+    move.w  d7, d0
+    moveq   #8, d1
+    
+    move.w  d1, d6                      ; Remove any leftovers
+    moveq   #0, d5
+    move.w  #4, a6
+    move.w  #17, a5
+    syscall OS_ERASETILES
+    
+    subq.w  #1, d2                      ; Draw all the cards
+    bmi.s   @Empty
+@Loop:
+    move.w  d0, d7
+    move.w  d1, d6
+    move.b  (a0)+, d5
+    bsr     DrawCard
+    addq.w  #1, d1
+    dbf     d2, @Loop
+    
+@Empty:
+    rts                                 ; End of subroutine

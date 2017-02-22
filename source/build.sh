@@ -17,6 +17,9 @@ asm desktop/buildme.68k rom/desktop.ixec
 gfx settings/data/gfxbuild
 asm settings/buildme.68k rom/settings.ixec
 
+gfx solitaire/data/gfxbuild
+asm solitaire/buildme.68k rom/solitaire.ixec
+
 gfx terminal/data/gfxbuild
 php terminal/data/makefont.php
 asm terminal/buildme.68k rom/terminal.ixec
