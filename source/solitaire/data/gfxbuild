@@ -8,6 +8,10 @@ tiles 0 0 3 3
 input "solitaire/data/reverse.png"
 tiles 0 0 3 3
 
+input "solitaire/data/new.png"
+tiles 0 0 3 2
+tiles 0 2 3 2
+
 input "solitaire/data/hearts_a.png"
 tiles 0 0 4 6
 input "solitaire/data/hearts_2.png"

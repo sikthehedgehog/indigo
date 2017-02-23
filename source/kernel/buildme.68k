@@ -4,6 +4,7 @@
     include "kernel/memory.68k"
     include "kernel/video.68k"
     include "kernel/text.68k"
+    include "kernel/random.68k"
     include "kernel/mouse.68k"
     include "kernel/cursor.68k"
     include "kernel/gui.68k"

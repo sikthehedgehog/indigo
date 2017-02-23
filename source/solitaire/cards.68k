@@ -14,6 +14,20 @@ Shuffle:
     addq.b  #1, d0
     dbf     d7, @Fill
     
+    moveq   #52-1, d0                   ; Shuffle the cards!
+    lea     (Deck), a0                  ; We just go through the whole deck
+    move.l  a0, a1                      ; and swap each card with another
+@Loop:                                  ; random one (so literally shuffling)
+    syscall OS_RAND
+    and.l   #$FFFF, d7
+    divu.w  #52, d7
+    swap    d7
+    move.b  (a0), d1
+    move.b  (a1,d7.w), d2
+    move.b  d1, (a1,d7.w)
+    move.b  d2, (a0)+
+    dbf     d0, @Loop
+    
     lea     (Deck+52), a0               ; Distribute the cards among
     lea     (Piles), a1                 ; the piles
     moveq   #1-1, d0
@@ -81,6 +95,8 @@ DrawTable:
     syscall OS_FILLFRAME
     dbf     d0, @DrawFreeSlots
     
+    bsr     DrawDeck                    ; Draw the deck
+    
     moveq   #7-1, d7                    ; Draw all piles
 @DrawPiles:
     move.w  d7, -(sp)
@@ -137,10 +153,41 @@ DrawCard:
     move.w  #4, a6
     move.w  #6, a5
     syscall OS_DRAWTILES
-
+    
 ;----------------------------------------------------------------------------
 
 @Empty:
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; DrawDeck
+; Draws the deck.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DrawDeck:
+    moveq   #2, d7                      ; Remove leftovers
+    moveq   #1, d6
+    moveq   #0, d5
+    move.w  #9, a6
+    move.w  #6, a5
+    syscall OS_ERASETILES
+    
+    tst.b   (DeckLen)                   ; Check if there are unturned
+    beq.s   @NoDeck                     ; cards in the deck
+    
+    moveq   #2, d7                      ; Draw them if so
+    moveq   #1, d6
+    moveq   #-1, d5
+    bsr     DrawCard
+@NoDeck:
+    
+    moveq   #7, d7                      ; Draw the topmost unturned card
+    moveq   #1, d6
+    moveq   #-1, d5
+    bsr     DrawCard
+    
     rts                                 ; End of subroutine
 
 ;****************************************************************************

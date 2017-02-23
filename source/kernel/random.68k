@@ -1,0 +1,23 @@
+;****************************************************************************
+; Rand
+; Generates a random 16-bit number.
+;----------------------------------------------------------------------------
+; output d7.w ... Random number
+;****************************************************************************
+
+Rand:
+    move.w  (RandSeed), d7              ; Get last seed
+    
+    rol.w   #2, d7                      ; Do weird stuff
+    add.w   (MouseX), d7
+    eor.w   #$A6E5, d7
+    sub.w   ($C00008), d7
+    ror.w   #3, d7
+    sub.w   (MouseY), d7
+    eor.w   #$5E6A, d7
+    add.w   ($C00008), d7
+    rol.w   #4, d7
+    not.w   d7
+    
+    move.w  d7, (RandSeed)              ; Reuse result as new seed
+    rts                                 ; End of subroutine

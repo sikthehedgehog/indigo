@@ -51,10 +51,11 @@ OS_GETVRAMSIZE:         equ 24      ; Gets the amount of VRAM in KB
 OS_INT2ASCII:           equ 25      ; Convert int32 into string
 OS_UINT2ASCII:          equ 30      ; Convert uint32 into string
 
+OS_RAND:                equ 32      ; Generate random 16-bit number
+
 ;****************************************************************************
 ; Macros for building the GUI layouts
 ;****************************************************************************
-
 
 ;----------------------------------------------------------------------------
 ; Standard button

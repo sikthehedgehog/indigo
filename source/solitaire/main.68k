@@ -10,11 +10,22 @@ EntryPoint:
     lea     Layout(pc), a6              ; Load interface
     syscall OS_PARSELAYOUT
     
-    bsr     Shuffle                     ; Initial game
-    bsr     DrawTable                   ; Draw everything
-
 ;----------------------------------------------------------------------------
 
 MainLoop:
+    bsr     NewGame
     syscall OS_GUILOOP
     bra.s   MainLoop
+
+;****************************************************************************
+; NewGame
+; Starts a new game.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+NewGame:
+    bsr     Shuffle                     ; Shuffle all cards
+    bsr     DrawTable                   ; Redraw everything
+    
+    rts                                 ; End of subroutine
