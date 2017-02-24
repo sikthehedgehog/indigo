@@ -32,6 +32,8 @@ OS_FILLFRAME:           equ 8       ; Fills tiles with a frame
 OS_DRAWLABELS:          equ 16      ; Draws a bunch of labels
 OS_FILLBACKGROUND:      equ 9       ; Fills plane B with 2×2 tiles
 
+OS_SETBGCOLOR:          equ 33      ; Changes the background color
+
 OS_SETSCROLL:           equ 12      ; Set scroll positions
 
 OS_ALLOCSPRITE:         equ 26      ; Allocate a new sprite

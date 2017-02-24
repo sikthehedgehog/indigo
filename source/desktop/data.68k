@@ -51,6 +51,13 @@ AltPalette:
     dc.w    $000,$A60,$840,$000,$000,$000,$000,$000
     dc.w    $000,$000,$000,$000,$000,$000,$EEE,$000
 
+BgPalette:
+    dc.w    $000,$200,$400,$600,$E00,$402,$E66,$604
+    dc.w    $826,$E88,$A48,$EAA,$C6A,$ECC,$E8C,$EEE
+
+Wallpaper:
+    incbin  "desktop/blob/wallpaper.blob"
+
 ;****************************************************************************
 ; Pattern IDs
 ;****************************************************************************
@@ -65,3 +72,5 @@ VramSettings:       rs.b 9*2            ; Settings
 
 VramBg:             rs.b 1              ; Background
 NumPatterns:        rs.b 0              ; Number of patterns
+
+VramWallpaper:      rs.b 40*25          ; Wallpaper

@@ -44,6 +44,8 @@ LoadProcess:
     moveq   #0, d7                      ; Load default GUI palette
     lea     (Palette), a6
     bsr     LoadPalette
+    moveq   #$00, d7
+    bsr     SetBgColor
     
     bsr     ResetGuiStates              ; Reset all GUI states
     

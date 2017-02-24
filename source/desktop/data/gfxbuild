@@ -18,3 +18,8 @@ tiles 3 0 3 3
 
 input "desktop/data/bg.png"
 tiles 0 0 1 1
+
+output "desktop/blob/wallpaper.blob"
+input "desktop/data/wallpaper.png"
+layout tilemap
+tiles 0 0 40 25

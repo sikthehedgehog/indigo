@@ -725,6 +725,24 @@ LoadPalette:
     rts                                 ; End of subroutine
 
 ;****************************************************************************
+; SetBgColor
+; Changes the background color.
+;----------------------------------------------------------------------------
+; input d7.b ... New background color
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+SetBgColor:
+    and.w   #$003F, d7                  ; Set the BG color register
+    or.w    #$8700, d7
+    st.b    (DontDraw)
+    move.w  d7, ($C00004)
+    clr.b   (DontDraw)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
 ; SetScroll
 ; Sets the scroll position for each plane.
 ;----------------------------------------------------------------------------
@@ -732,6 +750,8 @@ LoadPalette:
 ; input d6.w ... X scroll for plane B
 ; input a6.w ... Y scroll for plane A
 ; input a5.w ... Y scroll for plane B
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
 ;****************************************************************************
 
 SetScroll:

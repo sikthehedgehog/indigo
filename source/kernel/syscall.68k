@@ -30,4 +30,6 @@
     jmp     SetMouseSpeed               ; OS_SETMOUSESPEED
     jmp     UintToAscii                 ; OS_UINT2ASCII
     jmp     SetCursorShape              ; OS_SETCURSOR
+
     jmp     Rand                        ; OS_RAND
+    jmp     SetBgColor                  ; OS_SETBGCOLOR

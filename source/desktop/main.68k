@@ -6,15 +6,33 @@ EntryPoint:
     moveq   #1, d7
     lea     AltPalette(pc), a6
     syscall OS_LOADPALETTE
+    moveq   #3, d7
+    lea     BgPalette(pc), a6
+    syscall OS_LOADPALETTE
+    moveq   #$30, d7
+    syscall OS_SETBGCOLOR
+    
+    move.w  #40*25, d6                  ; Load wallpaper
+    move.w  #VramWallpaper, d7
+    lea     Wallpaper(pc), a6
+    syscall OS_LOADPATTERNS
     
     lea     Layout(pc), a6              ; Load interface
     syscall OS_PARSELAYOUT
     
-    move.w  #VramBg+$2000, d7           ; Draw background
-    move.w  #VramBg+$2800, d6
-    move.w  #VramBg+$3000, a6
-    move.w  #VramBg+$3800, a5
-    syscall OS_FILLBACKGROUND
+    moveq   #0, d7                      ; Draw wallpaper
+    moveq   #0, d6
+    moveq   #1, d5
+    move.w  #40, a6
+    move.w  #25, a5
+    move.w  #VramWallpaper+$6000, a4
+    syscall OS_DRAWTILES
+    
+;   move.w  #VramBg+$2000, d7           ; Draw background
+;    move.w  #VramBg+$2800, d6
+;    move.w  #VramBg+$3000, a6
+;    move.w  #VramBg+$3800, a5
+;    syscall OS_FILLBACKGROUND
 
 ;----------------------------------------------------------------------------
 
