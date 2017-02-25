@@ -8,6 +8,8 @@ input "kernel/data/cursor_busy.png"
 tiles 0 0 2 2
 input "kernel/data/cursor_ibeam.png"
 tiles 0 0 2 2
+input "kernel/data/cursor_grab.png"
+tiles 0 0 2 2
 
 output "kernel/blob/taskbar.blob"
 layout tilemap

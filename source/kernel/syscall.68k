@@ -33,3 +33,4 @@
 
     jmp     Rand                        ; OS_RAND
     jmp     SetBgColor                  ; OS_SETBGCOLOR
+    jmp     GetCursorPos                ; OS_GETCURSORPOS
