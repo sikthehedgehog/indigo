@@ -7,9 +7,11 @@ MAX_WIDGETS:        equ $20             ; How many widgets we allow
                     rsreset
 
 WIDGET_TYPE:        rs.b 1              ; Widget behavior (see WTYPE_*)
-WIDGET_SHAPE:       rs.b 1              ; Widget shape (see WSHAPE_*)
+WIDGET_FLAGS:       rs.b 1              ; Behavior flags (see WFLAG_*)
 WIDGET_ID:          rs.b 1              ; Associated action
 WIDGET_VALUE:       rs.b 1              ; Associated value
+WIDGET_SHAPE:       rs.b 1              ; Widget shape (see WSHAPE_*)
+WIDGET_CURSOR:      rs.b 1              ; Cursor to show (see CURSOR_*)
 
 WIDGET_X1:          rs.b 1              ; Left coordinate (inclusive)
 WIDGET_Y1:          rs.b 1              ; Top coordinate (inclusive)
@@ -21,7 +23,7 @@ WIDGET_GFX2:        rs.w 1              ; Graphic used when enabled
 WIDGET_SIZE:        rs.b 0              ; Size of widget data
 
 ;****************************************************************************
-; Widget behavior types
+; Widget behavior types and flags
 ;****************************************************************************
 
                     rsreset
@@ -33,6 +35,10 @@ WTYPE_TOGGLE:       rs.b 1              ; Toggles state between 0 and 1
 WTYPE_HSCROLL:      rs.b 1              ; Horizontal scroller
 WTYPE_VSCROLL:      rs.b 1              ; Vertical scroller
 WTYPE_QUIT:         rs.b 1              ; Causes process to quit
+
+                    rsreset
+
+WFLAG_HOLD:         rs.b 1              ; Hold down (i.e. continuous)
 
 ;****************************************************************************
 ; Widget shapes
@@ -125,7 +131,9 @@ ParseGuiLayout:
 
 ParseGuiLayout_Button:
     move.b  #WTYPE_FIRE, WIDGET_TYPE(a5)        ; Widget behavior
+    clr.b   WIDGET_FLAGS(a5)
     move.b  #WSHAPE_ANY, WIDGET_SHAPE(a5)
+    move.b  #CURSOR_HAND, WIDGET_CURSOR(a5)
     move.b  #1, WIDGET_VALUE(a5)
     
     moveq   #0, d7                      ; Get widget coordinates
@@ -180,7 +188,7 @@ ParseGuiLayout_Toggle:
 
 ParseGuiLayout_Hold:
     bsr     ParseGuiLayout_Button
-    move.b  #$80|WTYPE_FIRE, WIDGET_TYPE-WIDGET_SIZE(a5)
+    bset.b  #WFLAG_HOLD, WIDGET_FLAGS-WIDGET_SIZE(a5)
     rts
 
 ;----------------------------------------------------------------------------
@@ -188,8 +196,10 @@ ParseGuiLayout_Hold:
 ;----------------------------------------------------------------------------
 
 ParseGuiLayout_HScroll:
-    move.b  #$80|WTYPE_HSCROLL, WIDGET_TYPE(a5)     ; Widget behavior
+    move.b  #WTYPE_HSCROLL, WIDGET_TYPE(a5)     ; Widget behavior
+    move.b  #1<<WFLAG_HOLD, WIDGET_FLAGS(a5)
     move.b  #WSHAPE_HCURSOR, WIDGET_SHAPE(a5)
+    move.b  #CURSOR_GRAB, WIDGET_CURSOR(a5)
     
     move.b  (a6)+, d7                   ; Get widget coordinates
     move.b  (a6)+, d6
@@ -243,8 +253,10 @@ ParseGuiLayout_HScroll:
 ;----------------------------------------------------------------------------
 
 ParseGuiLayout_VScroll:
-    move.b  #$80|WTYPE_VSCROLL, WIDGET_TYPE(a5)     ; Widget behavior
+    move.b  #WTYPE_VSCROLL, WIDGET_TYPE(a5)     ; Widget behavior
+    move.b  #1<<WFLAG_HOLD, WIDGET_FLAGS(a5)
     move.b  #WSHAPE_VCURSOR, WIDGET_SHAPE(a5)
+    move.b  #CURSOR_GRAB, WIDGET_CURSOR(a5)
     
     move.b  (a6)+, d7                   ; Get widget coordinates
     move.b  (a6)+, d6
@@ -355,7 +367,8 @@ RunGuiLoop:
     cmp.l   d2, d1
     bne.s   @NoHand
 @YesHand:
-    moveq   #CURSOR_HAND, d0
+    move.l  d1, a6
+    move.b  WIDGET_CURSOR(a6), d0
 @NoHand:
     move.b  d0, (CursorShape)
     
@@ -363,8 +376,8 @@ RunGuiLoop:
     beq.s   @NoConstantTrigger          ; on every frame
     cmp.l   (Hovering), d7
     bne.s   @NoConstantTrigger
-    tst.b   WIDGET_TYPE(a6)
-    bpl.s   @NoConstantTrigger
+    btst.b  #WFLAG_HOLD, WIDGET_FLAGS(a6)
+    beq.s   @NoConstantTrigger
     bra     @ConstantTrigger
 @NoConstantTrigger:
     
@@ -435,7 +448,7 @@ RunGuiLoop:
 
 TriggerWidget:
     move.b  WIDGET_TYPE(a6), d7         ; Call the handler for widget type
-    and.w   #$7F, d7
+    and.w   #$FF, d7
     lsl.w   #2, d7
     lea     @Handlers(pc), a5
     move.l  (a5,d7.w), a5
