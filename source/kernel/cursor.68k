@@ -7,6 +7,7 @@ CURSOR_ARROW:       rs.b 1
 CURSOR_HAND:        rs.b 1
 CURSOR_BUSY:        rs.b 1
 CURSOR_IBEAM:       rs.b 1
+CURSOR_GRAB:        rs.b 1
 
 MAX_CURSOR:         rs.b 0
 
@@ -126,9 +127,10 @@ RedrawCursor:
 
 @Hotspots:
     dc.w    0,0                         ; CURSOR_ARROW
-    dc.w    7,1                         ; ARROW_HAND
-    dc.w    8,8                         ; ARROW_BUSY
-    dc.w    8,8                         ; ARROW_IBEAM
+    dc.w    7,1                         ; CURSOR_HAND
+    dc.w    8,8                         ; CURSOR_BUSY
+    dc.w    8,8                         ; CURSOR_IBEAM
+    dc.w    7,4                         ; CURSOR_GRAB
 
 ;****************************************************************************
 ; SetCursorShape
@@ -146,4 +148,21 @@ SetCursorShape:
 @ShapeOk:
     
     move.b  d7, (CursorShape)           ; Store new shape
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; GetCursorPos
+; Gets the current position of the cursor.
+;----------------------------------------------------------------------------
+; output d7.w ... X coordinate
+; output d6.w ... Y coordinate
+;----------------------------------------------------------------------------
+; breaks: d5, a4-a6
+;****************************************************************************
+
+GetCursorPos:
+    move.l  (CursorX), d7               ; Get the current position in a
+    move.w  d7, d6                      ; single read in case the IRQ gets
+    swap    d7                          ; in the way
+    
     rts                                 ; End of subroutine
