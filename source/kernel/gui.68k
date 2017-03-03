@@ -96,6 +96,7 @@ ParseGuiLayout:
     clr.b   (TimerSet)                  ; No timer attached yet
     st.b    (KeyUpId)                   ; No keyboard events yet
     st.b    (KeyDownId)
+    st.b    (AsciiId)
     
     lea     (Widgets), a5               ; Rebuild taskbar first
     bsr     (BuildTaskbar)
@@ -401,13 +402,13 @@ RunGuiLoop:
     
     subq.b  #1, d6                      ; Key down?
     bne.s   @NoKeyDown
-    move.b  (KeyDownId), d7
-    cmp.b   #$FF, d7
-    beq.s   @NoKeyDown
     moveq   #0, d6
     move.b  d5, d6
     lea     (KeyToAscii), a6
     move.b  (a6,d6.w), (NextAscii)
+    move.b  (KeyDownId), d7
+    cmp.b   #$FF, d7
+    beq.s   @NoKeyInput
     movem.l (sp)+, d0-d4/a0-a3
     rts
 @NoKeyDown:
@@ -416,7 +417,7 @@ RunGuiLoop:
     bne.s   @NoKeyUp
     move.b  (KeyUpId), d7
     cmp.b   #$FF, d7
-    beq.s   @NoKeyUp
+    beq.s   @NoKeyInput
     moveq   #0, d6
     move.b  d5, d6
     movem.l (sp)+, d0-d4/a0-a3
