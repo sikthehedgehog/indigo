@@ -129,6 +129,18 @@ AddText:
 FlushLine:
     bsr     RenderText                  ; Render the line!
     
+    ; ...
+    ; Move onto AdvanceLine
+    ; ...
+    
+;****************************************************************************
+; AdvanceLine
+; Advances the display to the next line (without rerendering the last one).
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+AdvanceLine:
     move.b  (CursorY), d7               ; Advance line
     addq.b  #1, d7
     and.b   #$1F, d7

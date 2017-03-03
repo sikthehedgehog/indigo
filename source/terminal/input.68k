@@ -76,6 +76,8 @@ GotAscii:
 @Control:
     cmp.b   #$08, d6                    ; Backspace?
     beq.s   @Backspace
+    cmp.b   #$0A, d6                    ; Enter?
+    beq     RunCommand
     
     rts                                 ; Eh, unrecognized
 

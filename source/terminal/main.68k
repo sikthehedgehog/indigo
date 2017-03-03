@@ -87,3 +87,53 @@ MainLoop:
 @Handlers:
     bra.w   DoCursorBlink
     bra.w   GotAscii
+
+;****************************************************************************
+; RunCommand
+; Runs the entered command.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+RunCommand:
+    bsr     AdvanceLine                 ; Leave the command line alone
+    
+    lea     (InputBuffer), a6           ; Erase excess whitespace
+    move.l  a6, a5
+    moveq   #$20, d6
+    moveq   #1, d7
+@SpaceLoop:
+    move.b  (a6)+, d6
+    beq.s   @SpaceEnd
+    cmp.b   #$20, d6
+    beq.s   @SpaceBlank
+    moveq   #0, d7
+@SpaceGraph:
+    move.b  d6, (a5)+
+    bra.s   @SpaceLoop
+@SpaceBlank:
+    move.w  d7, d5
+    moveq   #1, d7
+    tst.w   d5
+    beq.s   @SpaceGraph
+    bra.s   @SpaceLoop
+@SpaceEnd:
+    clr.b   (a5)
+    
+    tst.b   (InputBuffer)               ; Ignore empty lines
+    bne.s   @HasCommand
+    st.b    (InputDirty)
+    rts
+@HasCommand:
+    
+    lea     @Invalid(pc), a6            ; ¯\_(ツ)_/¯
+    bsr     PrintLine
+    
+    bsr     ClearInput                  ; Erase any entered text now
+    bsr     PrintBlank                  ; For spacing purposes
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Invalid:   dc.b 'Eh?',0
+            even
