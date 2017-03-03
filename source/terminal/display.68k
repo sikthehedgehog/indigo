@@ -87,6 +87,7 @@ ClearBuffer:
     move.l  d7, (a6)+
     move.l  d7, (a6)+
     
+    clr.b   (CursorX)                   ; Move cursor to the beginning
     rts                                 ; End of subroutine
 
 ;****************************************************************************
@@ -207,3 +208,14 @@ UpdateCursor:
     syscall OS_SETSPRITE
     
     rts                                 ; End of subroutine
+
+;****************************************************************************
+; DoCursorBlink
+; Handler for the timer, used to blink the cursor.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DoCursorBlink:
+    not.b   (CursorBlink)
+    rts

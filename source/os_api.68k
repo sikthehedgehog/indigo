@@ -189,3 +189,82 @@ OSCURSOR_HAND:      equ 1               ; Hand (pointing)
 OSCURSOR_BUSY:      equ 2               ; Hourglass
 OSCURSOR_IBEAM:     equ 3               ; I-beam
 OSCURSOR_GRAB:      equ 4               ; Hand (open)
+
+;****************************************************************************
+; Recognized key scancodes
+;****************************************************************************
+
+OSKEY_A:            equ $1C
+OSKEY_B:            equ $32
+OSKEY_C:            equ $21
+OSKEY_D:            equ $23
+OSKEY_E:            equ $24
+OSKEY_F:            equ $2B
+OSKEY_G:            equ $34
+OSKEY_H:            equ $33
+OSKEY_I:            equ $43
+OSKEY_J:            equ $3B
+OSKEY_K:            equ $42
+OSKEY_L:            equ $4B
+OSKEY_M:            equ $3A
+OSKEY_N:            equ $31
+OSKEY_O:            equ $44
+OSKEY_P:            equ $4D
+OSKEY_Q:            equ $15
+OSKEY_R:            equ $2D
+OSKEY_S:            equ $1B
+OSKEY_T:            equ $2C
+OSKEY_U:            equ $3C
+OSKEY_V:            equ $2A
+OSKEY_W:            equ $1D
+OSKEY_X:            equ $22
+OSKEY_Y:            equ $35
+OSKEY_Z:            equ $1A
+
+OSKEY_0:            equ $45
+OSKEY_1:            equ $16
+OSKEY_2:            equ $1E
+OSKEY_3:            equ $26
+OSKEY_4:            equ $25
+OSKEY_5:            equ $2E
+OSKEY_6:            equ $36
+OSKEY_7:            equ $3D
+OSKEY_8:            equ $3E
+OSKEY_9:            equ $46
+
+OSKEY_SPACE:        equ $29
+OSKEY_ENTER:        equ $5A
+OSKEY_BACK:         equ $66
+OSKEY_TAB:          equ $0D
+OSKEY_ESC:          equ $76
+
+OSKEY_LCTRL:        equ $14
+OSKEY_RCTRL:        equ $18
+OSKEY_LALT:         equ $11
+OSKEY_RALT:         equ $17
+OSKEY_LSHIFT:       equ $12
+OSKEY_RSHIFT:       equ $59
+
+OSKEY_UP:           equ $89
+OSKEY_DOWN:         equ $8A
+OSKEY_LEFT:         equ $86
+OSKEY_RIGHT:        equ $8D
+OSKEY_INS:          equ $81
+OSKEY_DEL:          equ $85
+OSKEY_HOME:         equ $87
+OSKEY_END:          equ $88
+OSKEY_PGUP:         equ $8B
+OSKEY_PGDN:         equ $8C
+
+OSKEY_F1:           equ $05
+OSKEY_F2:           equ $06
+OSKEY_F3:           equ $04
+OSKEY_F4:           equ $0C
+OSKEY_F5:           equ $03
+OSKEY_F6:           equ $0B
+OSKEY_F7:           equ $83
+OSKEY_F8:           equ $0A
+OSKEY_F9:           equ $01
+OSKEY_F10:          equ $09
+OSKEY_F11:          equ $78
+OSKEY_F12:          equ $07

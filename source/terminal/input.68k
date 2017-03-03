@@ -1,0 +1,90 @@
+MAX_INPUT:          equ 46              ; Input buffer size
+
+;****************************************************************************
+; ClearInput
+; Removes all text entered by the user.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+ClearInput:
+    clr.b   (InputBuffer)               ; Remove all entered text
+    st.b    (InputDirty)                ; Needs to refresh input
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; PrintInput
+; Shows the text entered by the user on screen.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+PrintInput:
+    tst.b   (InputDirty)                ; Need to refresh the input?
+    bne.s   @NeedsRefresh
+    rts
+@NeedsRefresh:
+    clr.b   (InputDirty)
+    
+    bsr     ClearBuffer                 ; Draw the prompt
+    lea     @Prompt(pc), a6
+    bsr     AddText
+    
+    lea     (InputBuffer), a6           ; Draw the entered text
+    bsr     AddText
+    
+    bra     RenderText                  ; Display the command line
+
+;----------------------------------------------------------------------------
+
+@Prompt:            dc.b '>',0
+                    even
+
+;****************************************************************************
+; GotAscii
+; For when the user types text.
+;----------------------------------------------------------------------------
+; input d6.b ... ASCII code
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+GotAscii:
+    moveq   #0, d0                      ; Get position in the buffer
+    move.b  (CursorX), d0
+    subq.b  #1, d0
+    
+    lea     (InputBuffer), a0           ; Pointer to buffer
+    
+    cmp.b   #$20, d6                    ; Control code?
+    blo.s   @Control
+    
+    cmp.b   #MAX_INPUT, d0              ; Buffer too full?
+    bne.s   @NotFull
+    rts
+@NotFull:
+    
+    move.b  d6, (a0,d0.w)               ; Insert character
+    clr.b   1(a0,d0.w)
+    addq.b  #1, (CursorX)
+    
+    st.b    (InputDirty)                ; Refresh command line
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Control:
+    cmp.b   #$08, d6                    ; Backspace?
+    beq.s   @Backspace
+    
+    rts                                 ; Eh, unrecognized
+
+;----------------------------------------------------------------------------
+
+@Backspace:
+    tst.b   d0                          ; Any characters left?
+    beq.s   @NoBackspace
+    clr.b   -1(a0,d0.w)                 ; Remove last character
+    st.b    (InputDirty)                ; Refresh command line
+@NoBackspace:
+    rts                                 ; End of subroutine
