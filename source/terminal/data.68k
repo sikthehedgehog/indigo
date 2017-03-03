@@ -4,6 +4,9 @@
 
                     rsreset
 ID_BLINK:           rs.b 1              ; Cursor blinking
+ID_KEYDOWN:         rs.b 1              ; Key pressed
+ID_KEYUP:           rs.b 1              ; Key released
+ID_ASCII:           rs.b 1              ; ASCII input
 
 ;****************************************************************************
 ; Interface layout
@@ -11,6 +14,9 @@ ID_BLINK:           rs.b 1              ; Cursor blinking
 
 Layout:
     OSUI_Timer ID_BLINK, 6
+    OSUI_KeyDown ID_KEYDOWN
+    OSUI_KeyUp ID_KEYUP
+    OSUI_Ascii ID_ASCII
     OSUI_End
 
 ;****************************************************************************

@@ -76,6 +76,116 @@ EntryPoint:
 
 MainLoop:
     bsr     UpdateCursor                ; Position the cursor
-    syscall OS_GUILOOP
+    syscall OS_GUILOOP                  ; Wait for an event
+    
+    and.w   #$FF, d7                    ; Handle the event
+    lsl.w   #2, d7
+    lea     @Handlers(pc), a6
+    jsr     (a6,d7.w)
+    
+    bra.s   MainLoop                    ; Keep going
+
+;----------------------------------------------------------------------------
+
+@Handlers:
+    bra.w   DoCursorBlink
+    bra.w   KeyDownTest
+    bra.w   KeyUpTest
+    bra.w   AsciiTest
+
+;****************************************************************************
+; DoCursorBlink
+; Handler for the timer, used to blink the cursor.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DoCursorBlink:
     not.b   (CursorBlink)
-    bra.s   MainLoop
+    rts
+
+;****************************************************************************
+; KeyDownTest, KeyUpTest
+; Test routines for key events.
+;----------------------------------------------------------------------------
+; input d6.w ... Key scancode and flags
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+KeyDownTest:
+    lea     @Message(pc), a0
+    bra     KeyTest
+@Message:
+    dc.b ' pressed', 0
+    even
+
+KeyUpTest:
+    lea     @Message(pc), a0
+    bra     KeyTest
+@Message:
+    dc.b ' released', 0
+    even
+
+;----------------------------------------------------------------------------
+
+KeyTest:
+    move.b  d6, d0                      ; Separate scancode and flags
+    move.w  d6, -(sp)
+    move.b  (sp)+, d1
+    
+    bsr     ClearBuffer                 ; Draw beginning of message
+    lea     @KeyNo(pc), a6
+    bsr     AddText
+    
+    moveq   #0, d7                      ; Draw key scancode
+    move.b  d0, d7
+    lea     -12(sp), sp
+    move.l  sp, a6
+    syscall OS_INT2ASCII
+    move.l  sp, a6
+    bsr     AddText
+    lea     12(sp), sp
+    
+    move.l  a0, a6                      ; Draw pressed/released
+    bsr     AddText
+    
+    bsr     FlushLine                   ; Done here
+    bsr     ClearBuffer
+    bra     RenderText
+
+;----------------------------------------------------------------------------
+
+@KeyNo:             dc.b 'Key #', 0
+                    even
+
+;****************************************************************************
+; AsciiTest
+; Test routines for ASCII events.
+;----------------------------------------------------------------------------
+; input d6.w ... ASCII code and flags
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+AsciiTest:
+    move.w  d6, d0
+    
+    bsr     ClearBuffer                 ; Draw beginning of message
+    lea     @Message(pc), a6
+    bsr     AddText
+    
+    lsl.w   #8, d0                      ; Draw ASCII character
+    move.w  d0, -(sp)
+    move.l  sp, a6
+    bsr     AddText
+    addq.w  #2, sp
+    
+    bsr     FlushLine                   ; Done here
+    bsr     ClearBuffer
+    bra     RenderText
+
+;----------------------------------------------------------------------------
+
+@Message:           dc.b 'ASCII character ',0
+                    even

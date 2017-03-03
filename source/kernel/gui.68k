@@ -11,7 +11,7 @@ WIDGET_FLAGS:       rs.b 1              ; Behavior flags (see WFLAG_*)
 WIDGET_ID:          rs.b 1              ; Associated action
 WIDGET_VALUE:       rs.b 1              ; Associated value
 WIDGET_SHAPE:       rs.b 1              ; Widget shape (see WSHAPE_*)
-WIDGET_CURSOR:      rs.b 1              ; Cursor to show (see CURSOR_*)
+                    rs.b 1
 
 WIDGET_X1:          rs.b 1              ; Left coordinate (inclusive)
 WIDGET_Y1:          rs.b 1              ; Top coordinate (inclusive)
@@ -19,6 +19,8 @@ WIDGET_X2:          rs.b 1              ; Right coordinate (exclusive)
 WIDGET_Y2:          rs.b 1              ; Bottom coordinate (exclusive)
 WIDGET_GFX1:        rs.w 1              ; Graphic used when disabled
 WIDGET_GFX2:        rs.w 1              ; Graphic used when enabled
+WIDGET_CURSOR1:     rs.b 1              ; Cursor to show on hover
+WIDGET_CURSOR2:     rs.b 1              ; Cursor to show on interaction
 
 WIDGET_SIZE:        rs.b 0              ; Size of widget data
 
@@ -92,6 +94,8 @@ ParseGuiLayout:
     move.l  (sp)+, a6
     
     clr.b   (TimerSet)                  ; No timer attached yet
+    st.b    (KeyUpId)                   ; No keyboard events yet
+    st.b    (KeyDownId)
     
     lea     (Widgets), a5               ; Rebuild taskbar first
     bsr     (BuildTaskbar)
@@ -124,6 +128,9 @@ ParseGuiLayout:
     dc.l    ParseGuiLayout_HScroll      ; OSUI_HScroll
     dc.l    ParseGuiLayout_VScroll      ; OSUI_VScroll
     dc.l    ParseGuiLayout_Timer        ; OSUI_Timer
+    dc.l    ParseGuiLayout_KeyDown      ; OSUI_KeyDown
+    dc.l    ParseGuiLayout_KeyUp        ; OSUI_KeyUp
+    dc.l    ParseGuiLayout_Ascii        ; OSUI_Ascii
 
 ;----------------------------------------------------------------------------
 ; OSUI_Button
@@ -133,7 +140,8 @@ ParseGuiLayout_Button:
     move.b  #WTYPE_FIRE, WIDGET_TYPE(a5)        ; Widget behavior
     clr.b   WIDGET_FLAGS(a5)
     move.b  #WSHAPE_ANY, WIDGET_SHAPE(a5)
-    move.b  #CURSOR_HAND, WIDGET_CURSOR(a5)
+    move.b  #CURSOR_HAND, WIDGET_CURSOR1(a5)
+    move.b  #CURSOR_HAND, WIDGET_CURSOR2(a5)
     move.b  #1, WIDGET_VALUE(a5)
     
     moveq   #0, d7                      ; Get widget coordinates
@@ -199,7 +207,8 @@ ParseGuiLayout_HScroll:
     move.b  #WTYPE_HSCROLL, WIDGET_TYPE(a5)     ; Widget behavior
     move.b  #1<<WFLAG_HOLD, WIDGET_FLAGS(a5)
     move.b  #WSHAPE_HCURSOR, WIDGET_SHAPE(a5)
-    move.b  #CURSOR_GRAB, WIDGET_CURSOR(a5)
+    move.b  #CURSOR_HAND, WIDGET_CURSOR1(a5)
+    move.b  #CURSOR_GRAB, WIDGET_CURSOR2(a5)
     
     move.b  (a6)+, d7                   ; Get widget coordinates
     move.b  (a6)+, d6
@@ -256,7 +265,8 @@ ParseGuiLayout_VScroll:
     move.b  #WTYPE_VSCROLL, WIDGET_TYPE(a5)     ; Widget behavior
     move.b  #1<<WFLAG_HOLD, WIDGET_FLAGS(a5)
     move.b  #WSHAPE_VCURSOR, WIDGET_SHAPE(a5)
-    move.b  #CURSOR_GRAB, WIDGET_CURSOR(a5)
+    move.b  #CURSOR_HAND, WIDGET_CURSOR1(a5)
+    move.b  #CURSOR_GRAB, WIDGET_CURSOR2(a5)
     
     move.b  (a6)+, d7                   ; Get widget coordinates
     move.b  (a6)+, d6
@@ -321,6 +331,30 @@ ParseGuiLayout_Timer:
     move.b  (a6)+, (TimerId)            ; Get timer action
     rts                                 ; End of subroutine
 
+;----------------------------------------------------------------------------
+; OSUI_KeyDown
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_KeyDown:
+    move.b  (a6)+, (KeyDownId)          ; Get action ID for key down
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+; OSUI_KeyUp
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_KeyUp:
+    move.b  (a6)+, (KeyUpId)            ; Get action ID for key up
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+; OSUI_Ascii
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_Ascii:
+    move.b  (a6)+, (AsciiId)            ; Get action ID for ASCII input
+    rts                                 ; End of subroutine
+
 ;****************************************************************************
 ; RunGuiLoop
 ; Runs the GUI main loop, parsing user input and handling the widgets as
@@ -343,6 +377,53 @@ RunGuiLoop:
     tst.b   (NewFrame)
     beq.s   @WaitFrame
     
+    moveq   #0, d6                      ; Pending ASCII input?
+    move.b  (NextAscii), d6
+    beq.s   @NoAscii
+    clr.b   (NextAscii)
+    move.b  (AsciiId), d7
+    cmp.b   #$FF, d7
+    beq.s   @NoAscii
+    movem.l (sp)+, d0-d4/a0-a3
+    rts
+@NoAscii:
+    
+    moveq   #0, d7                      ; Check if there's pending keyboard
+    move.b  (KeyBufStart), d7           ; input to handle
+    lea     (KeyBuf), a6
+    move.b  (a6,d7.w), d6
+    beq.s   @NoKeyInput
+    move.b  1(a6,d7.w), d5
+    clr.w   (a6,d7.w)
+    addq.b  #2, d7
+    and.b   #$07*2, d7
+    move.b  d7, (KeyBufStart)
+    
+    subq.b  #1, d6                      ; Key down?
+    bne.s   @NoKeyDown
+    move.b  (KeyDownId), d7
+    cmp.b   #$FF, d7
+    beq.s   @NoKeyDown
+    moveq   #0, d6
+    move.b  d5, d6
+    lea     (KeyToAscii), a6
+    move.b  (a6,d6.w), (NextAscii)
+    movem.l (sp)+, d0-d4/a0-a3
+    rts
+@NoKeyDown:
+    
+    subq.b  #1, d6                      ; Key up?
+    bne.s   @NoKeyUp
+    move.b  (KeyUpId), d7
+    cmp.b   #$FF, d7
+    beq.s   @NoKeyUp
+    moveq   #0, d6
+    move.b  d5, d6
+    movem.l (sp)+, d0-d4/a0-a3
+    rts
+@NoKeyUp:
+@NoKeyInput:
+    
     bsr     CheckHover                  ; Check if a widget is being hovered
     move.l  a6, (Hovering)
     
@@ -361,14 +442,16 @@ RunGuiLoop:
     
     moveq   #CURSOR_ARROW, d0           ; Which cursor to show?
     move.l  (Hovering), d1
+    move.l  d1, a6
     beq.s   @NoHand
+    move.b  WIDGET_CURSOR1(a6), d7
     move.l  (Interacting), d2
     beq.s   @YesHand
     cmp.l   d2, d1
     bne.s   @NoHand
+    move.b  WIDGET_CURSOR2(a6), d7
 @YesHand:
-    move.l  d1, a6
-    move.b  WIDGET_CURSOR(a6), d0
+    move.b  d7, d0
 @NoHand:
     move.b  d0, (CursorShape)
     

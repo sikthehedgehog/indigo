@@ -1,3 +1,5 @@
+;--- Indigo 0.10 ------------------------------------------------------------
+
     jmp     LoadPatterns                ; OS_LOADPATTERNS
     jmp     DrawTiles                   ; OS_DRAWTILES
     jmp     FillTiles                   ; OS_FILLTILES
@@ -30,6 +32,8 @@
     jmp     SetMouseSpeed               ; OS_SETMOUSESPEED
     jmp     UintToAscii                 ; OS_UINT2ASCII
     jmp     SetCursorShape              ; OS_SETCURSOR
+
+;--- Indigo 0.20 ------------------------------------------------------------
 
     jmp     Rand                        ; OS_RAND
     jmp     SetBgColor                  ; OS_SETBGCOLOR

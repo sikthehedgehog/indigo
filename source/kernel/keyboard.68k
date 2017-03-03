@@ -1,0 +1,159 @@
+;****************************************************************************
+; InitKeyboard
+; Initializes the keyboard.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+InitKeyboard:
+    lea     ($A10003), a6               ; Set up hardware
+    move.b  #$60, 6(a6)
+    move.b  #$60, (a6)
+    
+    moveq   #0, d7                      ; Reset key buffer
+    lea     (KeyBuf), a6
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.w  d7, (a6)+
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; UpdateKeyboard
+; Checks for keyboard input and sends new events as needed.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+UpdateKeyboard:
+    lea     ($A10003), a6               ; Keyboard port
+    lea     -4(sp), sp                  ; Input buffer
+    lea     (sp), a5
+    
+    bsr     ReadKeyboardByte            ; Check if the keyboard is there
+    cmp.w   #$0034, d7
+    bne.s   @NoKeyboard
+    
+    moveq   #4-1, d5                    ; Read in all bytes
+@Loop:
+    bsr     ReadKeyboardByte
+    tst.w   d7
+    bmi.s   @NoKeyboard
+    move.b  d7, (a5)+
+    dbf     d5, @Loop
+    
+    bsr     ReadKeyboardByte            ; Dummy read needed?
+    
+    moveq   #0, d6
+    move.w  2(sp), d7
+    
+    btst.l  #11, d7                     ; Check if a key got pressed or
+    beq.s   @NoPress                    ; released (only one can happen at a
+    move.b  d7, d6                      ; given time)
+    or.w    #$0100, d6
+@NoPress:
+    btst.l  #8, d7
+    beq.s   @NoRelease
+    move.b  d7, d6
+    or.w    #$0200, d6
+@NoRelease:
+    
+    tst.b   d6                          ; Key event to register?
+    beq.s   @NoEvent
+    
+    moveq   #0, d7                      ; Insert event in the queue if we
+    move.b  (KeyBufEnd), d7             ; have room for it
+    lea     (KeyBuf), a5
+    tst.w   (a5,d7.w)
+    bne.s   @NoEvent
+    move.w  d6, (a5,d7.w)
+    addq.b  #2, d7
+    and.b   #$07*2, d7
+    move.b  d7, (KeyBufEnd)
+@NoEvent:
+    
+@NoKeyboard:
+    lea     4(sp), sp                   ; Done with buffer
+    move.b  #$60, (a6)                  ; Let keyboard idle
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+
+    btst.b  #1, (CursorClick)           ; Dumb hack for testing
+    beq.s   @NoKeyPress
+    
+    moveq   #0, d7
+    move.b  (KeyBufEnd), d7
+    lea     (KeyBuf), a6
+    tst.w   (a6,d7.w)
+    bne.s   @NoKeyPress
+    
+    move.w  #$0132, (a6,d7.w)
+    addq.b  #2, d7
+    and.b   #$07*2, d7
+    move.b  d7, (KeyBufEnd)
+@NoKeyPress:
+    
+    btst.b  #2, (CursorClick)
+    beq.s   @NoKeyRelease
+    
+    moveq   #0, d7
+    move.b  (KeyBufEnd), d7
+    lea     (KeyBuf), a6
+    tst.w   (a6,d7.w)
+    bne.s   @NoKeyPress
+    
+    move.w  #$0232, (a6,d7.w)
+    addq.b  #2, d7
+    and.b   #$07*2, d7
+    move.b  d7, (KeyBufEnd)
+@NoKeyRelease:
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; ReadKeyboardByte
+; Fetches a byte from the keyboard.
+;----------------------------------------------------------------------------
+; input a6.l .... Keyboard port
+;----------------------------------------------------------------------------
+; output d7.w ... On success: $00xx (where xx is the byte)
+;                 On failure: $FFFF
+;----------------------------------------------------------------------------
+; breaks: d6
+;****************************************************************************
+
+ReadKeyboardByte:
+    move.b  #$00, (a6)                  ; Read first nibble
+    moveq   #$3F, d6
+@Wait1:
+    btst.b  #4, (a6)
+    beq.s   @Done1
+    dbf     d6, @Wait1
+    bra.s   @Timeout
+@Done1:
+    move.b  (a6), d7
+    and.w   #$0F, d7
+    
+    move.b  #$20, (a6)                  ; Read second nibble
+    moveq   #$3F, d6
+@Wait2:
+    btst.b  #4, (a6)
+    bne.s   @Done2
+    dbf     d6, @Wait2
+    bra.s   @Timeout
+@Done2:
+    lsl.w   #8, d7
+    move.b  (a6), d7
+    lsl.b   #4, d7
+    lsr.w   #4, d7
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Timeout:
+    moveq   #-1, d7                     ; An error has happened
+    rts                                 ; End of subroutine

@@ -25,6 +25,7 @@ php terminal/data/makefont.php
 asm terminal/buildme.68k rom/terminal.ixec
 
 gfx kernel/data/gfxbuild
+php kernel/data/key2ascii.php
 php kernel/data/makefont.php
 php kernel/data/makerom.php
 asm kernel/data/rom_fs.68k kernel/blob/rom_fs.blob

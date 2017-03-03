@@ -40,6 +40,7 @@ OS_ALLOCSPRITE:         equ 26      ; Allocate a new sprite
 OS_SETSPRITE:           equ 27      ; Set a sprite's properties
 
 OS_SETCURSOR:           equ 31      ; Sets the cursor shape
+OS_GETCURSORPOS:        equ 34      ; Gets the cursor position
 
 OS_GETMOUSESWAP:        equ 21      ; Retrieves the mouse swap setting
 OS_SETMOUSESWAP:        equ 22      ; Changes the mouse swap setting
@@ -58,6 +59,8 @@ OS_RAND:                equ 32      ; Generate random 16-bit number
 ;****************************************************************************
 ; Macros for building the GUI layouts
 ;****************************************************************************
+
+;--- Indigo 0.10 ------------------------------------------------------------
 
 ;----------------------------------------------------------------------------
 ; Standard button
@@ -137,6 +140,37 @@ OSUI_Timer: macro id,delay
     dc.b    id
     endm
 
+;--- Indigo 0.20 ------------------------------------------------------------
+
+;----------------------------------------------------------------------------
+; Key press event
+;----------------------------------------------------------------------------
+
+OSUI_KeyDown: macro id
+    dc.b    $07
+    dc.b    id
+    endm
+
+;----------------------------------------------------------------------------
+; Key release event
+;----------------------------------------------------------------------------
+
+OSUI_KeyUp: macro id
+    dc.b    $08
+    dc.b    id
+    endm
+
+;----------------------------------------------------------------------------
+; ASCII input event
+;----------------------------------------------------------------------------
+
+OSUI_Ascii: macro id
+    dc.b    $09
+    dc.b    id
+    endm
+
+;----------------------------------------------------------------------------
+
 ;----------------------------------------------------------------------------
 ; End of layout
 ;----------------------------------------------------------------------------
@@ -151,6 +185,7 @@ OSUI_End: macro
 ;****************************************************************************
 
 OSCURSOR_ARROW:     equ 0               ; Arrow
-OSCURSOR_HAND:      equ 1               ; Hand
+OSCURSOR_HAND:      equ 1               ; Hand (pointing)
 OSCURSOR_BUSY:      equ 2               ; Hourglass
 OSCURSOR_IBEAM:     equ 3               ; I-beam
+OSCURSOR_GRAB:      equ 4               ; Hand (open)

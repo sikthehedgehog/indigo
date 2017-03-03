@@ -16,6 +16,14 @@ DontDraw:           rs.b 1              ; Set when IRQ shouldn't touch VDP
 NewFrame:           rs.b 1              ; Set when a new frame starts
 NumSprites:         rs.b 1              ; Number of allocated sprites
 
+KeyBuf:             rs.w 8              ; Ring buffer for key events
+KeyBufStart:        rs.b 1              ; First used slot in key buffer
+KeyBufEnd:          rs.b 1              ; First free slot in key buffer
+NextAscii:          rs.b 1              ; ASCII character to send
+KeyDownId:          rs.b 1              ; Event ID for key press
+KeyUpId:            rs.b 1              ; Event ID for key release
+AsciiId:            rs.b 1              ; Event ID for ASCII input
+
 CursorX:            rs.w 1              ; Cursor X coordinate
 CursorY:            rs.w 1              ; Cursor Y coordinate
 CursorHeld:         rs.b 1              ; Cursor buttons being held
@@ -37,6 +45,8 @@ TimerLen:           rs.w 1              ; How often the timer fires
 TimerCount:         rs.w 1              ; Current value of the timer
 
 RandSeed:           rs.w 1              ; Seed for RNG
+
+Handles:            rs.b HANDLE_SIZE*MAX_HANDLES    ; File handle data
 
 ;****************************************************************************
 ; Pattern IDs

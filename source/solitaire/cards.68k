@@ -236,3 +236,34 @@ DrawPile:
     
 @Empty:
     rts                                 ; End of subroutine
+
+;****************************************************************************
+; DragCard
+; Updates the card being dragged.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DragCard:
+    syscall OS_GETCURSORPOS             ; Get card position
+    moveq   #-16, d0
+    moveq   #-4, d1
+    add.w   d7, d0
+    add.w   d6, d1
+    
+    moveq   #6-1, d2                    ; Move card alongside cursor
+    move.b  (DragSprite), d3
+    move.w  #VramCards, d4
+@SpriteLoop:
+    move.w  d3, d7
+    move.w  d0, d6
+    move.w  d1, d5
+    move.w  d4, a6
+    move.w  #%1100, a5
+    syscall OS_SETSPRITE
+    addq.w  #1, d3
+    addq.w  #8, d1
+    addq.w  #4, d4
+    dbf     d2, @SpriteLoop
+    
+    rts                                 ; End of subroutine

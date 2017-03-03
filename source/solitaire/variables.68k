@@ -4,3 +4,5 @@ Deck:               rs.b 52             ; Cards on the deck
 Piles:              rs.b 7*32           ; Cards on each of the piles
 DeckLen:            rs.b 1              ; Number of cards on the deck
 PileLen:            rs.b 7              ; Number of cards on each pile
+DragSprite:         rs.b 1              ; 1st sprite ID of dragged card
+                    rs.b 1

@@ -10,12 +10,39 @@ EntryPoint:
     lea     Layout(pc), a6              ; Load interface
     syscall OS_PARSELAYOUT
     
+    syscall OS_ALLOCSPRITE              ; Allocate sprites for the card
+    move.b  d7, (DragSprite)            ; that's being dragged
+    syscall OS_ALLOCSPRITE
+    syscall OS_ALLOCSPRITE
+    syscall OS_ALLOCSPRITE
+    syscall OS_ALLOCSPRITE
+    syscall OS_ALLOCSPRITE
+    
+    bsr     NewGame                     ; Start with a clean game
+    
 ;----------------------------------------------------------------------------
 
 MainLoop:
-    bsr     NewGame
-    syscall OS_GUILOOP
-    bra.s   MainLoop
+    syscall OS_GUILOOP                  ; Keep the GUI going
+    
+    and.w   #$FF, d7                    ; Handle the event
+    lsl.w   #2, d7
+    lea     @Handlers(pc), a6
+    jsr     (a6,d7.w)
+    
+    bra.s   MainLoop                    ; Back to the GUI
+
+;----------------------------------------------------------------------------
+
+@Handlers:
+    bra.w   NewGame                     ; ID_NEW
+    bra.w   DragCard                    ; ID_PILE1
+    bra.w   DragCard                    ; ID_PILE2
+    bra.w   DragCard                    ; ID_PILE3
+    bra.w   DragCard                    ; ID_PILE4
+    bra.w   DragCard                    ; ID_PILE5
+    bra.w   DragCard                    ; ID_PILE6
+    bra.w   DragCard                    ; ID_PILE7
 
 ;****************************************************************************
 ; NewGame

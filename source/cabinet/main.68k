@@ -62,7 +62,7 @@ EntryPoint:
     bsr     DrawFilename
     bra.s   MainLoop
 
-@Test:      dc.b 'This is a test', 0
+@Test:      dc.b 'File Cabinet is not ready yet', 0
             even
 
 ;----------------------------------------------------------------------------

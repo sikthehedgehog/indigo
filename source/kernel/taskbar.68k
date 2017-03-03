@@ -12,7 +12,8 @@
 BuildTaskbar:
     move.b  #WTYPE_QUIT, WIDGET_TYPE(a5)    ; Add "Apps" button
     clr.b   WIDGET_FLAGS(a5)
-    move.b  #CURSOR_HAND, WIDGET_CURSOR(a5)
+    move.b  #CURSOR_HAND, WIDGET_CURSOR1(a5)
+    move.b  #CURSOR_HAND, WIDGET_CURSOR2(a5)
     move.b  #WSHAPE_TASKAPPS, WIDGET_SHAPE(a5)
     move.b  #-1, WIDGET_ID(a5)
     move.b  #-1, WIDGET_VALUE(a5)

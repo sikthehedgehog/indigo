@@ -42,6 +42,7 @@ EntryPoint:
     move.b  d0, (RamSize)
     
     bsr     InitMouse                   ; Set up system
+    bsr     InitKeyboard
     bsr     InitVideo
     bsr     InitCursor
     
@@ -70,6 +71,8 @@ Interrupt:
     bsr     UpdateMouse                 ; Handle the cursor
     bsr     UpdateCursor
     bsr     RedrawCursor
+    
+    bsr     UpdateKeyboard              ; Handle typing
     
     st.b    (NewFrame)                  ; Mark that a new frame started
     movem.l (sp)+, d5-d7/a4-a6          ; Restore registers

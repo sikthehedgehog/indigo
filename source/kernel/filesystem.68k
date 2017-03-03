@@ -1,3 +1,62 @@
+MAX_HANDLES:        equ 4               ; Maximum files that can be opened
+
+;****************************************************************************
+; Data for a file handle
+;****************************************************************************
+
+                    rsreset
+
+HANDLE_OPEN:        rs.b 1              ; Set if file handle is in use
+HANDLE_MODE:        rs.b 1              ; Mode (er, just see HMODE_*)
+HANDLE_PTR:         rs.l 1              ; Pointer to file data in filesystem
+HANDLE_LEN:         rs.l 1              ; File length in bytes
+
+HANDLE_SIZE:        rs.b 0              ; Size of file handle data
+
+;****************************************************************************
+; Possible file handle modes
+;****************************************************************************
+
+                    rsreset
+
+                    rs.b 1              ; Unusable handle (EOF?)
+HMODE_DIR:          rs.b 1              ; Scanning directory
+
+;****************************************************************************
+; AllocHandle
+; Allocates a new file handle.
+;----------------------------------------------------------------------------
+; output d7.b ... File handle ID (-1 on failure)
+; output a6.l ... Pointer to handle (0 on failure)
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a5
+;****************************************************************************
+
+AllocHandle:
+    lea     (Handles), a6               ; Test all handle slots to see if
+    moveq   #MAX_HANDLES-1, d7          ; any of them isn't open yet
+@Loop:
+    tst.b   HANDLE_OPEN(a6)
+    beq.s   @Free
+    lea     HANDLE_SIZE(a6), a6
+    dbf     d7, @Loop
+    
+    move.w  #0, a6                      ; No handle found
+    moveq   #-1, d7
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Free:
+    st.b    HANDLE_OPEN(a6)             ; Initialize handle
+    clr.b   HANDLE_MODE(a6)
+    clr.l   HANDLE_PTR(a6)
+    clr.l   HANDLE_LEN(a6)
+    
+    neg.w   d7                          ; Get the handle ID
+    add.w   #MAX_HANDLES-1, d7
+    rts                                 ; End of subroutine
+
 ;****************************************************************************
 ; ScanForFile
 ; Scans for a file entry in a directory.
