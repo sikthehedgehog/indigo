@@ -228,3 +228,51 @@ DoOperation:
     bra.w   Multiply                    ; ID_MUL
     bra.w   Divide                      ; ID_DIV
     bra.w   Equal                       ; ID_EQU
+
+;****************************************************************************
+; DoShortcut
+; Handles keyboard shortcuts.
+;----------------------------------------------------------------------------
+; input d5.b ... ASCII code
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DoShortcut:
+    cmp.b   #'0', d5                    ; Digit?
+    blo.s   @NoDigit
+    cmp.b   #'9', d5
+    bhi.s   @NoDigit
+    sub.b   #'0', d5
+    move.b  d5, d6
+    bra     AddDigit
+@NoDigit:
+    
+    cmp.b   #'.', d5                    ; Comma?
+    beq     AddComma
+    cmp.b   #'_', d5                    ; Sign?
+    beq     FlipSign
+    cmp.b   #$08, d5                    ; Backspace?
+    beq     Backspace
+    cmp.b   #$1B, d5                    ; All clear?
+    beq     AllClear
+    
+    moveq   #ID_ADD, d6                 ; Operation?
+    cmp.b   #'+', d5
+    beq     DoOperation
+    addq.b  #1, d6
+    cmp.b   #'-', d5
+    beq     DoOperation
+    addq.b  #1, d6
+    cmp.b   #'*', d5
+    beq     DoOperation
+    addq.b  #1, d6
+    cmp.b   #'/', d5
+    beq     DoOperation
+    addq.b  #1, d6
+    cmp.b   #$0A, d5
+    beq     DoOperation
+    cmp.b   #'=', d5
+    beq     DoOperation
+    
+    rts                                 ; Not a shortcut, end of subroutine

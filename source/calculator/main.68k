@@ -46,7 +46,8 @@ EntryPoint:
     bsr     DrawLcd                     ; Redraw LCD screen
     syscall OS_GUILOOP                  ; Handle the GUI
     
-    move.b  d7, d6                      ; Handle this button
+    move.b  d6, d5                      ; Handle this button
+    move.b  d7, d6
     and.w   #$FF, d7
     lsl.w   #2, d7
     lea     @Handlers(pc), a6
@@ -80,6 +81,7 @@ EntryPoint:
     bra.w   SaveMemory                  ; ID_MSAV
     bra.w   RestoreMemory               ; ID_MRES
     bra.w   ClearMemory                 ; ID_MCLR
+    bra.w   DoShortcut                  ; ID_ASCII
 
 @Dummy:
     rts

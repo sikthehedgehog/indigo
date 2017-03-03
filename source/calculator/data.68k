@@ -27,6 +27,7 @@ ID_MADD:            rs.b 1              ; Memory add
 ID_MSAV:            rs.b 1              ; Memory save
 ID_MRES:            rs.b 1              ; Memory restore
 ID_MCLR:            rs.b 1              ; Memory clear
+ID_ASCII:           rs.b 1              ; Shortcuts
 
 ;****************************************************************************
 ; Interface layout
@@ -68,6 +69,7 @@ Layout:
     OSUI_Button     ID_MRES, @MemX+6,@MemY,3,2, VramMRes+$2000
     OSUI_Button     ID_MCLR, @MemX+9,@MemY,3,2, VramMClr+$2000
     
+    OSUI_Ascii      ID_ASCII
     OSUI_End
 
 ;****************************************************************************
