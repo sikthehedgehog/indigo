@@ -239,6 +239,7 @@ UintToAscii:
     and.b   #$0F, d5
     bne.s   @NoZeroSkip
     dbf     d6, @ZeroSkip
+    rol.l   #4, d2
 @NoZeroSkip:
     
     addq.w  #1, d6                      ; Convert remaining digits
@@ -250,7 +251,6 @@ UintToAscii:
     rol.l   #4, d2
     dbf     d6, @DigitLoop
     
-@Done:
     clr.b   (a6)                        ; End the string here
     
     movem.l (sp)+, d0-d3                ; Restore registers
