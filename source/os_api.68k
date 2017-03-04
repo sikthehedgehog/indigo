@@ -245,6 +245,10 @@ OSKEY_RALT:         equ $17
 OSKEY_LSHIFT:       equ $12
 OSKEY_RSHIFT:       equ $59
 
+OSKEY_NUM:          equ $77
+OSKEY_CAPS:         equ $58
+OSKEY_SCROLL:       equ $7E
+
 OSKEY_UP:           equ $89
 OSKEY_DOWN:         equ $8A
 OSKEY_LEFT:         equ $86
@@ -268,3 +272,18 @@ OSKEY_F9:           equ $01
 OSKEY_F10:          equ $09
 OSKEY_F11:          equ $78
 OSKEY_F12:          equ $07
+
+OSKEY_PRNSCR:       equ $84
+OSKEY_PAUSE:        equ $82
+
+;****************************************************************************
+; Modifier key flags (use with btst)
+;****************************************************************************
+
+OSKMOD_CTRL:        equ 8
+OSKMOD_ALT:         equ 9
+OSKMOD_SHIFT:       equ 10
+
+OSKMOD_NUM:         equ 13
+OSKMOD_CAPS:        equ 14
+OSKMOD_SCROLL:      equ 12
