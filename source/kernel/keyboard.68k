@@ -18,6 +18,9 @@ InitKeyboard:
     move.l  d7, (a6)+
     move.w  d7, (a6)+
     
+    clr.b   (KeyMods)                   ; Reset modifiers
+    clr.b   (KeyLeds)
+    
     rts                                 ; End of subroutine
 
 ;****************************************************************************
@@ -34,13 +37,13 @@ UpdateKeyboard:
     
     bsr     ReadKeyboardByte            ; Check if the keyboard is there
     cmp.w   #$0034, d7
-    bne.s   @NoKeyboard
+    bne     @NoKeyboard
     
     moveq   #4-1, d5                    ; Read in all bytes
 @Loop:
     bsr     ReadKeyboardByte
     tst.w   d7
-    bmi.s   @NoKeyboard
+    bmi     @NoKeyboard
     move.b  d7, (a5)+
     dbf     d5, @Loop
     
@@ -74,44 +77,39 @@ UpdateKeyboard:
     move.b  d7, (KeyBufEnd)
 @NoEvent:
     
+    lea     @ModList(pc), a5            ; Check if it's a modifier key
+    moveq   #6-1, d7
+@IsMod:
+    cmp.b   (a5)+, d6
+    beq.s   @Modifier
+    dbf     d7, @IsMod
+    bra.s   @NotModifier
+    
+@Modifier:
+    move.b  6-1(a5), d7                 ; Update modifier flags
+    move.b  (KeyMods), d5
+    bset.l  d7, d5
+    cmp.w   #$200, d6
+    blo.s   @ModDown
+    bclr.l  d7, d5
+@ModDown:
+    move.b  d5, (KeyMods)
+    
+@NotModifier:
+    move.b  2(sp), d7                   ; Store the state of the key LEDs
+    and.b   #$70, d7
+    move.b  d7, (KeyLeds)
+    
 @NoKeyboard:
     lea     4(sp), sp                   ; Done with buffer
     move.b  #$60, (a6)                  ; Let keyboard idle
     rts                                 ; End of subroutine
 
-;****************************************************************************
+;----------------------------------------------------------------------------
 
-    btst.b  #1, (CursorClick)           ; Dumb hack for testing
-    beq.s   @NoKeyPress
-    
-    moveq   #0, d7
-    move.b  (KeyBufEnd), d7
-    lea     (KeyBuf), a6
-    tst.w   (a6,d7.w)
-    bne.s   @NoKeyPress
-    
-    move.w  #$0132, (a6,d7.w)
-    addq.b  #2, d7
-    and.b   #$07*2, d7
-    move.b  d7, (KeyBufEnd)
-@NoKeyPress:
-    
-    btst.b  #2, (CursorClick)
-    beq.s   @NoKeyRelease
-    
-    moveq   #0, d7
-    move.b  (KeyBufEnd), d7
-    lea     (KeyBuf), a6
-    tst.w   (a6,d7.w)
-    bne.s   @NoKeyPress
-    
-    move.w  #$0232, (a6,d7.w)
-    addq.b  #2, d7
-    and.b   #$07*2, d7
-    move.b  d7, (KeyBufEnd)
-@NoKeyRelease:
-    
-    rts                                 ; End of subroutine
+@ModList:
+    dc.b    $14,$18,$11,$17,$12,$59     ; Scancodes
+    dc.b    0,0,1,1,2,2                 ; Flag order
 
 ;****************************************************************************
 ; ReadKeyboardByte

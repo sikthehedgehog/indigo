@@ -23,6 +23,8 @@ NextAscii:          rs.b 1              ; ASCII character to send
 KeyDownId:          rs.b 1              ; Event ID for key press
 KeyUpId:            rs.b 1              ; Event ID for key release
 AsciiId:            rs.b 1              ; Event ID for ASCII input
+KeyMods:            rs.b 1              ; Modifier keys pressed
+KeyLeds:            rs.b 1              ; Keyboard lights turned on
 
 CursorX:            rs.w 1              ; Cursor X coordinate
 CursorY:            rs.w 1              ; Cursor Y coordinate

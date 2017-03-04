@@ -405,6 +405,10 @@ RunGuiLoop:
     moveq   #0, d6
     move.b  d5, d6
     lea     (KeyToAscii), a6
+    btst.b  #2, (KeyMods)
+    beq.s   @NoShiftedAscii
+    lea     $100(a6), a6
+@NoShiftedAscii:
     move.b  (a6,d6.w), (NextAscii)
     move.b  (KeyDownId), d7
     cmp.b   #$FF, d7
