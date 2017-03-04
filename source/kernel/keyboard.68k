@@ -109,7 +109,7 @@ UpdateKeyboard:
 
 @ModList:
     dc.b    $14,$18,$11,$17,$12,$59     ; Scancodes
-    dc.b    0,0,1,1,2,2                 ; Flag order
+    dc.b    0,1,2,3,4,5                 ; Flag order
 
 ;****************************************************************************
 ; ReadKeyboardByte

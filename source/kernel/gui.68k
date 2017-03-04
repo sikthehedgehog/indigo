@@ -378,9 +378,22 @@ RunGuiLoop:
     tst.b   (NewFrame)
     beq.s   @WaitFrame
     
-    moveq   #0, d0                      ; Get flags for keyboard events
-    move.b  (KeyMods), d0
-    or.b    (KeyLeds), d0
+    move.b  (KeyLeds), d0               ; Get flags for keyboard events
+    move.b  (KeyMods), d7
+    move.b  d7, d6
+    move.b  d7, d5
+    and.b   #$03, d7
+    sne.b   d7
+    and.w   #$01, d7
+    and.b   #$0C, d6
+    sne.b   d6
+    and.w   #$02, d6
+    and.b   #$30, d5
+    sne.b   d5
+    and.w   #$04, d5
+    or.w    d7, d0
+    or.w    d6, d0
+    or.w    d5, d0
     lsl.w   #8, d0
     
     move.w  d0, d6                      ; Pending ASCII input?
@@ -410,7 +423,7 @@ RunGuiLoop:
     moveq   #0, d6
     move.b  d5, d6
     lea     (KeyToAscii), a6
-    btst.b  #2, (KeyMods)
+    btst.l  #10, d0
     beq.s   @NoShiftedAscii
     lea     $100(a6), a6
 @NoShiftedAscii:
