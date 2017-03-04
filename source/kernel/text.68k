@@ -291,3 +291,31 @@ UintToAscii:
     dc.b    $05,$36,$87,$09,$12
     dc.b    $10,$73,$74,$18,$24
     dc.b    $21,$47,$48,$36,$48
+
+;****************************************************************************
+; AreStringsEqual
+; Checks if two strings are identical. Case sensitive.
+;----------------------------------------------------------------------------
+; input a6.l .... Pointer to 1st string
+; input a5.l .... Pointer to 2nd string
+;----------------------------------------------------------------------------
+; output d7.w ... 1 if equal, 0 if not
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a6
+;****************************************************************************
+
+AreStringsEqual:
+@Loop:
+    move.b  (a6)+, d7                   ; Compare every character until
+    cmp.b   (a5)+, d7                   ; either a mismatch (not equal) or
+    bne.s   @NotEqual                   ; otherwise a nul (then equal)
+    tst.b   d7
+    bne.s   @Loop
+    
+@Equal:
+    moveq   #1, d7                      ; Strings are equal
+    rts                                 ; End of subroutine
+    
+@NotEqual:
+    moveq   #0, d7                      ; Strings are different
+    rts                                 ; End of subroutine

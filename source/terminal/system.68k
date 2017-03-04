@@ -20,8 +20,6 @@ ShowVersion:
     bsr     AddText
     bsr     FlushLine
     
-    bsr     PrintBlank                  ; Blank line for spacing
-    
     addq.w  #8, sp                      ; Get rid of buffer
     rts                                 ; End of subroutine
 
@@ -68,8 +66,6 @@ ShowMemory:
     bsr     AddText
     bsr     FlushLine
     
-    bsr     PrintBlank                  ; Blank line for spacing
-    
     lea     12(sp), sp                  ; Get rid of buffer
     rts                                 ; End of subroutine
 
@@ -79,3 +75,13 @@ ShowMemory:
 @TextVram:          dc.b 'VRAM size ... ', 0
 @TextKb:            dc.b ' KB', 0
                     even
+
+;****************************************************************************
+; ExitTerminal
+; Quits the terminal.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ExitTerminal:
+    syscall OS_QUITPROCESS

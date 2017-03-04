@@ -52,20 +52,15 @@ EntryPoint:
     bsr     ClearInput
     bsr     ClearBuffer
     
-    bsr     ShowVersion
-    bsr     ShowMemory
-    
-    lea     @Message1(pc), a6           ; Sowwy!
-    bsr     PrintLine
-    lea     @Message2(pc), a6
+    lea     @HelpMessage(pc), a6
     bsr     PrintLine
     bsr     PrintBlank
     
     bra     MainLoop
 
-@Message1:  dc.b 'Sorry!! Terminal currently out of order', 0
-@Message2:  dc.b 'Please wait for commands to be implemented :)', 0
-            even
+@HelpMessage:
+    dc.b    'Type "help" for a list of commands.',0
+    even
 
 ;----------------------------------------------------------------------------
 
@@ -121,19 +116,82 @@ RunCommand:
     clr.b   (a5)
     
     tst.b   (InputBuffer)               ; Ignore empty lines
-    bne.s   @HasCommand
-    st.b    (InputDirty)
-    rts
-@HasCommand:
+    beq     ClearInput
+    cmpi.b  #'#', (InputBuffer)         ; Comments too
+    beq     ClearInput
     
-    lea     @Invalid(pc), a6            ; ¯\_(ツ)_/¯
+    lea     (InputBuffer), a6           ; Split arguments into their own
+    moveq   #$20, d7                    ; strings (replace spaces with nuls,
+@SplitArgs:                             ; real end of string will be a
+    move.b  (a6)+, d6                   ; double nul)
+    beq.s   @SplitEnd
+    cmp.b   d7, d6
+    bne.s   @SplitArgs
+    clr.b   -1(a6)
+    bra.s   @SplitArgs
+@SplitEnd:
+    
+    lea     @List(pc), a0               ; Try all possible commands
+    move.l  a0, a1
+@CheckCommand:
+    move.w  (a1)+, d7
+    beq.s   @BadCommand
+    move.w  (a1)+, d6
+    lea     (a0,d7.w), a5
+    lea     (a0,d6.w), a2
+    lea     (InputBuffer), a6
+    syscall OS_STREQU
+    tst.w   d7
+    beq.s   @CheckCommand
+    jsr     (a2)
+    bra.s   @Done
+    
+@BadCommand:
+    lea     @Invalid(pc), a6            ; Invalid command
     bsr     PrintLine
     
+@Done:
     bsr     ClearInput                  ; Erase any entered text now
     bsr     PrintBlank                  ; For spacing purposes
     rts                                 ; End of subroutine
 
 ;----------------------------------------------------------------------------
 
-@Invalid:   dc.b 'Eh?',0
-            even
+@Invalid:           dc.b 'Eh?',0
+
+@CmdHelp:           dc.b 'help',0
+@CmdVer:            dc.b 'ver',0
+@CmdMem:            dc.b 'mem',0
+@CmdExit:           dc.b 'exit',0
+                    even
+
+;----------------------------------------------------------------------------
+
+@List:
+    dc.w    @CmdHelp-@List, ShowHelp-@List
+    dc.w    @CmdVer-@List, ShowVersion-@List
+    dc.w    @CmdMem-@List, ShowMemory-@List
+    dc.w    @CmdExit-@List, ExitTerminal-@List
+    dc.w    0
+
+;****************************************************************************
+; ShowHelp
+; Shows the list of commands.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ShowHelp:
+    lea     @CmdVer(pc), a6
+    bsr     PrintLine
+    lea     @CmdMem(pc), a6
+    bsr     PrintLine
+    lea     @CmdExit(pc), a6
+    bra     PrintLine
+
+;----------------------------------------------------------------------------
+
+@CmdVer:            dc.b 'ver .... Show Indigo version',0
+@CmdMem:            dc.b 'mem .... Show amount of memory',0
+@CmdExit:           dc.b 'exit ... Quits the terminal',0
+                    even
