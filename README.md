@@ -4,8 +4,8 @@ The Indigo operating system turns your Mega Drive into a computer! It's
 currently in early stages of development so don't expect much. You can take
 a look at the screenshots in the `screenshots` directory!
 
-If you want to emulate it, you can try using BlastEm (and make sure the
-second port has a mouse), other emulators may or may not work.
+If you want to emulate it, you can try using BlastEm (see
+`docs/using_blastem`), other emulators may or may not work.
 
 ## System requirements
 
