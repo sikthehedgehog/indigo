@@ -55,7 +55,9 @@ BeepVolume:         rs.b 1              ; PSG volume for beeping
 
 Handles:            rs.b HANDLE_SIZE*MAX_HANDLES    ; File handle data
 
-KernelUsage:        rs.b 0
+KernelUsage:        rs.b 0              ; To help keep track of how much RAM
+                                        ; the kernel is using (this address
+                                        ; is stored at the end of the header)
 
 ;****************************************************************************
 ; Pattern IDs

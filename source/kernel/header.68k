@@ -43,4 +43,4 @@
     dcb.b   $1F0-*, $20
     dc.b    'JUE'
     dcb.b   $1FC-*, $20
-    dc.l    SoundVolume
+    dc.l    KernelUsage
