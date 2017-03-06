@@ -7,6 +7,7 @@
     include "kernel/random.68k"
     include "kernel/keyboard.68k"
     include "kernel/mouse.68k"
+    include "kernel/beep.68k"
     include "kernel/cursor.68k"
     include "kernel/gui.68k"
     include "kernel/filesystem.68k"

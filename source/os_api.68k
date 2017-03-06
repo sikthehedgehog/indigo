@@ -42,6 +42,8 @@ OS_SETSPRITE:           equ 27      ; Set a sprite's properties
 OS_SETCURSOR:           equ 31      ; Sets the cursor shape
 OS_GETCURSORPOS:        equ 34      ; Gets the cursor position
 
+OS_BEEP:                equ 36      ; Beep!
+
 OS_GETMOUSESWAP:        equ 21      ; Retrieves the mouse swap setting
 OS_SETMOUSESWAP:        equ 22      ; Changes the mouse swap setting
 OS_GETMOUSETYPE:        equ 19      ; Retrieves the mouse type

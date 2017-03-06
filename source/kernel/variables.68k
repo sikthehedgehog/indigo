@@ -50,6 +50,9 @@ RandSeed:           rs.w 1              ; Seed for RNG
 
 Handles:            rs.b HANDLE_SIZE*MAX_HANDLES    ; File handle data
 
+BeepTimer:          rs.b 1              ; How long before resetting beep?
+                    rs.b 1
+
 ;****************************************************************************
 ; Pattern IDs
 ;****************************************************************************

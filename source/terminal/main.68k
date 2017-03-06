@@ -190,6 +190,8 @@ ShowHelp:
     bsr     PrintLine
     lea     @CmdMem(pc), a6
     bsr     PrintLine
+    lea     @CmdBeep(pc), a6
+    bsr     PrintLine
     lea     @CmdExit(pc), a6
     bra     PrintLine
 
@@ -197,5 +199,6 @@ ShowHelp:
 
 @CmdVer:            dc.b 'ver .... Show Indigo version',0
 @CmdMem:            dc.b 'mem .... Show amount of memory',0
+@CmdBeep:           dc.b 'beep ... Beep!!',0
 @CmdExit:           dc.b 'exit ... Quits the terminal',0
                     even
