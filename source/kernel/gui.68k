@@ -958,7 +958,7 @@ IsWidgetSet:
 ResetGuiStates:
     lea     (GuiStates), a6             ; Set all GUI states to 0
     moveq   #0, d6
-    moveq   #$100/8-1, d7
+    moveq   #$100/$10-1, d7
 @Loop:
     move.l  d6, (a6)+
     move.l  d6, (a6)+
