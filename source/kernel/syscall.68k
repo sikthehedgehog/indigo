@@ -40,3 +40,5 @@
     jmp     GetCursorPos                ; OS_GETCURSORPOS
     jmp     AreStringsEqual             ; OS_STREQU
     jmp     Beep                        ; OS_BEEP
+    jmp     GetSoundVolume              ; OS_GETVOLUME
+    jmp     SetSoundVolume              ; OS_SETVOLUME

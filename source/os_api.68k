@@ -50,6 +50,8 @@ OS_GETMOUSETYPE:        equ 19      ; Retrieves the mouse type
 OS_SETMOUSETYPE:        equ 20      ; Changes the mouse type
 OS_GETMOUSESPEED:       equ 28      ; Retrieves the mouse sensivity
 OS_SETMOUSESPEED:       equ 29      ; Changes the mouse sensivity
+OS_GETVOLUME:           equ 37      ; Retrieves the sound volume
+OS_SETVOLUME:           equ 38      ; Changes the sound volume
 OS_GETRAMSIZE:          equ 23      ; Gets the amount of RAM in KB
 OS_GETVRAMSIZE:         equ 24      ; Gets the amount of VRAM in KB
 

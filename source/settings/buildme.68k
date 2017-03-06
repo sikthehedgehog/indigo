@@ -1,3 +1,5 @@
     include "os_api.68k"
     include "settings/main.68k"
+    include "settings/mouse.68k"
+    include "settings/sound.68k"
     include "settings/data.68k"

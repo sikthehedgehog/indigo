@@ -43,7 +43,7 @@ EntryPoint:
     
     bsr     InitMouse                   ; Set up system
     bsr     InitKeyboard
-    bsr     InitBeep
+    bsr     InitSound
     bsr     InitVideo
     bsr     InitCursor
     

@@ -48,10 +48,14 @@ TimerCount:         rs.w 1              ; Current value of the timer
 
 RandSeed:           rs.w 1              ; Seed for RNG
 
+SoundVolume:        rs.b 1              ; Sound volume
+BeepTimer:          rs.b 1              ; How long before resetting beep?
+BeepVolume:         rs.b 1              ; PSG volume for beeping
+                    rs.b 1
+
 Handles:            rs.b HANDLE_SIZE*MAX_HANDLES    ; File handle data
 
-BeepTimer:          rs.b 1              ; How long before resetting beep?
-                    rs.b 1
+KernelUsage:        rs.b 0
 
 ;****************************************************************************
 ; Pattern IDs

@@ -1,0 +1,95 @@
+;****************************************************************************
+; SetMouseSwap
+; Changes the mouse swap setting.
+;----------------------------------------------------------------------------
+; input d6.b ... 0 = right handed, 1 = left handed
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+SetMouseSwap:
+    move.b  d6, d7
+    syscall OS_SETMOUSESWAP
+    rts
+
+;****************************************************************************
+; SetMouseType
+; Changes the mouse type.
+;----------------------------------------------------------------------------
+; input d6.b ... 0 = Mega Mouse, 1 = Sega Mouse
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+SetMouseType:
+    move.b  d6, d7
+    syscall OS_SETMOUSETYPE
+    rts
+
+;****************************************************************************
+; SetSensivity
+; Updates the mouse sensivity immediately.
+;----------------------------------------------------------------------------
+; input d6.b ... New sensivity
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+SetSensivity:
+    move.b  d6, d7                      ; Update mouse sensivity
+    syscall OS_SETMOUSESPEED
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; DecreaseSensivity
+; Decreases the mouse sensivity.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DecreaseSensivity:
+    moveq   #ID_MOUSESENS, d7           ; Get current sensivity
+    syscall OS_GETSTATE
+    
+    subq.w  #1, d7                      ; Decrease it a bit
+    bge.s   @ValueOk                    ; Make sure to not go too far!
+    moveq   #0, d7
+@ValueOk:
+    move.b  d7, d0
+    
+    move.b  d0, d7                      ; Change mouse sensivity
+    syscall OS_SETMOUSESPEED
+    
+    move.b  d0, d6                      ; Store new sensivity
+    moveq   #ID_MOUSESENS, d7
+    syscall OS_SETSTATE
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; IncreaseSensivity
+; Increases the mouse sensivity.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+IncreaseSensivity:
+    moveq   #ID_MOUSESENS, d7           ; Get current sensivity
+    syscall OS_GETSTATE
+    
+    addq.w  #1, d7                      ; Increase it a bit
+    cmp.w   #$40, d7                    ; Make sure to not go too far!
+    blo.s   @ValueOk
+    moveq   #$40, d7
+@ValueOk:
+    move.b  d7, d0
+    
+    move.b  d0, d7                      ; Change mouse sensivity
+    syscall OS_SETMOUSESPEED
+    
+    move.b  d0, d6                      ; Store new sensivity
+    moveq   #ID_MOUSESENS, d7
+    syscall OS_SETSTATE
+    
+    rts                                 ; End of subroutine

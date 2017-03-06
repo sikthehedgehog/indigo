@@ -535,14 +535,18 @@ RunGuiLoop:
     cmp.l   (Hovering), d2              ; Did the user cancel the action?
     bne     @NoInteractStop
     
+    moveq   #0, d6                      ; Let program know that
+                                        ; interaction is over
 @Return:
     move.l  a0, a6                      ; Perform the widget's behavior
+    move.w  d6, -(sp)
     bsr     TriggerWidget
+    move.w  (sp)+, d6
     
     moveq   #0, d7                      ; Get event action ID and state
-    move.b  WIDGET_ID(a0), d7
-    lea     (GuiStates), a6
-    move.b  (a6,d7.w), d6
+    move.b  WIDGET_ID(a0), d7           ; DO NOT TOUCH THE HIGH BYTE, it's
+    lea     (GuiStates), a6             ; how you can tell when a hold event
+    move.b  (a6,d7.w), d6               ; is over or not
     
     movem.l (sp)+, d0-d4/a0-a3          ; Restore registers
     rts                                 ; End of subroutine
@@ -553,6 +557,9 @@ RunGuiLoop:
     move.l  d7, a0                      ; Redraw widget
     move.l  a0, a6
     bsr     DrawWidget
+    
+    moveq   #-1, d6                     ; Let program know that interaction
+                                        ; is over still ongoing
     
     bra     @Return                     ; Let the widget trigger as usual
                                         ; (we skip the part that stops

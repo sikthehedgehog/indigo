@@ -8,6 +8,9 @@ ID_MOUSETYPE:       rs.b 1              ; Mouse type (US/JP)
 ID_MOUSESENS:       rs.b 1              ; Mouse sensivity
 ID_MOUSESENS_D:     rs.b 1                ; (less)
 ID_MOUSESENS_U:     rs.b 1                ; (more)
+ID_SOUNDVOL:        rs.b 1              ; Sound volume
+ID_SOUNDVOL_D:      rs.b 1                ; (less)
+ID_SOUNDVOL_U:      rs.b 1                ; (more)
 ID_TEST:            rs.b 1              ; For testing
 
 ;****************************************************************************
@@ -24,6 +27,10 @@ Layout:
     OSUI_HScroll ID_MOUSESENS, 4,17,8, VramScroller,VramHScrollBg
     OSUI_Hold ID_MOUSESENS_D, 2,17,2,2, VramLess
     OSUI_Hold ID_MOUSESENS_U, 14,17,2,2, VramMore
+    
+    OSUI_HScroll ID_SOUNDVOL, 4,22,8, VramScroller,VramHScrollBg
+    OSUI_Hold ID_SOUNDVOL_D, 2,22,2,2, VramLess
+    OSUI_Hold ID_SOUNDVOL_U, 14,22,2,2, VramMore
     OSUI_End
 
 ;----------------------------------------------------------------------------
@@ -50,6 +57,7 @@ LabelText:
     dc.b    8, 'Mega Mouse',0
     dc.b    8, 'Sega Mouse',0
     dc.b    11, 'Mouse sensivity:',0
+    dc.b    9,'Sound volume:',0
     dc.b    0
     even
 
@@ -71,7 +79,17 @@ LabelList:
     dc.b    2,15,0,11
     dc.w    VramMouseSensivity
     
+    dc.b    2,20,0,9
+    dc.w    VramSoundVolume
+    
     dc.w    $FFFF
+
+;****************************************************************************
+; Look-up tables to convert sound volume to scroller values
+;****************************************************************************
+
+FromSoundVol:
+ToSoundVol:
 
 ;****************************************************************************
 ; Interface graphics
@@ -102,3 +120,4 @@ VramMouseType:      rs.b 8              ; "Mouse type:"
 VramMegaMouse:      rs.b 8              ; "Mega Mouse"
 VramSegaMouse:      rs.b 8              ; "Sega Mouse"
 VramMouseSensivity: rs.b 11             ; "Mouse sensivity:"
+VramSoundVolume:    rs.b 9              ; "Sound volume:"

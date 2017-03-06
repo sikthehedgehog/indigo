@@ -1,0 +1,84 @@
+;****************************************************************************
+; InitSound
+; Sets up the sound hardware.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+InitSound:
+    lea     ($C00011), a6               ; Set up PSG channel #1
+    move.b  #$9F, (a6)
+    move.b  #$80, (a6)
+    move.b  #$04, (a6)
+    
+    clr.b   (BeepTimer)                 ; Not beeping yet
+    
+    move.b  #255, d7                    ; Default volume
+    bra     SetSoundVolume
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; Beep
+; Starts a beep.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+Beep:
+    move.b  #3, (BeepTimer)             ; Set when to stop beeping
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; UpdateBeep
+; Checks when to stop beeping.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+UpdateBeep:
+    tst.b   (BeepTimer)                 ; Is it beeping?
+    bne.s   @Beeping
+    move.b  #$9F, ($C00011)
+    rts
+    
+@Beeping:
+    move.b  (BeepVolume), ($C00011)     ; Keep volume updated
+    subq.b  #1, (BeepTimer)             ; Update timer
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; GetSoundVolume
+; Gets the current volume.
+;----------------------------------------------------------------------------
+; output d7.b ... Sound volume (0..255)
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a6
+;****************************************************************************
+
+GetSoundVolume:
+    move.b  (SoundVolume), d7           ; Get current volume
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; SetSoundVolume
+; Changes the current volume.
+;----------------------------------------------------------------------------
+; input d7.b ... Sound volume (0..255)
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+SetSoundVolume:
+    move.b  d7, (SoundVolume)           ; Store new volume
+    
+    moveq   #0, d6                      ; Update beeping volume
+    move.b  d7, d6
+    lsr.w   #2, d6
+    lea     (PsgVolTable), a6
+    move.b  (a6,d6.w), d6
+    or.b    #$90, d6
+    move.b  d6, (BeepVolume)
+    
+    rts                                 ; End of subroutine

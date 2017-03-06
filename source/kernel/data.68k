@@ -36,3 +36,15 @@ Font:
 
 FontBold:
     incbin  "kernel/blob/font_bold.blob"
+
+;****************************************************************************
+; To convert from system volume to hardware ones
+; Note that scale is logarithmic, so we can't just bit shift
+; ...also note we're dropping off two bits from the system volume :P
+;****************************************************************************
+
+PsgVolTable:
+    dc.b    $0F,$0F,$0E,$0E,$0D,$0D,$0C,$0C,$0B,$0B,$0B,$0A,$0A,$0A,$09,$09
+    dc.b    $08,$08,$08,$07,$07,$07,$06,$06,$06,$06,$05,$05,$05,$04,$04,$04
+    dc.b    $04,$03,$03,$03,$03,$03,$02,$02,$02,$02,$02,$02,$01,$01,$01,$01
+    dc.b    $01,$01,$01,$01,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00

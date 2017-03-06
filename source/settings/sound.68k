@@ -1,0 +1,83 @@
+;****************************************************************************
+; SetVolume
+; Changes the sound volume.
+;----------------------------------------------------------------------------
+; input d6.w ... Low byte = Volume (0..64)
+;                High byte = $00 when done, $FF when not
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+SetVolume:
+    move.w  d6, d0                      ; Preserve interaction flag
+    
+    move.b  d6, d7                      ; Scale from scroller value to
+    beq.s   @Zero                       ; sound volume value
+    subq.b  #1, d7
+    subq.b  #1, d6
+    lsl.b   #2, d7
+    lsr.b   #4, d6
+    or.b    d6, d7
+    
+@Zero:
+    syscall OS_SETVOLUME                ; Update sound volume
+    
+    tst.w   d0                          ; Beep when done
+    bmi.s   @NoBeepYet
+    syscall OS_BEEP
+@NoBeepYet:
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; DecreaseVolume
+; Decreases the sound volume.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DecreaseVolume:
+    move.w  d6, d0                      ; Preserve interaction flag
+    
+    moveq   #ID_SOUNDVOL, d7            ; Get current volume
+    syscall OS_GETSTATE
+    
+    subq.w  #1, d7                      ; Decrease it a bit
+    bge.s   @ValueOk                    ; Make sure to not go too far!
+    moveq   #0, d7
+@ValueOk:
+    move.b  d7, d0
+    
+    move.b  d0, d6                      ; Store new volume
+    moveq   #ID_SOUNDVOL, d7
+    syscall OS_SETSTATE
+    
+    move.w  d0, d6                      ; Update volume
+    bra     SetVolume
+
+;****************************************************************************
+; IncreaseVolume
+; Increases the sound volume.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+IncreaseVolume:
+    move.w  d6, d0                      ; Preserve interaction flag
+    
+    moveq   #ID_SOUNDVOL, d7            ; Get current volume
+    syscall OS_GETSTATE
+    
+    addq.w  #1, d7                      ; Increase it a bit
+    cmp.w   #$40, d7                    ; Make sure to not go too far!
+    blo.s   @ValueOk
+    moveq   #$40, d7
+@ValueOk:
+    move.b  d7, d0
+    
+    move.b  d0, d6                      ; Store new volume
+    moveq   #ID_SOUNDVOL, d7
+    syscall OS_SETSTATE
+    
+    move.w  d0, d6                      ; Update volume
+    bra     SetVolume
