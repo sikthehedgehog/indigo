@@ -1,0 +1,73 @@
+FLIST_W:            equ 22              ; Width of list in tiles
+FLIST_H:            equ 18              ; Height of list in tiles
+FLIST_X:            equ 4               ; X coordinate of list
+FLIST_Y:            equ 5               ; Y coordinate of list
+
+;****************************************************************************
+; ClearFileList
+; Clears the file list.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+ClearFileList:
+    move.w  #VramFileList, d7           ; Clear the list tiles
+    move.w  #FLIST_W*32, d6
+    moveq   #0, d5
+    syscall OS_FILLPATTERNS
+    
+    moveq   #FLIST_X, d7                ; Draw the beginning
+    moveq   #0, d6                      ; of the list
+    moveq   #1, d5
+    move.w  #FLIST_W, a6
+    move.w  #FLIST_H, a5
+    move.w  #VramFileList+$8000, a4
+    syscall OS_DRAWTILES
+    
+    moveq   #FLIST_X-1, d7              ; Get rid of everything else
+    moveq   #FLIST_H, d6                ; where the list will be drawn
+    moveq   #1, d5                      ; during scrolling
+    move.w  #FLIST_W, a6
+    move.w  #32-FLIST_H, a5
+    syscall OS_ERASETILES
+    
+    moveq   #0, d7                      ; Set scrolling accordingly
+    moveq   #0, d6
+    move.w  d7, a6
+    move.w  #-8*FLIST_Y, a5
+    syscall OS_SETSCROLL
+    
+    lea     @TestList(pc), a6           ; For testing
+    move.w  #VramFileList, d7
+    syscall OS_LOADTEXTLIST
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@TestList:
+    dc.b    FLIST_W, 'First string',0
+    dc.b    FLIST_W, '2nd text',0
+    dc.b    FLIST_W, 'Another one',0
+    dc.b    FLIST_W, 'Filler',0
+    dc.b    FLIST_W, 'Filler',0
+    dc.b    FLIST_W, 'Filler?',0
+    dc.b    FLIST_W, 'Filler',0
+    dc.b    FLIST_W, 'Filler',0
+    dc.b    FLIST_W, 'Filler!',0
+    dc.b    FLIST_W, 'Filler?',0
+    dc.b    FLIST_W, 'Filler',0
+    dc.b    FLIST_W, 'Filler',0
+    dc.b    FLIST_W, 'Filler...',0
+    dc.b    FLIST_W, 'Filler',0
+    dc.b    FLIST_W, 'Filler',0
+    dc.b    FLIST_W, 'Filler :)',0
+    dc.b    FLIST_W, 'Filler',0
+    dc.b    FLIST_W, 'Filler',0
+    dc.b    FLIST_W, 'Filler',0
+    dc.b    FLIST_W, 'Filler',0
+    dc.b    FLIST_W, 'Filler',0
+    dc.b    FLIST_W, 'Filler',0
+    dc.b    FLIST_W, 'Filler',0
+    dc.b    0
+    even

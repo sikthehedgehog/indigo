@@ -3,5 +3,6 @@
     include "terminal/display.68k"
     include "terminal/input.68k"
     include "terminal/system.68k"
+    include "terminal/beep.68k"
     include "terminal/data.68k"
     include "terminal/variables.68k"

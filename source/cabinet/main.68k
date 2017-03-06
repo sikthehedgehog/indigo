@@ -18,12 +18,12 @@ EntryPoint:
     lea     LabelList(pc), a6
     syscall OS_DRAWLABELS
     
-    moveq   #2, d7                      ; Draw frame for main list
-    moveq   #4, d6
+    moveq   #FLIST_X-2, d7              ; Draw frame for main list
+    moveq   #FLIST_Y-1, d6
     moveq   #0, d5
-    move.w  #23, a6
-    move.w  #18, a5
-    move.w  #VramFrame+$8000, a4
+    move.w  #FLIST_W, a6
+    move.w  #FLIST_H, a5
+    move.w  #VramFrame, a4
     syscall OS_FILLFRAME
     
     moveq   #30, d7                     ; Draw frame for drive list
@@ -31,9 +31,10 @@ EntryPoint:
     moveq   #0, d5
     move.w  #6, a6
     move.w  #6, a5
-    move.w  #VramFrame+$8000, a4
+    move.w  #VramFrame, a4
     syscall OS_FILLFRAME
     
+    if 0
     moveq   #2, d7                      ; Draw sides of the filename field
     moveq   #1, d6
     moveq   #0, d5
@@ -60,6 +61,9 @@ EntryPoint:
     
     lea     @Test(pc), a6
     bsr     DrawFilename
+    endc
+    
+    bsr     ClearFileList
     bra.s   MainLoop
 
 @Test:      dc.b 'File Cabinet is not ready yet', 0

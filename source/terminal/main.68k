@@ -162,6 +162,8 @@ RunCommand:
 @CmdHelp:           dc.b 'help',0
 @CmdVer:            dc.b 'ver',0
 @CmdMem:            dc.b 'mem',0
+@CmdBeep:           dc.b 'beep',0
+@CmdBoop:           dc.b 'boop',0
 @CmdExit:           dc.b 'exit',0
                     even
 
@@ -171,6 +173,8 @@ RunCommand:
     dc.w    @CmdHelp-@List, ShowHelp-@List
     dc.w    @CmdVer-@List, ShowVersion-@List
     dc.w    @CmdMem-@List, ShowMemory-@List
+    dc.w    @CmdBeep-@List, Beep-@List
+    dc.w    @CmdBoop-@List, Boop-@List
     dc.w    @CmdExit-@List, ExitTerminal-@List
     dc.w    0
 

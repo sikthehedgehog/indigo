@@ -73,4 +73,5 @@ VramOpen:           rs.b 16*2           ; Open button
 NumPatterns:        rs.b 0              ; Number of patterns
 VramDrives:         rs.b 6              ; "Drives:"
 
-VramNameField:      rs.b NAMEFIELD_LEN*2    ; Filename field
+VramNameField:      rs.b NAMEFIELD_LEN*2        ; Filename field
+VramFileList:       rs.b FLIST_W*32             ; File list
