@@ -1,0 +1,212 @@
+;****************************************************************************
+; DrawWidget
+; Draws a widget on screen.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to widget
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+DrawWidget:
+    moveq   #0, d7                      ; Jump to the relevant handler for
+    move.b  WIDGET_SHAPE(a6), d7        ; this widget's shape
+    lsl.w   #2, d7
+    lea     @Handlers(pc), a5
+    move.l  (a5,d7.w), a5
+    jmp     (a5)
+
+;----------------------------------------------------------------------------
+
+@Handlers:
+    dc.l    DrawWidget_None
+    dc.l    DrawWidget_Any              ; WSHAPE_ANY
+    dc.l    DrawWidget_HorCursor        ; WSHAPE_HCURSOR
+    dc.l    DrawWidget_VerCursor        ; WSHAPE_VCURSOR
+    dc.l    DrawWidget_TaskApps         ; WSHAPE_TASKAPPS
+
+;----------------------------------------------------------------------------
+; No shape defined
+;----------------------------------------------------------------------------
+
+DrawWidget_None:
+    rts                                 ; Draw nothing
+
+;----------------------------------------------------------------------------
+; WSHAPE_ANY
+;----------------------------------------------------------------------------
+
+DrawWidget_Any:
+    bsr     IsWidgetSet                 ; Get graphic to show
+    add.w   d7, d7
+    lea     WIDGET_GFX1(a6), a4
+    move.w  (a4,d7.w), a4
+    
+    moveq   #0, d7                      ; Get position and dimensions
+    moveq   #0, d6
+    move.w  WIDGET_X1(a6), -(sp)
+    move.b  WIDGET_X2(a6), d7
+    move.b  WIDGET_Y2(a6), d6
+    sub.b   (sp), d7
+    sub.b   1(sp), d6
+    move.w  d7, a6
+    move.w  d6, a5
+    move.b  (sp), d7
+    move.b  1(sp), d6
+    addq.w  #2, sp
+    
+    moveq   #0, d5                      ; Draw the widget
+    bra     DrawTiles
+
+;----------------------------------------------------------------------------
+; WSHAPE_HCURSOR
+;----------------------------------------------------------------------------
+
+DrawWidget_HorCursor:
+    moveq   #0, d6                      ; Get sprite position
+    moveq   #0, d5
+    move.b  WIDGET_X1(a6), d6
+    move.b  WIDGET_Y1(a6), d5
+    lsl.w   #3, d6
+    lsl.w   #3, d5
+    
+    moveq   #0, d7                      ; Offset sprite by state's value
+    move.b  WIDGET_ID(a6), d7
+    lea     (GuiStates), a5
+    move.b  (a5,d7.w), d7
+    add.w   d7, d6
+    
+    move.l  a6, a4                      ; Get sprite grahic
+    move.w  WIDGET_GFX1(a4), a6
+    move.w  WIDGET_GFX2(a4), d7
+    move.w  #%0101, a5
+    
+    bra     SetSprite                   ; Move the sprite!
+
+;----------------------------------------------------------------------------
+; WSHAPE_VCURSOR
+;----------------------------------------------------------------------------
+
+DrawWidget_VerCursor:
+    moveq   #0, d6                      ; Get sprite position
+    moveq   #0, d5
+    move.b  WIDGET_X1(a6), d6
+    move.b  WIDGET_Y1(a6), d5
+    lsl.w   #3, d6
+    lsl.w   #3, d5
+    
+    moveq   #0, d7                      ; Offset sprite by state's value
+    move.b  WIDGET_ID(a6), d7
+    lea     (GuiStates), a5
+    move.b  (a5,d7.w), d7
+    add.w   d7, d5
+    
+    move.l  a6, a4                      ; Get sprite grahic
+    move.w  WIDGET_GFX1(a4), a6
+    move.w  WIDGET_GFX2(a4), d7
+    move.w  #%0101, a5
+    
+    bra     SetSprite                   ; Move the sprite!
+
+;----------------------------------------------------------------------------
+; WSHAPE_TASKAPPS
+;----------------------------------------------------------------------------
+
+DrawWidget_TaskApps:
+    bsr     IsWidgetSet                 ; Get graphic to show
+    add.w   d7, d7
+    lea     WIDGET_GFX1(a6), a4
+    move.w  (a4,d7.w), a4
+    
+    moveq   #1, d7                      ; Draw button
+    moveq   #25+32, d6
+    moveq   #0, d5
+    move.w  #5, a6
+    move.w  #3, a5
+    bra     DrawTiles
+
+;****************************************************************************
+; DrawAllWidgets
+; Draws all the widgets.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+DrawAllWidgets:
+    lea     (Widgets), a6               ; Scan every widget slot
+    moveq   #MAX_WIDGETS-1, d7
+@Loop:
+    tst.b   WIDGET_TYPE(a6)             ; Does the widget exist?
+    beq.s   @Missing
+    
+    move.w  d7, -(sp)                   ; Draw it if so
+    move.l  a6, -(sp)
+    bsr     DrawWidget
+    move.l  (sp)+, a6
+    move.w  (sp)+, d7
+    
+@Missing:
+    lea     WIDGET_SIZE(a6), a6         ; Check next widget
+    dbf     d7, @Loop
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; DrawWidgetsById
+; Draws all widgets with the associated action.
+;----------------------------------------------------------------------------
+; input d7.b ... Action ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+DrawWidgetsById:
+    lea     (Widgets), a6               ; Scan all widget slots
+    moveq   #MAX_WIDGETS-1, d6
+@Loop:
+    tst.b   WIDGET_TYPE(a6)             ; Does the widget exist?
+    beq.s   @Skip
+    cmp.b   WIDGET_ID(a6), d7           ; Is it associated to the action
+    bne.s   @Skip                       ; we're looking for?
+    
+    movem.l d6-d7/a6, -(sp)             ; Draw it if so
+    bsr     DrawWidget
+    movem.l (sp)+, d6-d7/a6
+    
+@Skip:
+    lea     WIDGET_SIZE(a6), a6         ; Check next widget
+    dbf     d6, @Loop
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; IsWidgetSet
+; Determines whether a widget should look "set" (e.g. pressed).
+;----------------------------------------------------------------------------
+; input a6.l .... Pointer to widget
+;----------------------------------------------------------------------------
+; output d7.w ... 0 = unset, 1 = set
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a5
+;****************************************************************************
+
+IsWidgetSet:
+    cmpa.l  (Interacting), a6           ; Interacting with this widget?
+    bne.s   @NotInteracting
+    cmpa.l  (Hovering), a6
+    bne.s   @NotInteracting
+    moveq   #1, d7
+    rts
+@NotInteracting:
+    
+    moveq   #0, d7                      ; Check if the state matches the
+    move.b  WIDGET_ID(a6), d7           ; widget's value
+    lea     (GuiStates), a5
+    move.b  (a5,d7.w), d7
+    cmp.b   WIDGET_VALUE(a6), d7
+    bne.s   @NotSet
+    moveq   #1, d7
+    rts
+@NotSet:
+    
+    moveq   #0, d7                      ; Widget isn't set
+    rts

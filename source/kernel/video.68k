@@ -244,6 +244,36 @@ ClearScreen:
     bra     ClearPlane
 
 ;****************************************************************************
+; PutTile
+; Draws a single tile.
+;----------------------------------------------------------------------------
+; input d7.w ... X coordinate
+; input d6.w ... Y coordinate
+; input d5.w ... Plane ID
+; input a6.w ... Pattern ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+PutTile:
+    lsl.w   #6, d6                      ; Get VRAM address
+    add.w   d6, d7
+    add.w   d7, d7
+    ror.w   #3, d5
+    add.w   d5, d7
+    or.w    #$4000, d7
+    swap    d7
+    move.w  #$0003, d7
+    
+    lea     ($C00000), a5               ; Draw the tile
+    st.b    (DontDraw)
+    move.l  d7, 4(a5)
+    move.w  a6, (a5)
+    clr.b   (DontDraw)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
 ; DrawTiles
 ; Draws a block of tiles with consecutive patterns.
 ;----------------------------------------------------------------------------

@@ -69,6 +69,7 @@ VramNameLeft:       rs.b 2              ; Left side of filename field
 VramNameRight:      rs.b 2              ; Right side of filename field
 VramParent:         rs.b 4*2            ; Parent button
 VramOpen:           rs.b 16*2           ; Open button
+VramIcons:          rs.b 3              ; Type icons
 
 NumPatterns:        rs.b 0              ; Number of patterns
 VramDrives:         rs.b 6              ; "Drives:"

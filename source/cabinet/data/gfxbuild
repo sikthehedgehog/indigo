@@ -32,3 +32,10 @@ input "cabinet/data/open.png"
 layout tilemap
 tiles 0 0 8 2
 tiles 0 2 8 2
+
+input "cabinet/data/type_folder.png"
+tiles 0 0 1 1
+input "cabinet/data/type_blob.png"
+tiles 0 0 1 1
+input "cabinet/data/type_ixec.png"
+tiles 0 0 1 1

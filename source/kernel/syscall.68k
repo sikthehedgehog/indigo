@@ -42,3 +42,4 @@
     jmp     Beep                        ; OS_BEEP
     jmp     GetSoundVolume              ; OS_GETVOLUME
     jmp     SetSoundVolume              ; OS_SETVOLUME
+    jmp     PutTile                     ; OS_PUTTILE

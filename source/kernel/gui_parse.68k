@@ -1,0 +1,301 @@
+;****************************************************************************
+; RemoveAllWidgets
+; Removes all widgets.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+RemoveAllWidgets:
+    lea     (Widgets), a6               ; Scan all slots
+    moveq   #MAX_WIDGETS-1, d7
+@Loop:
+    clr.b   WIDGET_TYPE(a6)             ; Free up the slot
+    clr.b   WIDGET_SHAPE(a6)            ; Don't draw (just in case)
+    
+    move.b  #$FF, WIDGET_X1(a6)         ; Get collision out of the way
+    move.b  #$FF, WIDGET_Y1(a6)
+    move.b  #$FF, WIDGET_X2(a6)
+    move.b  #$FF, WIDGET_Y2(a6)
+    
+    lea     WIDGET_SIZE(a6), a6         ; Go for next slot
+    dbf     d7, @Loop
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; ParseGuiLayout
+; Parses a GUI layout and generates the widgets from it.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to layout
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+ParseGuiLayout:
+    move.l  a6, -(sp)                   ; Remove all existing widgets first
+    bsr     RemoveAllWidgets
+    bsr     ClearScreen
+    move.l  (sp)+, a6
+    
+    clr.b   (TimerSet)                  ; No timer attached yet
+    st.b    (KeyUpId)                   ; No keyboard events yet
+    st.b    (KeyDownId)
+    st.b    (AsciiId)
+    
+    lea     (Widgets), a5               ; Rebuild taskbar first
+    bsr     (BuildTaskbar)
+    
+@Loop:                                  ; Scan through entire layout
+    moveq   #0, d7                      ; Get next widget type
+    move.b  (a6)+, d7                   ; $FF terminates the layout
+    cmp.b   #$FF, d7
+    beq.s   @End
+    
+    lsl.w   #2, d7                      ; Go to the handler for this type
+    lea     @Handlers(pc), a4
+    move.l  (a4,d7.w), a4
+    jsr     (a4)
+    
+    bra.s   @Loop                       ; Go for next widget
+    
+@End:
+    clr.l   (Interacting)               ; Not interacting with anything yet
+    bsr     DrawAllWidgets              ; Draw all the widgets
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Handlers:
+    dc.l    ParseGuiLayout_Button       ; OSUI_Button
+    dc.l    ParseGuiLayout_Select       ; OSUI_Select
+    dc.l    ParseGuiLayout_Toggle       ; OSUI_Toggle
+    dc.l    ParseGuiLayout_Hold         ; OSUI_Hold
+    dc.l    ParseGuiLayout_HScroll      ; OSUI_HScroll
+    dc.l    ParseGuiLayout_VScroll      ; OSUI_VScroll
+    dc.l    ParseGuiLayout_Timer        ; OSUI_Timer
+    dc.l    ParseGuiLayout_KeyDown      ; OSUI_KeyDown
+    dc.l    ParseGuiLayout_KeyUp        ; OSUI_KeyUp
+    dc.l    ParseGuiLayout_Ascii        ; OSUI_Ascii
+
+;----------------------------------------------------------------------------
+; OSUI_Button
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_Button:
+    move.b  #WTYPE_FIRE, WIDGET_TYPE(a5)        ; Widget behavior
+    clr.b   WIDGET_FLAGS(a5)
+    move.b  #WSHAPE_ANY, WIDGET_SHAPE(a5)
+    move.b  #CURSOR_HAND, WIDGET_CURSOR1(a5)
+    move.b  #CURSOR_HAND, WIDGET_CURSOR2(a5)
+    move.b  #1, WIDGET_VALUE(a5)
+    
+    moveq   #0, d7                      ; Get widget coordinates
+    moveq   #0, d6
+    move.b  (a6)+, d7
+    move.b  (a6)+, d6
+    move.b  d7, WIDGET_X1(a5)
+    move.b  d6, WIDGET_Y1(a5)
+    add.b   (a6)+, d7
+    add.b   (a6)+, d6
+    move.b  d7, WIDGET_X2(a5)
+    move.b  d6, WIDGET_Y2(a5)
+    
+    move.b  (a6)+, -(sp)                ; Get released graphic
+    move.w  (sp)+, d5
+    move.b  (a6)+, d5
+    move.w  d5, WIDGET_GFX1(a5)
+    
+    sub.b   WIDGET_X1(a5), d7           ; Get pressed graphic
+    sub.b   WIDGET_Y1(a5), d6
+    mulu.w  d6, d7
+    add.w   d7, d5
+    move.w  d5, WIDGET_GFX2(a5)
+    
+    move.b  (a6)+, WIDGET_ID(a5)        ; Get widget action
+    
+    lea     WIDGET_SIZE(a5), a5         ; Go for next widget
+    rts
+
+;----------------------------------------------------------------------------
+; OSUI_Select
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_Select:
+    bsr     ParseGuiLayout_Button
+    move.b  #WTYPE_SET, WIDGET_TYPE-WIDGET_SIZE(a5)
+    move.b  (a6)+, WIDGET_VALUE-WIDGET_SIZE(a5)
+    rts
+
+;----------------------------------------------------------------------------
+; OSUI_Toggle
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_Toggle:
+    bsr     ParseGuiLayout_Button
+    move.b  #WTYPE_TOGGLE, WIDGET_TYPE-WIDGET_SIZE(a5)
+    rts
+
+;----------------------------------------------------------------------------
+; OSUI_Hold
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_Hold:
+    bsr     ParseGuiLayout_Button
+    bset.b  #WFLAG_HOLD, WIDGET_FLAGS-WIDGET_SIZE(a5)
+    rts
+
+;----------------------------------------------------------------------------
+; OSUI_HScroll
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_HScroll:
+    move.b  #WTYPE_HSCROLL, WIDGET_TYPE(a5)     ; Widget behavior
+    move.b  #1<<WFLAG_HOLD, WIDGET_FLAGS(a5)
+    move.b  #WSHAPE_HCURSOR, WIDGET_SHAPE(a5)
+    move.b  #CURSOR_HAND, WIDGET_CURSOR1(a5)
+    move.b  #CURSOR_GRAB, WIDGET_CURSOR2(a5)
+    
+    move.b  (a6)+, d7                   ; Get widget coordinates
+    move.b  (a6)+, d6
+    move.b  d7, WIDGET_X1(a5)
+    move.b  d6, WIDGET_Y1(a5)
+    add.b   (a6)+, d7
+    addq.b  #2, d7
+    addq.b  #2, d6
+    move.b  d7, WIDGET_X2(a5)
+    move.b  d6, WIDGET_Y2(a5)
+    
+    move.b  (a6)+, -(sp)                ; Get scrolller graphic
+    move.w  (sp)+, d5
+    move.b  (a6)+, d5
+    move.w  d5, WIDGET_GFX1(a5)
+    move.l  a6, -(sp)
+    move.l  a5, -(sp)
+    bsr     AllocSprite
+    move.l  (sp)+, a5
+    move.l  (sp)+, a6
+    move.w  d7, WIDGET_GFX2(a5)
+    
+    move.b  (a6)+, -(sp)                ; Draw scrollbar background
+    move.w  (sp)+, d5
+    move.b  (a6)+, d5
+    move.w  d5, a4
+    moveq   #0, d7
+    moveq   #0, d6
+    moveq   #0, d5
+    move.b  WIDGET_X1(a5), d7
+    move.b  WIDGET_Y1(a5), d6
+    move.b  WIDGET_X2(a5), d5
+    sub.b   d7, d5
+    subq.b  #2, d5
+    move.l  a5, -(sp)
+    move.l  a6, -(sp)
+    move.w  d5, a6
+    move.w  a4, a5
+    moveq   #0, d5
+    bsr     DrawHBar
+    move.l  (sp)+, a6
+    move.l  (sp)+, a5
+    
+    move.b  (a6)+, WIDGET_ID(a5)        ; Get widget action
+    
+    lea     WIDGET_SIZE(a5), a5         ; Go for next widget
+    rts
+
+;----------------------------------------------------------------------------
+; OSUI_VScroll
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_VScroll:
+    move.b  #WTYPE_VSCROLL, WIDGET_TYPE(a5)     ; Widget behavior
+    move.b  #1<<WFLAG_HOLD, WIDGET_FLAGS(a5)
+    move.b  #WSHAPE_VCURSOR, WIDGET_SHAPE(a5)
+    move.b  #CURSOR_HAND, WIDGET_CURSOR1(a5)
+    move.b  #CURSOR_GRAB, WIDGET_CURSOR2(a5)
+    
+    move.b  (a6)+, d7                   ; Get widget coordinates
+    move.b  (a6)+, d6
+    move.b  d7, WIDGET_X1(a5)
+    move.b  d6, WIDGET_Y1(a5)
+    add.b   (a6)+, d6
+    addq.b  #2, d7
+    addq.b  #2, d6
+    move.b  d7, WIDGET_X2(a5)
+    move.b  d6, WIDGET_Y2(a5)
+    
+    move.b  (a6)+, -(sp)                ; Get scrolller graphic
+    move.w  (sp)+, d5
+    move.b  (a6)+, d5
+    move.w  d5, WIDGET_GFX1(a5)
+    move.l  a6, -(sp)
+    move.l  a5, -(sp)
+    bsr     AllocSprite
+    move.l  (sp)+, a5
+    move.l  (sp)+, a6
+    move.w  d7, WIDGET_GFX2(a5)
+    
+    move.b  (a6)+, -(sp)                ; Draw scrollbar background
+    move.w  (sp)+, d5
+    move.b  (a6)+, d5
+    move.w  d5, a4
+    moveq   #0, d7
+    moveq   #0, d6
+    moveq   #0, d5
+    move.b  WIDGET_X1(a5), d7
+    move.b  WIDGET_Y1(a5), d6
+    move.b  WIDGET_Y2(a5), d5
+    sub.b   d6, d5
+    subq.b  #2, d5
+    move.l  a5, -(sp)
+    move.l  a6, -(sp)
+    move.w  d5, a6
+    move.w  a4, a5
+    moveq   #0, d5
+    bsr     DrawVBar
+    move.l  (sp)+, a6
+    move.l  (sp)+, a5
+    
+    move.b  (a6)+, WIDGET_ID(a5)        ; Get widget action
+    
+    lea     WIDGET_SIZE(a5), a5         ; Go for next widget
+    rts
+
+;----------------------------------------------------------------------------
+; OSUI_Timer
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_Timer:
+    st.b    (TimerSet)                  ; Enable the timer
+    
+    move.b  (a6)+, -(sp)                ; Get delay between triggers
+    move.w  (sp)+, d7
+    move.b  (a6)+, d7
+    move.w  d7, (TimerLen)
+    move.w  d7, (TimerCount)
+    
+    move.b  (a6)+, (TimerId)            ; Get timer action
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+; OSUI_KeyDown
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_KeyDown:
+    move.b  (a6)+, (KeyDownId)          ; Get action ID for key down
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+; OSUI_KeyUp
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_KeyUp:
+    move.b  (a6)+, (KeyUpId)            ; Get action ID for key up
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+; OSUI_Ascii
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_Ascii:
+    move.b  (a6)+, (AsciiId)            ; Get action ID for ASCII input
+    rts                                 ; End of subroutine

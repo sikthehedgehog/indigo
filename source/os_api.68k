@@ -24,6 +24,7 @@ OS_RENDERTEXT:          equ 17      ; Renders text into patterns
 OS_LOADTEXTLIST:        equ 18      ; Renders and loads a list of text
 OS_LOADPALETTE:         equ 4       ; Loads a palette into CRAM
 
+OS_PUTTILE:             equ 39      ; Draws a single tile
 OS_DRAWTILES:           equ 1       ; Draws tiles with consecutive patterns
 OS_FILLTILES:           equ 2       ; Fills tiles with a single pattern
 OS_ERASETILES:          equ 3       ; Fills tiles with a blank pattern

@@ -11,6 +11,75 @@ FLIST_Y:            equ 5               ; Y coordinate of list
 ;****************************************************************************
 
 ClearFileList:
+    moveq   #0, d7                      ; Clear string offsets
+    lea     (FileListPtr), a6
+    moveq   #4-1, d6
+@ClearOffsets:
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    dbf     d6, @ClearOffsets
+    
+    clr.w   (FileListLast)              ; Set up offsets for new entries
+    move.w  #FileList&$FFFF, (FileListNext)
+    
+    clr.l   (FileList)                  ; Make sure the list is empty
+    clr.w   (FileList+4)
+    clr.w   (NumFiles)
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; AddFileEntry
+; Adds a filename to the file list.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to filename
+; input d7.b ... Icon to show
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+AddFileEntry:
+    moveq   #-1, d6                     ; Get pointer to new and last entries
+    move.w  (FileListNext), d6
+    move.l  d6, a5
+    move.w  (FileListLast), d6
+    move.l  d6, a4
+    
+    tst.w   d6                          ; Link the two entries
+    beq.s   @NoLastEntry
+    move.w  (FileListNext), 2(a4)
+@NoLastEntry:
+    move.w  (FileListLast), (a5)+
+    clr.w   (a5)+
+    
+    move.b  d7, (a5)+                   ; Store icon
+    move.b  #$20, (a5)+                 ; Store padding space
+    
+@CopyFilename:                          ; Store filename
+    move.b  (a6)+, (a5)+
+    bne.s   @CopyFilename
+    
+    move.w  a5, d7                      ; Pad to an even size if needed
+    and.w   #1, d7
+    beq.s   @NoPadding
+    clr.b   (a5)+
+@NoPadding:
+    
+    move.w  (FileListNext), (FileListLast)  ; Update offsets for inserting
+    move.w  a5, (FileListNext)              ; the next entry
+    
+    addq.w  #1, (NumFiles)              ; Update file count
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; DrawInitialList
+; Draws the initial portion of the list.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DrawInitialList:
     move.w  #VramFileList, d7           ; Clear the list tiles
     move.w  #FLIST_W*32, d6
     moveq   #0, d5
@@ -37,37 +106,86 @@ ClearFileList:
     move.w  #-8*FLIST_Y, a5
     syscall OS_SETSCROLL
     
-    lea     @TestList(pc), a6           ; For testing
-    move.w  #VramFileList, d7
-    syscall OS_LOADTEXTLIST
+    clr.w   (ScrollPos)
+    clr.w   (ScrollDelay)
+    moveq   #ID_SCROLL, d7
+    moveq   #0, d6
+    syscall OS_SETSTATE
     
+    lea     (FileListPtr), a0           ; Cache the offsets to the entries
+    lea     (FileList), a1              ; at the beginning of the list
+    move.w  (NumFiles), d7
+    beq.s   @NoFiles
+    cmp.w   #FLIST_H, d7
+    blo.s   @ShortScan
+    moveq   #FLIST_H, d7
+@ShortScan:
+    subq.w  #1, d7
+    move.w  d7, d1
+    moveq   #-1, d0
+@ScanFiles:
+    move.w  a1, (a0)+
+    move.w  2(a1), d0
+    move.l  d0, a1
+    dbf     d7, @ScanFiles
+    
+    moveq   #0, d0                      ; Render all filenames
+@RenderFiles:
+    move.w  d0, d7
+    bsr     DrawFileEntry
+    addq.w  #1, d0
+    dbf     d1, @RenderFiles
+    
+@NoFiles:
     rts                                 ; End of subroutine
 
+;****************************************************************************
+; DrawFileEntry
+; Draws a single file entry.
 ;----------------------------------------------------------------------------
+; input d7.w ... Entry from the cache (0..31)
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
 
-@TestList:
-    dc.b    FLIST_W, 'First string',0
-    dc.b    FLIST_W, '2nd text',0
-    dc.b    FLIST_W, 'Another one',0
-    dc.b    FLIST_W, 'Filler',0
-    dc.b    FLIST_W, 'Filler',0
-    dc.b    FLIST_W, 'Filler?',0
-    dc.b    FLIST_W, 'Filler',0
-    dc.b    FLIST_W, 'Filler',0
-    dc.b    FLIST_W, 'Filler!',0
-    dc.b    FLIST_W, 'Filler?',0
-    dc.b    FLIST_W, 'Filler',0
-    dc.b    FLIST_W, 'Filler',0
-    dc.b    FLIST_W, 'Filler...',0
-    dc.b    FLIST_W, 'Filler',0
-    dc.b    FLIST_W, 'Filler',0
-    dc.b    FLIST_W, 'Filler :)',0
-    dc.b    FLIST_W, 'Filler',0
-    dc.b    FLIST_W, 'Filler',0
-    dc.b    FLIST_W, 'Filler',0
-    dc.b    FLIST_W, 'Filler',0
-    dc.b    FLIST_W, 'Filler',0
-    dc.b    FLIST_W, 'Filler',0
-    dc.b    FLIST_W, 'Filler',0
-    dc.b    0
-    even
+DrawFileEntry:
+    and.w   #$1F, d7                    ; Get pointer to entry
+    move.w  d7, d6
+    add.w   d6, d6
+    lea     (FileListPtr), a6
+    move.w  (a6,d6.w), d6
+    or.l    #$FFFF0000, d6
+    move.l  d6, a6
+    
+    addq.w  #4, a6                      ; Skip linked list pointers
+    
+    moveq   #0, d6                      ; Get file type
+    move.b  (a6)+, d6
+    add.w   #VramIcons+$8000, d6
+    
+    move.l  a6, -(sp)                   ; Draw type icon
+    move.w  d6, a6
+    move.w  d7, d6
+    moveq   #FLIST_X-1, d7
+    moveq   #1, d5
+    move.w  d6, -(sp)
+    syscall OS_PUTTILE
+    move.w  (sp)+, d6
+    move.l  (sp)+, a6
+    
+    lea     -$20*FLIST_W(sp), sp        ; Render the filename
+    move.l  sp, a5
+    moveq   #FLIST_W, d7
+    move.w  d6, -(sp)
+    syscall OS_RENDERTEXT
+    move.w  (sp)+, d7
+    
+    mulu.w  #FLIST_W, d7                ; Get where to load the text
+    add.w   #VramFileList, d7
+    
+    move.l  sp, a6                      ; Load it into VRAM
+    moveq   #FLIST_W, d6
+    syscall OS_LOADPATTERNS
+    lea     $20*FLIST_W(sp), sp
+    
+    rts                                 ; End of subroutine

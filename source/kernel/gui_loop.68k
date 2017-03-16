@@ -1,0 +1,385 @@
+;****************************************************************************
+; RunGuiLoop
+; Runs the GUI main loop, parsing user input and handling the widgets as
+; needed. It'll return whenever an event is fired.
+;----------------------------------------------------------------------------
+; output d7.b ... Action ID
+; output d6.b ... Action state
+;----------------------------------------------------------------------------
+; breaks: d5, a4-a6
+;****************************************************************************
+
+RunGuiLoop:
+    movem.l d0-d4/a0-a3, -(sp)          ; Save registers
+
+;----------------------------------------------------------------------------
+
+@MainLoop:
+    clr.b   (NewFrame)                  ; Wait for next frame
+@WaitFrame:
+    tst.b   (NewFrame)
+    beq.s   @WaitFrame
+    
+    move.b  (KeyLeds), d0               ; Get flags for keyboard events
+    move.b  (KeyMods), d7
+    move.b  d7, d6
+    move.b  d7, d5
+    and.b   #$03, d7
+    sne.b   d7
+    and.w   #$01, d7
+    and.b   #$0C, d6
+    sne.b   d6
+    and.w   #$02, d6
+    and.b   #$30, d5
+    sne.b   d5
+    and.w   #$04, d5
+    or.w    d7, d0
+    or.w    d6, d0
+    or.w    d5, d0
+    lsl.w   #8, d0
+    
+    move.w  d0, d6                      ; Pending ASCII input?
+    move.b  (NextAscii), d6
+    beq.s   @NoAscii
+    clr.b   (NextAscii)
+    move.b  (AsciiId), d7
+    cmp.b   #$FF, d7
+    beq.s   @NoAscii
+    movem.l (sp)+, d0-d4/a0-a3
+    rts
+@NoAscii:
+    
+    moveq   #0, d7                      ; Check if there's pending keyboard
+    move.b  (KeyBufStart), d7           ; input to handle
+    lea     (KeyBuf), a6
+    move.b  (a6,d7.w), d6
+    beq     @NoKeyInput
+    move.b  1(a6,d7.w), d5
+    clr.w   (a6,d7.w)
+    addq.b  #2, d7
+    and.b   #$07*2, d7
+    move.b  d7, (KeyBufStart)
+    
+    subq.b  #1, d6                      ; Key down?
+    bne.s   @NoKeyDown
+    moveq   #0, d6
+    move.b  d5, d6
+    lea     (KeyToAscii), a6
+    btst.l  #10, d0
+    beq.s   @NoShiftedAscii
+    lea     $100(a6), a6
+@NoShiftedAscii:
+    btst.l  #14, d0
+    beq.s   @NoCapsLock
+    cmp.b   #'A', d6
+    blo.s   @NoCapsLock
+    cmp.b   #'z', d6
+    bhi.s   @NoCapsLock
+    cmp.b   #'Z', d6
+    bls.s   @CapsLock
+    cmp.b   #'a', d6
+    blo.s   @NoCapsLock
+@CapsLock:
+    eor.b   #$20, d6
+@NoCapsLock:
+    move.b  (a6,d6.w), (NextAscii)
+    move.b  (KeyDownId), d7
+    cmp.b   #$FF, d7
+    beq.s   @NoKeyInput
+    move.w  d0, d6
+    move.b  d5, d6
+    movem.l (sp)+, d0-d4/a0-a3
+    rts
+@NoKeyDown:
+    
+    subq.b  #1, d6                      ; Key up?
+    bne.s   @NoKeyUp
+    move.b  (KeyUpId), d7
+    cmp.b   #$FF, d7
+    beq.s   @NoKeyInput
+    move.w  d0, d6
+    move.b  d5, d6
+    movem.l (sp)+, d0-d4/a0-a3
+    rts
+@NoKeyUp:
+@NoKeyInput:
+    
+    bsr     CheckHover                  ; Check if a widget is being hovered
+    move.l  a6, (Hovering)
+    
+    btst.b  #0, (CursorClick)           ; Start interaction?
+    beq.s   @NoInteractStart
+    tst.l   (Interacting)
+    bne.s   @NoInteractStart
+    move.l  (Hovering), (Interacting)
+@NoInteractStart:
+    
+    btst.b  #0, (CursorHeld)            ; Stop interaction?
+    bne.s   @NoInteractStop
+    move.l  (Interacting), d2
+    bne     @Trigger
+@NoInteractStop:
+    
+    moveq   #CURSOR_ARROW, d0           ; Which cursor to show?
+    move.l  (Hovering), d1
+    move.l  d1, a6
+    beq.s   @NoHand
+    move.b  WIDGET_CURSOR1(a6), d7
+    move.l  (Interacting), d2
+    beq.s   @YesHand
+    cmp.l   d2, d1
+    bne.s   @NoHand
+    move.b  WIDGET_CURSOR2(a6), d7
+@YesHand:
+    move.b  d7, d0
+@NoHand:
+    move.b  d0, (CursorShape)
+    
+    move.l  (Interacting), d7           ; Check if the widget retriggers
+    beq.s   @NoConstantTrigger          ; on every frame
+    cmp.l   (Hovering), d7
+    bne.s   @NoConstantTrigger
+    btst.b  #WFLAG_HOLD, WIDGET_FLAGS(a6)
+    beq.s   @NoConstantTrigger
+    bra     @ConstantTrigger
+@NoConstantTrigger:
+    
+    move.l  (Interacting), d7           ; Constantly refresh the widget we're
+    beq.s   @NoRefreshNeeded            ; interacting with
+    move.l  d7, a6
+    bsr     DrawWidget
+@NoRefreshNeeded:
+    
+    tst.b   (TimerSet)                  ; Check if the timer needs to fire
+    beq.s   @NoTimer
+    subq.w  #1, (TimerCount)
+    bne.s   @NoTimer
+    move.w  (TimerLen), (TimerCount)
+    moveq   #0, d7
+    move.b  (TimerId), d7
+    lea     (GuiStates), a6
+    move.b  (a6,d7.w), d6
+    movem.l (sp)+, d0-d4/a0-a3
+    rts
+@NoTimer:
+    
+    bra     @MainLoop
+
+;----------------------------------------------------------------------------
+
+@Trigger:
+    clr.l   (Interacting)               ; Done interacting with it
+    
+    move.l  d2, a0                      ; Redraw widget
+    move.l  a0, a6
+    bsr     DrawWidget
+    
+    cmp.l   (Hovering), d2              ; Did the user cancel the action?
+    bne     @NoInteractStop
+    
+    moveq   #0, d6                      ; Let program know that
+                                        ; interaction is over
+@Return:
+    move.l  a0, a6                      ; Perform the widget's behavior
+    move.w  d6, -(sp)
+    bsr     TriggerWidget
+    move.w  (sp)+, d6
+    
+    moveq   #0, d7                      ; Get event action ID and state
+    move.b  WIDGET_ID(a0), d7           ; DO NOT TOUCH THE HIGH BYTE, it's
+    lea     (GuiStates), a6             ; how you can tell when a hold event
+    move.b  (a6,d7.w), d6               ; is over or not
+    
+    movem.l (sp)+, d0-d4/a0-a3          ; Restore registers
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@ConstantTrigger:
+    move.l  d7, a0                      ; Redraw widget
+    move.l  a0, a6
+    bsr     DrawWidget
+    
+    moveq   #-1, d6                     ; Let program know that interaction
+                                        ; is over still ongoing
+    
+    bra     @Return                     ; Let the widget trigger as usual
+                                        ; (we skip the part that stops
+                                        ; interaction with it)
+
+;****************************************************************************
+; TriggerWidget
+; Triggers a widget's behavior.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to widget
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+TriggerWidget:
+    move.b  WIDGET_TYPE(a6), d7         ; Call the handler for widget type
+    and.w   #$FF, d7
+    lsl.w   #2, d7
+    lea     @Handlers(pc), a5
+    move.l  (a5,d7.w), a5
+    move.l  a6, -(sp)
+    jsr     (a5)
+    move.l  (sp)+, a6
+    
+    move.b  WIDGET_ID(a6), d7           ; Redraw any affected widgets
+    bra     DrawWidgetsById
+
+;----------------------------------------------------------------------------
+
+@Handlers:
+    dc.l    @Dummy
+    dc.l    @Dummy                      ; WTYPE_FIRE
+    dc.l    TriggerWidget_Set           ; WTYPE_SET
+    dc.l    TriggerWidget_Toggle        ; WTYPE_TOGGLE
+    dc.l    TriggerWidget_HScroll       ; WTYPE_HSCROLL
+    dc.l    TriggerWidget_VScroll       ; WTYPE_VSCROLL
+    dc.l    TriggerWidget_Quit          ; WTYPE_QUIT
+
+@Dummy:
+    rts
+
+;----------------------------------------------------------------------------
+; WTYPE_SET
+;----------------------------------------------------------------------------
+
+TriggerWidget_Set:
+    move.b  WIDGET_ID(a6), d7           ; Just set state to our value
+    move.b  WIDGET_VALUE(a6), d6
+    bra     SetGuiState
+
+;----------------------------------------------------------------------------
+; WTYPE_TOGGLE
+;----------------------------------------------------------------------------
+
+TriggerWidget_Toggle:
+    moveq   #0, d7                      ; Get pointer to state
+    move.b  WIDGET_ID(a6), d7
+    lea     (GuiStates), a5
+    lea     (a5,d7.w), a5
+    
+    move.b  (a5), d7                    ; Toggle between 0 and 1
+    seq.b   d7
+    and.b   #$01, d7
+    move.b  d7, (a5)
+    
+    rts                                 ; End of handler
+
+;----------------------------------------------------------------------------
+; WTYPE_HSCROLL, WTYPE_VSCROLL
+;----------------------------------------------------------------------------
+
+TriggerWidget_HScroll:
+    move.w  (CursorX), d7
+    move.b  WIDGET_X1(a6), d6
+    move.b  WIDGET_X2(a6), d5
+    bra.s   TriggerWidget_Scroll
+
+TriggerWidget_VScroll:
+    move.w  (CursorY), d7
+    move.b  WIDGET_Y1(a6), d6
+    move.b  WIDGET_Y2(a6), d5
+
+;----------------------------------------------------------------------------
+    
+TriggerWidget_Scroll:
+    subq.w  #8, d7                      ; Offset the cursor position to make
+                                        ; the slider centered on it
+    
+    ext.w   d6                          ; Convert hitbox into pixels
+    ext.w   d5
+    subq.b  #2, d5
+    lsl.w   #3, d6
+    lsl.w   #3, d5
+    
+    cmp.w   d6, d7                      ; Clamp cursor position to the valid
+    bge.s   @MinOk                      ; range we can handle
+    move.w  d6, d7
+@MinOk:
+    cmp.w   d5, d7
+    ble.s   @MaxOk
+    move.w  d5, d7
+@MaxOk:
+    
+    sub.w   d6, d7                      ; Store new state
+    moveq   #0, d5
+    move.b  WIDGET_ID(a6), d5
+    lea     (GuiStates), a5
+    move.b  d7, (a5,d5.w)
+    
+    rts                                 ; End of handler
+
+;----------------------------------------------------------------------------
+; WTYPE_QUIT
+;----------------------------------------------------------------------------
+
+TriggerWidget_Quit:
+    bra     QuitProcess
+
+;****************************************************************************
+; CheckHover
+; Checks over which widget the cursor is.
+;----------------------------------------------------------------------------
+; output a6.l ... Pointer to widget (0 if none)
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+CheckHover:
+    move.l  (CursorX), d0               ; Get cursor position
+    move.w  d0, d1
+    swap    d0
+    
+    cmp.w   #200, d1                    ; No widgets in this area
+    blo.s   @HoverOk                    ; (hack for the taskbar)
+    cmp.w   #220, d1
+    bhs.s   @HoverNotOk
+    cmp.w   #204, d1
+    bhs.s   @HoverOk
+@HoverNotOk:
+    move.w  #0, a6
+    rts
+@HoverOk:
+    
+    lea     (Widgets), a6               ; Check all widgets
+    moveq   #MAX_WIDGETS-1, d2
+@Loop:
+    tst.b   WIDGET_TYPE(a6)             ; Does this widget exist?
+    beq.s   @Skip
+    
+    moveq   #0, d7                      ; Check left boundary
+    move.b  WIDGET_X1(a6), d7
+    lsl.w   #3, d7
+    cmp.w   d7, d0
+    blt.s   @Skip
+    
+    moveq   #0, d7                      ; Check right boundary
+    move.b  WIDGET_X2(a6), d7
+    lsl.w   #3, d7
+    cmp.w   d7, d0
+    bge.s   @Skip
+    
+    moveq   #0, d7                      ; Check top boundary
+    move.b  WIDGET_Y1(a6), d7
+    lsl.w   #3, d7
+    cmp.w   d7, d1
+    blt.s   @Skip
+    
+    moveq   #0, d7                      ; Check bottom boundary
+    move.b  WIDGET_Y2(a6), d7
+    lsl.w   #3, d7
+    cmp.w   d7, d1
+    bgt.s   @Skip
+    
+    rts                                 ; Hovering over this widget!
+    
+@Skip:
+    lea     WIDGET_SIZE(a6), a6         ; Try next widget
+    dbf     d2, @Loop
+    
+    move.w  #0, a6                      ; No widget benig hovered
+    rts
