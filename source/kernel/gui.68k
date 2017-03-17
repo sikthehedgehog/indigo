@@ -41,6 +41,7 @@ WTYPE_QUIT:         rs.b 1              ; Causes process to quit
                     rsreset
 
 WFLAG_HOLD:         rs.b 1              ; Hold down (i.e. continuous)
+WFLAG_DRAG:         rs.b 1              ; Keep triggering outside its area
 
 ;****************************************************************************
 ; Widget shapes

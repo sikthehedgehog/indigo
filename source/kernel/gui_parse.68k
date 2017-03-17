@@ -76,15 +76,16 @@ ParseGuiLayout:
     dc.l    ParseGuiLayout_KeyDown      ; OSUI_KeyDown
     dc.l    ParseGuiLayout_KeyUp        ; OSUI_KeyUp
     dc.l    ParseGuiLayout_Ascii        ; OSUI_Ascii
+    dc.l    ParseGuiLayout_ClickArea    ; OSUI_Clickable
 
 ;----------------------------------------------------------------------------
-; OSUI_Button
+; Generic parser for most clickable widgets
 ;----------------------------------------------------------------------------
 
-ParseGuiLayout_Button:
+ParseGuiLayout_Generic:
     move.b  #WTYPE_FIRE, WIDGET_TYPE(a5)        ; Widget behavior
     clr.b   WIDGET_FLAGS(a5)
-    move.b  #WSHAPE_ANY, WIDGET_SHAPE(a5)
+    clr.b   WIDGET_SHAPE(a5)
     move.b  #CURSOR_HAND, WIDGET_CURSOR1(a5)
     move.b  #CURSOR_HAND, WIDGET_CURSOR2(a5)
     move.b  #1, WIDGET_VALUE(a5)
@@ -100,6 +101,10 @@ ParseGuiLayout_Button:
     move.b  d7, WIDGET_X2(a5)
     move.b  d6, WIDGET_Y2(a5)
     
+    move.w  (sp)+, d5                   ; Includes graphic?
+    beq.s   @NoGfx
+    move.b  #WSHAPE_ANY, WIDGET_SHAPE(a5)
+    
     move.b  (a6)+, -(sp)                ; Get released graphic
     move.w  (sp)+, d5
     move.b  (a6)+, d5
@@ -110,11 +115,20 @@ ParseGuiLayout_Button:
     mulu.w  d6, d7
     add.w   d7, d5
     move.w  d5, WIDGET_GFX2(a5)
+@NoGfx:
     
     move.b  (a6)+, WIDGET_ID(a5)        ; Get widget action
     
     lea     WIDGET_SIZE(a5), a5         ; Go for next widget
     rts
+
+;----------------------------------------------------------------------------
+; OSUI_Button
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_Button:
+    move.w  #1, -(sp)
+    bra     ParseGuiLayout_Generic
 
 ;----------------------------------------------------------------------------
 ; OSUI_Select
@@ -299,3 +313,11 @@ ParseGuiLayout_KeyUp:
 ParseGuiLayout_Ascii:
     move.b  (a6)+, (AsciiId)            ; Get action ID for ASCII input
     rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+; OSUI_ClickArea
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_ClickArea:
+    move.w  #0, -(sp)
+    bra     ParseGuiLayout_Generic

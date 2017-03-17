@@ -6,8 +6,8 @@
 ;****************************************************************************
 
 Shuffle:
-    moveq   #1, d0                      ; Fill the deck with cards
-    lea     (Deck), a0
+    moveq   #1, d0                      ; Fill the stock with cards
+    lea     (Stock), a0
     moveq   #52-1, d7
 @Fill:
     move.b  d0, (a0)+
@@ -15,7 +15,7 @@ Shuffle:
     dbf     d7, @Fill
     
     moveq   #52-1, d0                   ; Shuffle the cards!
-    lea     (Deck), a0                  ; We just go through the whole deck
+    lea     (Stock), a0                 ; We just go through the whole stock
     move.l  a0, a1                      ; and swap each card with another
 @Loop:                                  ; random one (so literally shuffling)
     syscall OS_RAND
@@ -28,7 +28,7 @@ Shuffle:
     move.b  d2, (a0)+
     dbf     d0, @Loop
     
-    lea     (Deck+52), a0               ; Distribute the cards among
+    lea     (Stock+52), a0              ; Distribute the cards among
     lea     (Piles), a1                 ; the piles
     moveq   #1-1, d0
     move.b  #$80, d1
@@ -55,7 +55,7 @@ Shuffle:
     lea     33(a6), a6
     dbf     d7, @UnflipLoop
     
-    lea     (DeckLen), a6               ; Set up the deck's and piles'
+    lea     (StockLen), a6              ; Set up the stock's and piles'
     move.b  #24, (a6)+                  ; card counts
     move.b  #1, (a6)+
     move.b  #2, (a6)+
@@ -95,7 +95,7 @@ DrawTable:
     syscall OS_FILLFRAME
     dbf     d0, @DrawFreeSlots
     
-    bsr     DrawDeck                    ; Draw the deck
+    bsr     DrawStock                   ; Draw the stock
     
     moveq   #7-1, d7                    ; Draw all piles
 @DrawPiles:
@@ -160,13 +160,13 @@ DrawCard:
     rts                                 ; End of subroutine
 
 ;****************************************************************************
-; DrawDeck
-; Draws the deck.
+; DrawStock
+; Draws the stock.
 ;----------------------------------------------------------------------------
 ; breaks: all
 ;****************************************************************************
 
-DrawDeck:
+DrawStock:
     moveq   #2, d7                      ; Remove leftovers
     moveq   #1, d6
     moveq   #0, d5
@@ -174,19 +174,19 @@ DrawDeck:
     move.w  #6, a5
     syscall OS_ERASETILES
     
-    tst.b   (DeckLen)                   ; Check if there are unturned
-    beq.s   @NoDeck                     ; cards in the deck
+    tst.b   (StockLen)                  ; Check if there are unturned
+    beq.s   @NoUnturned                 ; cards in the stock
     
     moveq   #2, d7                      ; Draw them if so
     moveq   #1, d6
     moveq   #-1, d5
     bsr     DrawCard
-@NoDeck:
+@NoUnturned:
     
-    moveq   #7, d7                      ; Draw the topmost unturned card
-    moveq   #1, d6
-    moveq   #-1, d5
-    bsr     DrawCard
+;    moveq   #7, d7                      ; Draw the topmost unturned card
+;    moveq   #1, d6
+;    moveq   #-1, d5
+;    bsr     DrawCard
     
     rts                                 ; End of subroutine
 

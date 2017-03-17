@@ -174,8 +174,11 @@ RunGuiLoop:
     move.l  a0, a6
     bsr     DrawWidget
     
+    btst.b  #WFLAG_DRAG, WIDGET_FLAGS(a0) ; Draggable action?
+    bne.s   @HoverNotNeeded
     cmp.l   (Hovering), d2              ; Did the user cancel the action?
     bne     @NoInteractStop
+@HoverNotNeeded:
     
     moveq   #0, d6                      ; Let program know that
                                         ; interaction is over
@@ -201,7 +204,7 @@ RunGuiLoop:
     bsr     DrawWidget
     
     moveq   #-1, d6                     ; Let program know that interaction
-                                        ; is over still ongoing
+                                        ; is still ongoing
     
     bra     @Return                     ; Let the widget trigger as usual
                                         ; (we skip the part that stops
