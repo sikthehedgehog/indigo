@@ -3,6 +3,7 @@
 ;****************************************************************************
 
                     rsreset
+ID_FILELIST:        rs.b 1              ; File list
 ID_SCROLL:          rs.b 1              ; Scrollbar
 ID_SCROLL_U:        rs.b 1                ; ↑ button
 ID_SCROLL_D:        rs.b 1                ; ↓ button
@@ -17,6 +18,7 @@ SCROLL_LEN: equ 14
 SCROLL_MAX: equ SCROLL_LEN*8
 
 Layout:
+    OSUI_Clickable ID_FILELIST, FLIST_X-1,FLIST_Y, FLIST_W+1,FLIST_H
     OSUI_VScroll ID_SCROLL, 27,6,SCROLL_LEN, VramScroller,VramScrollBg
     OSUI_Button ID_SCROLL_U, 27,4, 2,2, VramUp
     OSUI_Button ID_SCROLL_D, 27,22, 2,2, VramDown
@@ -65,6 +67,7 @@ VramDown:           rs.b 4*2            ; Scrollbar ↓ button
 VramScroller:       rs.b 4              ; Scrollbar knob
 VramScrollBg:       rs.b 6              ; Scrollbar bar
 VramFrame:          rs.b 9              ; Frame for the lists
+VramRow:            rs.b 2              ; File list row backgrounds
 VramNameLeft:       rs.b 2              ; Left side of filename field
 VramNameRight:      rs.b 2              ; Right side of filename field
 VramParent:         rs.b 4*2            ; Parent button

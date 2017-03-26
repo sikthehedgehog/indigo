@@ -336,6 +336,8 @@ CheckHover:
     move.l  (CursorX), d0               ; Get cursor position
     move.w  d0, d1
     swap    d0
+    move.w  d0, (EventX)
+    move.w  d1, (EventY)
     
     cmp.w   #200, d1                    ; No widgets in this area
     blo.s   @HoverOk                    ; (hack for the taskbar)
@@ -376,7 +378,7 @@ CheckHover:
     move.b  WIDGET_Y2(a6), d7
     lsl.w   #3, d7
     cmp.w   d7, d1
-    bgt.s   @Skip
+    bge.s   @Skip
     
     rts                                 ; Hovering over this widget!
     

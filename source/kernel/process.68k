@@ -48,6 +48,8 @@ LoadProcess:
     bsr     SetBgColor
     
     bsr     ResetGuiStates              ; Reset all GUI states
+    clr.w   (EventX)                    ; Reset last "event" state
+    clr.w   (EventY)
     clr.b   (NextAscii)                 ; No text entered yet
     
     move.l  (sp)+, a5                   ; Check if the program exists

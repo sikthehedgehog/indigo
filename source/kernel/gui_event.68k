@@ -1,0 +1,22 @@
+;****************************************************************************
+; GetEventXY
+; Gets the cursor state when last event happened.
+;----------------------------------------------------------------------------
+; output d7.w ... X coordinate (in tiles)
+; output d6.w ... Y coordinate (in tiles)
+; output a6.w ... X coordinate (in pixels)
+; output a5.w ... Y coordinate (in pixels)
+;----------------------------------------------------------------------------
+; breaks: d5, a4
+;****************************************************************************
+
+GetEventXY:
+    move.w  (EventX), d7                ; Get where last event happened
+    move.w  (EventY), d6
+    
+    move.w  d7, a6                      ; a6-a5: measured in pixels
+    move.w  d6, a5
+    lsr.w   #3, d7                      ; d7-d6: measured in tiles
+    lsr.w   #3, d6
+    
+    rts                                 ; End of subroutine

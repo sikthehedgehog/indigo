@@ -43,3 +43,4 @@
     jmp     GetSoundVolume              ; OS_GETVOLUME
     jmp     SetSoundVolume              ; OS_SETVOLUME
     jmp     PutTile                     ; OS_PUTTILE
+    jmp     GetEventXY                  ; OS_GETEVENTXY

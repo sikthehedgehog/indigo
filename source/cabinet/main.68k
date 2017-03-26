@@ -84,7 +84,8 @@ EntryPoint:
     bsr     AddFileEntry
     dbf     d0, @TestLoop
     
-    bsr     DrawInitialList
+    bsr     DeselectAll
+    bsr     RefreshList
     bra.s   MainLoop
 
 @Test:              dc.b 'File Cabinet is not ready yet', 0
@@ -99,5 +100,25 @@ EntryPoint:
 ;----------------------------------------------------------------------------
 
 MainLoop:
-    syscall OS_GUILOOP
+    syscall OS_GUILOOP                  ; Let the GUI run
+    
+    and.w   #$FF, d7                    ; Run the handler for this event
+    lsl.w   #2, d7
+    lea     @Handlers(pc), a6
+    lea     (a6,d7.w), a6
+    jsr     (a6)
+    
     bra.s   MainLoop
+
+;----------------------------------------------------------------------------
+
+@Handlers:
+    bra.w   SelectFile                  ; ID_FILELIST
+    bra.w   @Dummy                      ; ID_SCROLL
+    bra.w   @Dummy                      ; ID_SCROLL_U
+    bra.w   @Dummy                      ; ID_SCROLL_D
+    bra.w   @Dummy                      ; ID_PARENT
+    bra.w   @Dummy                      ; ID_OPEN
+
+@Dummy:
+    rts

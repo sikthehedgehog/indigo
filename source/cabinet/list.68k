@@ -73,38 +73,17 @@ AddFileEntry:
     rts                                 ; End of subroutine
 
 ;****************************************************************************
-; DrawInitialList
-; Draws the initial portion of the list.
+; RefreshList
+; Redraws the whole file list.
 ;----------------------------------------------------------------------------
 ; breaks: all
 ;****************************************************************************
 
-DrawInitialList:
+RefreshList:
     move.w  #VramFileList, d7           ; Clear the list tiles
     move.w  #FLIST_W*32, d6
     moveq   #0, d5
     syscall OS_FILLPATTERNS
-    
-    moveq   #FLIST_X-1, d7              ; Remove leftovers
-    moveq   #0, d6
-    moveq   #1, d5
-    move.w  #FLIST_W, a6
-    move.w  #32, a5
-    syscall OS_ERASETILES
-    
-    moveq   #FLIST_X, d7                ; Draw the beginning
-    moveq   #0, d6                      ; of the list
-    moveq   #1, d5
-    move.w  #FLIST_W, a6
-    move.w  #FLIST_H, a5
-    move.w  #VramFileList+$8000, a4
-    syscall OS_DRAWTILES
-    
-    moveq   #0, d7                      ; Set scrolling accordingly
-    moveq   #0, d6
-    move.w  d7, a6
-    move.w  #-8*FLIST_Y, a5
-    syscall OS_SETSCROLL
     
     clr.w   (ScrollPos)
     clr.w   (ScrollDelay)
@@ -132,23 +111,49 @@ DrawInitialList:
     moveq   #0, d0                      ; Render all filenames
 @RenderFiles:
     move.w  d0, d7
-    bsr     DrawFileEntry
+    bsr     DrawFileEntryText
     addq.w  #1, d0
     dbf     d1, @RenderFiles
     
 @NoFiles:
+;    rts                                 ; End of subroutine
+
+;****************************************************************************
+; RefreshListTiles
+; Redraws the whole file list tiles (*without* rerendering the text).
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+RefreshListTiles:
+;    moveq   #FLIST_X-1, d7              ; Remove leftovers
+;    moveq   #0, d6
+;    moveq   #1, d5
+;    move.w  #FLIST_W, a6
+;    move.w  #32, a5
+;    syscall OS_ERASETILES
+    
+    moveq   #32-1, d0                   ; Draw all entries
+@Loop:
+    move.w  d0, d7
+    bsr     DrawFileEntryTiles
+    dbf     d0, @Loop
+    
     rts                                 ; End of subroutine
 
 ;****************************************************************************
-; DrawFileEntry
-; Draws a single file entry.
+; DrawFileEntryText
+; Draws the text of a single file entry.
 ;----------------------------------------------------------------------------
 ; input d7.w ... Entry from the cache (0..31)
 ;----------------------------------------------------------------------------
 ; breaks: d5-d7, a4-a6
 ;****************************************************************************
 
-DrawFileEntry:
+DrawFileEntryText:
+    move.w  d7, -(sp)                   ; So we can later chain with
+                                        ; DrawFileEntryTiles
+    
     and.w   #$1F, d7                    ; Get pointer to entry
     move.w  d7, d6
     add.w   d6, d6
@@ -157,24 +162,11 @@ DrawFileEntry:
     or.l    #$FFFF0000, d6
     move.l  d6, a6
     
-    addq.w  #4, a6                      ; Skip linked list pointers
-    
-    moveq   #0, d6                      ; Get file type
-    move.b  (a6)+, d6
-    add.w   #VramIcons+$8000, d6
-    
-    move.l  a6, -(sp)                   ; Draw type icon
-    move.w  d6, a6
-    move.w  d7, d6
-    moveq   #FLIST_X-1, d7
-    moveq   #1, d5
-    move.w  d6, -(sp)
-    syscall OS_PUTTILE
-    move.w  (sp)+, d6
-    move.l  (sp)+, a6
+    addq.w  #5, a6                      ; Skip linked list pointers and icon
     
     lea     -$20*FLIST_W(sp), sp        ; Render the filename
     move.l  sp, a5
+    move.w  d7, d6
     moveq   #FLIST_W, d7
     move.w  d6, -(sp)
     syscall OS_RENDERTEXT
@@ -187,5 +179,151 @@ DrawFileEntry:
     moveq   #FLIST_W, d6
     syscall OS_LOADPATTERNS
     lea     $20*FLIST_W(sp), sp
+    
+    move.w  (sp)+, d7                   ; Go to DrawFileEntryTiles
+
+;****************************************************************************
+; DrawFileEntryTiles
+; Draws the tiles for a file entry (*without* rerendering the text). Useful
+; when the entry just moved or got (de)selected, since text is slow to render
+; and it's already in VRAM (so better to reuse it).
+;----------------------------------------------------------------------------
+; input d7.w ... Entry from the cache (0..31)
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+DrawFileEntryTiles:
+    move.w  d7, d6                      ; Get pointer to entry
+    and.w   #$1F, d6
+    add.w   d6, d6
+    moveq   #-1, d5
+    lea     (FileListPtr), a6
+    move.w  (a6,d6.w), d5
+    move.l  d5, a6
+    addq.w  #4, a6
+    
+    move.w  d7, d5                      ; Check if this entry is selected
+    moveq   #-1, d6
+    move.w  (FileListNext), d6
+    move.l  d6, a5
+    move.w  d7, d6
+    add.w   (ScrollPos), d6
+    move.w  d6, d5
+    and.w   #7, d5
+    lsr.w   #3, d6
+    btst.b  d5, (a5,d6.w)
+    sne.b   d5
+    
+    and.w   #$1F, d7                    ; Get vertical position on screen
+    sub.w   (ScrollPos), d7             ; Skip any entries that would end
+    cmp.w   #FLIST_H, d7                ; up off-screen
+    bhs     @Skip
+    
+    moveq   #0, d6                      ; Get icon
+    move.b  (a6)+, d6
+    add.w   #$8000+VramIcons, d6
+    tst.b   d5
+    beq.s   @NoHilitIcon
+    add.w   #$2000, d6
+@NoHilitIcon:
+    
+    move.w  d7, -(sp)                   ; Draw icon
+    move.w  d5, -(sp)
+    move.w  d6, a6
+    move.w  d7, d6
+    and.w   #$1F, d6
+    moveq   #FLIST_X-1, d7
+    add.w   #FLIST_Y, d6
+    moveq   #1, d5
+    syscall OS_PUTTILE
+    move.w  (sp)+, d5
+    move.w  (sp)+, d7
+    
+    and.w   #$1F, d7                    ; Draw filename
+    move.w  d7, d6
+    mulu.w  #FLIST_W, d7
+    add.w   #$8000+VramFileList, d7
+    tst.b   d5
+    beq.s   @NoHilitName
+    add.w   #$2000, d7
+@NoHilitName:
+    move.w  d7, a4
+    moveq   #FLIST_X, d7
+    move.w  #FLIST_W, a6
+    move.w  d6, -(sp)
+    move.w  d5, -(sp)
+    and.w   #$1F, d6
+    add.w   #FLIST_Y, d6
+    moveq   #1, d5
+    move.w  d5, a5
+    syscall OS_DRAWTILES
+    move.w  (sp)+, d5
+    move.w  (sp)+, d6
+    
+    move.w  #VramRow, d7                ; Draw background
+    and.w   #1, d5
+    add.w   d5, d7
+    move.w  d7, a4
+    moveq   #FLIST_X-1, d7
+    add.w   #FLIST_Y, d6
+    move.w  #FLIST_W, a6
+    move.w  #1, a5
+    moveq   #0, d5
+    syscall OS_FILLTILES
+    
+@Skip:
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; SelectFile
+; Selects a file entry from the list.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+SelectFile:
+    bsr     DeselectAll                 ; Deselect all entries first
+    
+    syscall OS_GETEVENTXY               ; Get which row was clicked
+    subq.w  #FLIST_Y, d6
+    add.w   (ScrollPos), d6
+    
+    move.w  d6, d5                      ; Mark that entry as selected
+    moveq   #-1, d7
+    move.w  d6, d7
+    lsr.w   #3, d7
+    and.w   #7, d6
+    add.w   (FileListNext), d7
+    move.l  d7, a6
+    bset.b  d6, (a6)
+    
+    bsr     RefreshListTiles            ; Redraw list
+    
+    syscall OS_BEEP                     ; For now
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; DeselectAll
+; Marks all files as not selected. Also used to initialize the selection
+; list (after the list has just been built).
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+DeselectAll:
+    move.w  (NumFiles), d7              ; Check how many bytes to clear
+    or.w    #$1F, d7
+    addq.w  #1, d7
+    lsr.w   #5, d7
+    
+    moveq   #-1, d6                     ; Mark all entries as unselected
+    move.w  (FileListNext), d6
+    move.l  d6, a6
+    moveq   #0, d6
+    subq.w  #1, d7
+@Loop:
+    move.l  d6, (a6)+
+    dbf     d7, @Loop
     
     rts                                 ; End of subroutine
