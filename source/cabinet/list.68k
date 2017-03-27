@@ -432,6 +432,10 @@ ScrollDownButton:
     bra     ScrollDown
 
 ;****************************************************************************
+; UpdateScroller
+; Updates the position of the scrollbar cursor to match the file list.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
 ;****************************************************************************
 
 UpdateScroller:
