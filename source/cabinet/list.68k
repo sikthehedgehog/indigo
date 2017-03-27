@@ -80,16 +80,7 @@ AddFileEntry:
 ;****************************************************************************
 
 RefreshList:
-    move.w  #VramFileList, d7           ; Clear the list tiles
-    move.w  #FLIST_W*32, d6
-    moveq   #0, d5
-    syscall OS_FILLPATTERNS
-    
-    clr.w   (ScrollPos)
-    clr.w   (ScrollDelay)
-    moveq   #ID_SCROLL, d7
-    moveq   #0, d6
-    syscall OS_SETSTATE
+    clr.w   (ScrollPos)                 ; Reset scroll position
     
     lea     (FileListPtr), a0           ; Cache the offsets to the entries
     lea     (FileList), a1              ; at the beginning of the list
@@ -116,7 +107,7 @@ RefreshList:
     dbf     d1, @RenderFiles
     
 @NoFiles:
-;    rts                                 ; End of subroutine
+    rts                                 ; End of subroutine
 
 ;****************************************************************************
 ; RefreshListTiles
@@ -126,13 +117,6 @@ RefreshList:
 ;****************************************************************************
 
 RefreshListTiles:
-;    moveq   #FLIST_X-1, d7              ; Remove leftovers
-;    moveq   #0, d6
-;    moveq   #1, d5
-;    move.w  #FLIST_W, a6
-;    move.w  #32, a5
-;    syscall OS_ERASETILES
-    
     moveq   #32-1, d0                   ; Draw all entries
 @Loop:
     move.w  d0, d7
@@ -194,6 +178,13 @@ DrawFileEntryText:
 ;****************************************************************************
 
 DrawFileEntryTiles:
+    move.w  d7, d6                      ; Only bother drawing the entry
+    sub.w   (ScrollPos), d6             ; if it's visible on the list
+    cmp.w   #FLIST_H, d6
+    blo.s   @Visible
+    rts
+@Visible:
+    
     move.w  d7, d6                      ; Get pointer to entry
     and.w   #$1F, d6
     add.w   d6, d6
@@ -208,17 +199,14 @@ DrawFileEntryTiles:
     move.w  (FileListNext), d6
     move.l  d6, a5
     move.w  d7, d6
-    add.w   (ScrollPos), d6
     move.w  d6, d5
     and.w   #7, d5
     lsr.w   #3, d6
     btst.b  d5, (a5,d6.w)
     sne.b   d5
     
-    and.w   #$1F, d7                    ; Get vertical position on screen
-    sub.w   (ScrollPos), d7             ; Skip any entries that would end
-    cmp.w   #FLIST_H, d7                ; up off-screen
-    bhs     @Skip
+    sub.w   (ScrollPos), d7
+    and.w   #$1F, d7
     
     moveq   #0, d6                      ; Get icon
     move.b  (a6)+, d6
@@ -232,7 +220,6 @@ DrawFileEntryTiles:
     move.w  d5, -(sp)
     move.w  d6, a6
     move.w  d7, d6
-    and.w   #$1F, d6
     moveq   #FLIST_X-1, d7
     add.w   #FLIST_Y, d6
     moveq   #1, d5
@@ -240,8 +227,10 @@ DrawFileEntryTiles:
     move.w  (sp)+, d5
     move.w  (sp)+, d7
     
-    and.w   #$1F, d7                    ; Draw filename
-    move.w  d7, d6
+    move.w  d7, d6                      ; Draw filename
+    add.w   #FLIST_Y, d6
+    add.w   (ScrollPos), d7
+    and.w   #$1F, d7
     mulu.w  #FLIST_W, d7
     add.w   #$8000+VramFileList, d7
     tst.b   d5
@@ -253,8 +242,6 @@ DrawFileEntryTiles:
     move.w  #FLIST_W, a6
     move.w  d6, -(sp)
     move.w  d5, -(sp)
-    and.w   #$1F, d6
-    add.w   #FLIST_Y, d6
     moveq   #1, d5
     move.w  d5, a5
     syscall OS_DRAWTILES
@@ -266,7 +253,6 @@ DrawFileEntryTiles:
     add.w   d5, d7
     move.w  d7, a4
     moveq   #FLIST_X-1, d7
-    add.w   #FLIST_Y, d6
     move.w  #FLIST_W, a6
     move.w  #1, a5
     moveq   #0, d5
@@ -325,5 +311,146 @@ DeselectAll:
 @Loop:
     move.l  d6, (a6)+
     dbf     d7, @Loop
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; CalcMaxScroll
+; Determines the maximum scrolling position
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+CalcMaxScroll:
+    move.w  (NumFiles), d7              ; Determine last scrolling row
+    sub.w   #FLIST_H, d7
+    bcc.s   @NoUnderflow                ; Negative? Not enough files to
+    moveq   #0, d7                      ; scroll at all then
+@NoUnderflow:
+    
+    move.w  d7, (ScrollMax)             ; Store max scroll
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; ScrollUp
+; Scrolls up the file list by 1 row.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ScrollUp:
+    move.w  (ScrollPos), d6             ; Check if we can scroll up
+    bne.s   @ScrollOk
+    rts
+@ScrollOk:
+    
+    subq.w  #1, d6                      ; Scroll up 1 row
+    move.w  d6, (ScrollPos)
+    
+    add.w   d6, d6                      ; Cache the pointer to the entry
+    lea     (FileListPtr), a6           ; that just scrolled in
+    moveq   #-1, d7
+    move.w  (a6,d6.w), d7
+    move.l  d7, a5
+    subq.w  #2, d6
+    and.w   #$1F<<1, d6
+    move.w  (a5), (a6,d6.w)
+    
+    lsr.w   #1, d6                      ; Render the text for new entry
+    move.w  d6, d7
+    bsr     DrawFileEntryText
+    
+    bsr     RefreshListTiles            ; Redraw list
+    bra     UpdateScroller              ; Update scroller position
+
+;****************************************************************************
+; ScrollDown
+; Scrolls down the file list by 1 row.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ScrollDown:
+    move.w  (ScrollPos), d6             ; Can we scroll down?
+    cmp.w   (ScrollMax), d6
+    blo.s   @ScrollOk
+    rts
+@ScrollOk:
+    
+    addq.w  #1, d6                      ; Scroll down 1 row
+    move.w  d6, (ScrollPos)
+    
+    add.w   #FLIST_H-2, d6              ; Cache the pointer to the entry
+    add.w   d6, d6                      ; that just scrolled in
+    lea     (FileListPtr), a6
+    moveq   #-1, d7
+    move.w  (a6,d6.w), d7
+    move.l  d7, a5
+    addq.w  #2, d6
+    and.w   #$1F<<1, d6
+    move.w  2(a5), (a6,d6.w)
+    
+    lsr.w   #1, d6                      ; Render the text for new entry
+    move.w  d6, d7
+    bsr     DrawFileEntryText
+    
+    bsr     RefreshListTiles            ; Redraw list
+    bra     UpdateScroller              ; Update scroller position
+
+;****************************************************************************
+; ScrollUpButton
+; Code for the scroll down button.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ScrollUpButton:
+    tst.b   (ScrollDelay)               ; Don't scroll too fast!
+    beq.s   @DoScroll
+    subq.b  #1, (ScrollDelay)
+    rts
+@DoScroll:
+    
+    move.b  #3, (ScrollDelay)           ; OK scroll then
+    bra     ScrollUp
+
+;****************************************************************************
+; ScrollDownButton
+; Code for the scroll down button.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ScrollDownButton:
+    tst.b   (ScrollDelay)               ; Don't scroll too fast!
+    beq.s   @DoScroll
+    subq.b  #1, (ScrollDelay)
+    rts
+@DoScroll:
+    
+    move.b  #3, (ScrollDelay)           ; OK scroll then
+    bra     ScrollDown
+
+;****************************************************************************
+;****************************************************************************
+
+UpdateScroller:
+    move.w  (ScrollMax), d7             ; Check if it can even scroll
+    beq.s   @CantScroll
+    
+    move.w  (ScrollPos), d6             ; Determine scroller position
+    mulu.w  #SCROLL_LEN*8, d6           ; in pixels
+    divu.w  d7, d6
+    moveq   #ID_SCROLL, d7
+    syscall OS_SETSTATE
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@CantScroll:
+    moveq   #ID_SCROLL, d7              ; Set scroller at the top if it
+    moveq   #0, d6                      ; can't be scrolled
+    syscall OS_SETSTATE
     
     rts                                 ; End of subroutine

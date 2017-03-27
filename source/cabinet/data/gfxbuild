@@ -40,5 +40,11 @@ input "cabinet/data/type_folder.png"
 tiles 0 0 1 1
 input "cabinet/data/type_blob.png"
 tiles 0 0 1 1
+input "cabinet/data/type_data.png"
+tiles 0 0 1 1
 input "cabinet/data/type_ixec.png"
+tiles 0 0 1 1
+input "cabinet/data/type_text.png"
+tiles 0 0 1 1
+input "cabinet/data/type_pixe.png"
 tiles 0 0 1 1

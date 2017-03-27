@@ -6,6 +6,7 @@ FileListNext:       rs.w 1              ; Offset where new entry will go
 NumFiles:           rs.w 1              ; Number of file entries
 
 ScrollPos:          rs.w 1              ; Scroll position
+ScrollMax:          rs.w 1              ; Maximum scroll position (min is 0)
 ScrollDelay:        rs.w 1              ; Delay to avoid scrolling too fast
 
 FileList:           rs.b 0              ; *Full* list of file entries

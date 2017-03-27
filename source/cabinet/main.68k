@@ -84,6 +84,7 @@ EntryPoint:
     bsr     AddFileEntry
     dbf     d0, @TestLoop
     
+    bsr     CalcMaxScroll
     bsr     DeselectAll
     bsr     RefreshList
     bra.s   MainLoop
@@ -115,8 +116,8 @@ MainLoop:
 @Handlers:
     bra.w   SelectFile                  ; ID_FILELIST
     bra.w   @Dummy                      ; ID_SCROLL
-    bra.w   @Dummy                      ; ID_SCROLL_U
-    bra.w   @Dummy                      ; ID_SCROLL_D
+    bra.w   ScrollUpButton              ; ID_SCROLL_U
+    bra.w   ScrollDownButton            ; ID_SCROLL_D
     bra.w   @Dummy                      ; ID_PARENT
     bra.w   @Dummy                      ; ID_OPEN
 
