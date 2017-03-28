@@ -1,4 +1,4 @@
-FLIST_W:            equ 22              ; Width of list in tiles
+FLIST_W:            equ 23              ; Width of list in tiles
 FLIST_H:            equ 18              ; Height of list in tiles
 FLIST_X:            equ 4               ; X coordinate of list
 FLIST_Y:            equ 5               ; Y coordinate of list
@@ -80,10 +80,20 @@ AddFileEntry:
 ;****************************************************************************
 
 RefreshList:
-    clr.w   (ScrollPos)                 ; Reset scroll position
+    moveq   #0, d0                      ; Find first entry to put in
+    lea     (FileList), a1              ; the cache
+    move.w  (ScrollPos), d7
+    beq.s   @StartAt0
+    subq.w  #1, d7
+@FindStart:
+    moveq   #-1, d1
+    move.w  2(a1), d1
+    move.l  d1, a1
+    addq.w  #2, d0
+    dbf     d7, @FindStart
+@StartAt0:
     
     lea     (FileListPtr), a0           ; Cache the offsets to the entries
-    lea     (FileList), a1              ; at the beginning of the list
     move.w  (NumFiles), d7
     beq.s   @NoFiles
     cmp.w   #FLIST_H, d7
@@ -92,21 +102,23 @@ RefreshList:
 @ShortScan:
     subq.w  #1, d7
     move.w  d7, d1
-    moveq   #-1, d0
+    moveq   #-1, d6
 @ScanFiles:
-    move.w  a1, (a0)+
-    move.w  2(a1), d0
-    move.l  d0, a1
+    and.w   #$1F<<1, d0
+    move.w  a1, (a0,d0.w)
+    addq.w  #2, d0
+    move.w  2(a1), d6
+    move.l  d6, a1
     dbf     d7, @ScanFiles
-    
-    moveq   #0, d0                      ; Render all filenames
-@RenderFiles:
-    move.w  d0, d7
-    bsr     DrawFileEntryText
-    addq.w  #1, d0
-    dbf     d1, @RenderFiles
-    
 @NoFiles:
+    
+    moveq   #32-1, d0                   ; Rerender all entries (note: those
+@RenderFiles:                           ; not on screen will get skipped)
+    moveq   #31, d7                     ; Done in an odd way so it rerenders
+    sub.w   d0, d7                      ; from top to bottom (otherwise it
+    bsr     DrawFileEntryText           ; looks weird on screen)
+    dbf     d0, @RenderFiles
+    
     rts                                 ; End of subroutine
 
 ;****************************************************************************
@@ -129,15 +141,28 @@ RefreshListTiles:
 ; DrawFileEntryText
 ; Draws the text of a single file entry.
 ;----------------------------------------------------------------------------
-; input d7.w ... Entry from the cache (0..31)
+; input d7.w ... Entry from the list
 ;----------------------------------------------------------------------------
 ; breaks: d5-d7, a4-a6
 ;****************************************************************************
 
 DrawFileEntryText:
+    move.w  d7, d6                      ; Only bother drawing the entry
+    sub.w   (ScrollPos), d6             ; if it's visible on the list
+    cmp.w   #FLIST_H, d6
+    blo.s   @Visible
+    rts
+@Visible:
+    
     move.w  d7, -(sp)                   ; So we can later chain with
                                         ; DrawFileEntryTiles
+      
+    cmp.w   (NumFiles), d7              ; Does this entry exist? (can happen
+    blo.s   @EntryExists                ; that it doesn't if the list is
+    lea     @FakeEntry(pc), a6          ; too short and the whole thing is
+    bra.s   @EntryFetched               ; getting rerendered)
     
+@EntryExists:
     and.w   #$1F, d7                    ; Get pointer to entry
     move.w  d7, d6
     add.w   d6, d6
@@ -146,6 +171,7 @@ DrawFileEntryText:
     or.l    #$FFFF0000, d6
     move.l  d6, a6
     
+@EntryFetched:
     addq.w  #5, a6                      ; Skip linked list pointers and icon
     
     lea     -$20*FLIST_W(sp), sp        ; Render the filename
@@ -165,6 +191,12 @@ DrawFileEntryText:
     lea     $20*FLIST_W(sp), sp
     
     move.w  (sp)+, d7                   ; Go to DrawFileEntryTiles
+    bra.s   DrawFileEntryTiles
+
+;----------------------------------------------------------------------------
+
+@FakeEntry:
+    dc.w    $0000,$0000,$0000
 
 ;****************************************************************************
 ; DrawFileEntryTiles
@@ -172,7 +204,7 @@ DrawFileEntryText:
 ; when the entry just moved or got (de)selected, since text is slow to render
 ; and it's already in VRAM (so better to reuse it).
 ;----------------------------------------------------------------------------
-; input d7.w ... Entry from the cache (0..31)
+; input d7.w ... Entry from the list
 ;----------------------------------------------------------------------------
 ; breaks: d5-d7, a4-a6
 ;****************************************************************************
@@ -398,6 +430,57 @@ ScrollDown:
     bra     UpdateScroller              ; Update scroller position
 
 ;****************************************************************************
+; ScrollScroller
+; Scrolls when the scroller moves.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ScrollScroller:
+    bsr     ScrollerToPos               ; Get row to scroll to
+    
+    move.w  d7, d6                      ; Check faster cases (avoid rendering
+    sub.w   (ScrollPos), d6             ; the whole list, which is slow)
+    beq.s   @NoScroll
+    cmp.w   #4, d6                      ; Using unsigned comparisons on these
+    bls.s   @FastDown                   ; two so only the -4..+4 range is
+    cmp.w   #-4, d6                     ; ever considered (and not any other
+    bhs.s   @FastUp                     ; "negative" value). Yeah, exploiting
+                                        ; integer wraparound here (that >= -4
+                                        ; is actually >= $FFFC).
+    
+    move.w  d7, (ScrollPos)             ; Scrolled too far, take the
+    bra     RefreshList                 ; slow route...
+
+;----------------------------------------------------------------------------
+
+@NoScroll:                              ; Didn't scroll at all, do nothing
+    rts
+
+;----------------------------------------------------------------------------
+
+@FastDown:                              ; Scrolled down a bit, only rerender
+    subq.w  #1, d6                      ; the rows we scrolled in
+@FastDownLoop:
+    move.w  d6, -(sp)
+    bsr     ScrollDown
+    move.w  (sp)+, d6
+    dbf     d6, @FastDownLoop
+    rts
+
+;----------------------------------------------------------------------------
+
+@FastUp:                                ; Scrolled up a bit, only rerender
+    neg.w   d6                          ; the rows we scrolled in
+    subq.w  #1, d6
+@FastUpLoop:
+    move.w  d6, -(sp)
+    bsr     ScrollUp
+    move.w  (sp)+, d6
+    dbf     d6, @FastUpLoop
+    rts
+
+;****************************************************************************
 ; ScrollUpButton
 ; Code for the scroll down button.
 ;----------------------------------------------------------------------------
@@ -430,6 +513,35 @@ ScrollDownButton:
     
     move.b  #3, (ScrollDelay)           ; OK scroll then
     bra     ScrollDown
+
+;****************************************************************************
+; ScrollerToPos
+; Gets to which row one should scroll based on the scroller position.
+;----------------------------------------------------------------------------
+; output d7.w ... Which row
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a6
+;****************************************************************************
+
+ScrollerToPos:
+    moveq   #ID_SCROLL, d7              ; Get scroller position
+    syscall OS_GETSTATE
+    
+    cmp.b   #SCROLL_LEN*8, d7           ; Ensure that the end of the scroller
+    bne.s   @NotAtEnd                   ; always goes to the last row
+    move.w  (ScrollMax), d7
+    rts
+@NotAtEnd:
+    
+    moveq   #0, d5
+    move.l  #SCROLL_LEN*8, d6
+    move.w  (ScrollMax), d5
+    divu.w  d5, d6
+    and.l   #$FFFF, d7
+    and.l   #$FFFF, d6
+    divu.w  d6, d7
+    
+    rts                                 ; End of subroutine
 
 ;****************************************************************************
 ; UpdateScroller

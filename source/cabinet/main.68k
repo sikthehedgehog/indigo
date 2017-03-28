@@ -86,7 +86,9 @@ EntryPoint:
     
     bsr     CalcMaxScroll
     bsr     DeselectAll
+    clr.w   (ScrollPos)
     bsr     RefreshList
+    
     bra.s   MainLoop
 
 @Test:              dc.b 'File Cabinet is not ready yet', 0
@@ -115,7 +117,7 @@ MainLoop:
 
 @Handlers:
     bra.w   SelectFile                  ; ID_FILELIST
-    bra.w   @Dummy                      ; ID_SCROLL
+    bra.w   ScrollScroller              ; ID_SCROLL
     bra.w   ScrollUpButton              ; ID_SCROLL_U
     bra.w   ScrollDownButton            ; ID_SCROLL_D
     bra.w   @Dummy                      ; ID_PARENT
