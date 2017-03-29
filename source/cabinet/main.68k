@@ -65,28 +65,33 @@ EntryPoint:
     
     bsr     ClearFileList
     
-    moveq   #5-1,d0
+    moveq   #15-1,d0
+    moveq   #0, d1
 @TestLoop:
-    moveq   #0, d7                      ; Test
+    move.w  d1, d7                      ; Test
     lea     @TestFile1(pc), a6
     bsr     AddFileEntry
-    moveq   #1, d7
+    move.w  d1, d7
     lea     @TestFile2(pc), a6
     bsr     AddFileEntry
-    moveq   #1, d7
+    move.w  d1, d7
     lea     @TestFile3(pc), a6
     bsr     AddFileEntry
-    moveq   #1, d7
+    move.w  d1, d7
     lea     @TestFile4(pc), a6
     bsr     AddFileEntry
-    moveq   #1, d7
+    move.w  d1, d7
     lea     @TestFile5(pc), a6
     bsr     AddFileEntry
+    addq.w  #1, d1
+    divu.w  #6, d1
+    clr.w   d1
+    swap    d1
     dbf     d0, @TestLoop
     
+    clr.w   (ScrollPos)
     bsr     CalcMaxScroll
     bsr     DeselectAll
-    clr.w   (ScrollPos)
     bsr     RefreshList
     
     bra.s   MainLoop

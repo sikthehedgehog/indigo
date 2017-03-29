@@ -85,8 +85,8 @@ RefreshList:
     move.w  (ScrollPos), d7
     beq.s   @StartAt0
     subq.w  #1, d7
-@FindStart:
     moveq   #-1, d1
+@FindStart:
     move.w  2(a1), d1
     move.l  d1, a1
     addq.w  #2, d0
@@ -101,7 +101,6 @@ RefreshList:
     moveq   #FLIST_H, d7
 @ShortScan:
     subq.w  #1, d7
-    move.w  d7, d1
     moveq   #-1, d6
 @ScanFiles:
     and.w   #$1F<<1, d0
@@ -112,11 +111,12 @@ RefreshList:
     dbf     d7, @ScanFiles
 @NoFiles:
     
-    moveq   #32-1, d0                   ; Rerender all entries (note: those
-@RenderFiles:                           ; not on screen will get skipped)
-    moveq   #31, d7                     ; Done in an odd way so it rerenders
-    sub.w   d0, d7                      ; from top to bottom (otherwise it
-    bsr     DrawFileEntryText           ; looks weird on screen)
+    moveq   #FLIST_H-1, d0              ; Rerender whole list
+    move.w  (ScrollPos), d1
+@RenderFiles:
+    move.w  d1, d7
+    addq.w  #1, d1
+    bsr     DrawFileEntryText
     dbf     d0, @RenderFiles
     
     rts                                 ; End of subroutine
@@ -129,9 +129,11 @@ RefreshList:
 ;****************************************************************************
 
 RefreshListTiles:
-    moveq   #32-1, d0                   ; Draw all entries
+    moveq   #FLIST_H-1, d0              ; Draw all entries
+    move.w  (ScrollPos), d1
 @Loop:
-    move.w  d0, d7
+    move.w  d1, d7
+    addq.w  #1, d1
     bsr     DrawFileEntryTiles
     dbf     d0, @Loop
     
@@ -141,7 +143,7 @@ RefreshListTiles:
 ; DrawFileEntryText
 ; Draws the text of a single file entry.
 ;----------------------------------------------------------------------------
-; input d7.w ... Entry from the list
+; input d7.w ... Entry ID from the *full* list
 ;----------------------------------------------------------------------------
 ; breaks: d5-d7, a4-a6
 ;****************************************************************************
@@ -167,9 +169,9 @@ DrawFileEntryText:
     move.w  d7, d6
     add.w   d6, d6
     lea     (FileListPtr), a6
-    move.w  (a6,d6.w), d6
-    or.l    #$FFFF0000, d6
-    move.l  d6, a6
+    moveq   #-1, d5
+    move.w  (a6,d6.w), d5
+    move.l  d5, a6
     
 @EntryFetched:
     addq.w  #5, a6                      ; Skip linked list pointers and icon
@@ -182,7 +184,8 @@ DrawFileEntryText:
     syscall OS_RENDERTEXT
     move.w  (sp)+, d7
     
-    mulu.w  #FLIST_W, d7                ; Get where to load the text
+    and.w   #$1F, d7                    ; Get where to load the text
+    mulu.w  #FLIST_W, d7
     add.w   #VramFileList, d7
     
     move.l  sp, a6                      ; Load it into VRAM
@@ -204,7 +207,7 @@ DrawFileEntryText:
 ; when the entry just moved or got (de)selected, since text is slow to render
 ; and it's already in VRAM (so better to reuse it).
 ;----------------------------------------------------------------------------
-; input d7.w ... Entry from the list
+; input d7.w ... Entry ID from the *full* list
 ;----------------------------------------------------------------------------
 ; breaks: d5-d7, a4-a6
 ;****************************************************************************
@@ -224,10 +227,8 @@ DrawFileEntryTiles:
     lea     (FileListPtr), a6
     move.w  (a6,d6.w), d5
     move.l  d5, a6
-    addq.w  #4, a6
     
-    move.w  d7, d5                      ; Check if this entry is selected
-    moveq   #-1, d6
+    moveq   #-1, d6                     ; Check if this entry is selected
     move.w  (FileListNext), d6
     move.l  d6, a5
     move.w  d7, d6
@@ -237,11 +238,10 @@ DrawFileEntryTiles:
     btst.b  d5, (a5,d6.w)
     sne.b   d5
     
-    sub.w   (ScrollPos), d7
-    and.w   #$1F, d7
+    sub.w   (ScrollPos), d7             ; Determine row on screen
     
     moveq   #0, d6                      ; Get icon
-    move.b  (a6)+, d6
+    move.b  4(a6), d6
     add.w   #$8000+VramIcons, d6
     tst.b   d5
     beq.s   @NoHilitIcon
@@ -354,14 +354,17 @@ DeselectAll:
 ;****************************************************************************
 
 CalcMaxScroll:
-    move.w  (NumFiles), d7              ; Determine last scrolling row
-    sub.w   #FLIST_H, d7
-    bcc.s   @NoUnderflow                ; Negative? Not enough files to
-    moveq   #0, d7                      ; scroll at all then
-@NoUnderflow:
+    move.w  (NumFiles), d7              ; Check if there's enough room to
+    cmp.w   #FLIST_H, d7                ; scroll
+    bls.s   @CantScroll
     
-    move.w  d7, (ScrollMax)             ; Store max scroll
-    rts                                 ; End of subroutine
+    sub.w   #FLIST_H, d7                ; Determine last scrolling row
+    move.w  d7, (ScrollMax)
+    rts
+    
+@CantScroll:
+    clr.w   (ScrollMax)                 ; Can't scroll, force scrolling to
+    rts                                 ; be always at 0 then
 
 ;****************************************************************************
 ; ScrollUp
@@ -380,7 +383,8 @@ ScrollUp:
     move.w  d6, (ScrollPos)
     
     add.w   d6, d6                      ; Cache the pointer to the entry
-    lea     (FileListPtr), a6           ; that just scrolled in
+    and.w   #$1F<<1, d6                 ; that just scrolled in
+    lea     (FileListPtr), a6
     moveq   #-1, d7
     move.w  (a6,d6.w), d7
     move.l  d7, a5
@@ -388,8 +392,7 @@ ScrollUp:
     and.w   #$1F<<1, d6
     move.w  (a5), (a6,d6.w)
     
-    lsr.w   #1, d6                      ; Render the text for new entry
-    move.w  d6, d7
+    move.w  (ScrollPos), d7             ; Render the text for new entry
     bsr     DrawFileEntryText
     
     bsr     RefreshListTiles            ; Redraw list
@@ -414,6 +417,7 @@ ScrollDown:
     
     add.w   #FLIST_H-2, d6              ; Cache the pointer to the entry
     add.w   d6, d6                      ; that just scrolled in
+    and.w   #$1F<<1, d6
     lea     (FileListPtr), a6
     moveq   #-1, d7
     move.w  (a6,d6.w), d7
@@ -422,8 +426,8 @@ ScrollDown:
     and.w   #$1F<<1, d6
     move.w  2(a5), (a6,d6.w)
     
-    lsr.w   #1, d6                      ; Render the text for new entry
-    move.w  d6, d7
+    move.w  (ScrollPos), d7              ; Render the text for new entry
+    add.w   #FLIST_H-1, d7
     bsr     DrawFileEntryText
     
     bsr     RefreshListTiles            ; Redraw list
@@ -533,13 +537,10 @@ ScrollerToPos:
     rts
 @NotAtEnd:
     
-    moveq   #0, d5
-    move.l  #SCROLL_LEN*8, d6
-    move.w  (ScrollMax), d5
-    divu.w  d5, d6
-    and.l   #$FFFF, d7
-    and.l   #$FFFF, d6
-    divu.w  d6, d7
+    and.w   #$FF, d7
+    move.w  (ScrollMax), d6
+    mulu.w  d6, d7
+    divu.w  #SCROLL_LEN*8, d7
     
     rts                                 ; End of subroutine
 
