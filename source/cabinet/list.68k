@@ -380,8 +380,9 @@ ScrollUp:
     subq.w  #1, d6                      ; Scroll up 1 row
     move.w  d6, (ScrollPos)
     
-    add.w   d6, d6                      ; Cache the pointer to the entry
-    and.w   #$1F<<1, d6                 ; that just scrolled in
+    addq.w  #1, d6                      ; Cache the pointer to the entry
+    add.w   d6, d6                      ; that just scrolled in
+    and.w   #$1F<<1, d6
     lea     (FileListPtr), a6
     moveq   #-1, d7
     move.w  (a6,d6.w), d7
