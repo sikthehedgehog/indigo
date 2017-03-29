@@ -87,7 +87,7 @@ EntryPoint:
     divu.w  #6, d1
     clr.w   d1
     swap    d1
-    dbf     d0, @TestLoop
+;    dbf     d0, @TestLoop
     
     clr.w   (ScrollPos)
     bsr     CalcMaxScroll

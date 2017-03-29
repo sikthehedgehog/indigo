@@ -218,6 +218,19 @@ DrawFileEntryTiles:
     rts
 @Visible:
     
+    cmp.w   (NumFiles), d7              ; Does the entry exist?
+    blo.s   @Exists                     ; If not, leave it blank
+    move.w  d7, d6
+    moveq   #FLIST_X-1, d7
+    add.w   #FLIST_Y, d6
+    moveq   #1, d5
+    move.w  #FLIST_W+1, a6
+    move.w  d5, a5
+    move.w  #0, a4
+    syscall OS_FILLTILES
+    rts
+@Exists:
+    
     move.w  d7, d6                      ; Get pointer to entry
     and.w   #$1F, d6
     add.w   d6, d6
@@ -305,6 +318,9 @@ SelectFile:
     subq.w  #FLIST_Y, d6
     add.w   (ScrollPos), d6
     
+    cmp.w   (NumFiles), d6              ; Make sure the file exists! (i.e.
+    bhs.s   @CantSelect                 ; not clicking beyond the list)
+    
     move.w  d6, d5                      ; Mark that entry as selected
     moveq   #-1, d7
     move.w  d6, d7
@@ -314,10 +330,8 @@ SelectFile:
     move.l  d7, a6
     bset.b  d6, (a6)
     
-    bsr     RefreshListTiles            ; Redraw list
-    
-    syscall OS_BEEP                     ; For now
-    rts                                 ; End of subroutine
+@CantSelect:
+    bra     RefreshListTiles            ; Redraw list
 
 ;****************************************************************************
 ; DeselectAll
@@ -440,6 +454,14 @@ ScrollDown:
 ;****************************************************************************
 
 ScrollScroller:
+    tst.w   (ScrollMax)                 ; Make sure that scrolling is allowed
+    bne.s   @CanScroll
+    moveq   #ID_SCROLL, d7
+    moveq   #0, d6
+    syscall OS_SETSTATE
+    rts
+    
+@CanScroll:
     bsr     ScrollerToPos               ; Get row to scroll to
     
     move.w  d7, d6                      ; Check faster cases (avoid rendering
