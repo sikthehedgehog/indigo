@@ -25,8 +25,11 @@ ClearFileList:
     move.w  #FileList&$FFFF, (FileListNext)
     
     clr.l   (FileList)                  ; Make sure the list is empty
-    clr.w   (FileList+4)
+    clr.l   (FileList+4)
     clr.w   (NumFiles)
+    clr.w   (ScrollPos)
+    clr.w   (ScrollMax)
+    
     rts                                 ; End of subroutine
 
 ;****************************************************************************
@@ -44,10 +47,9 @@ AddFileEntry:
     move.w  (FileListNext), d6
     move.l  d6, a5
     move.w  (FileListLast), d6
-    move.l  d6, a4
     
-    tst.w   d6                          ; Link the two entries
-    beq.s   @NoLastEntry
+    beq.s   @NoLastEntry                ; Link the two entries
+    move.l  d6, a4
     move.w  (FileListNext), 2(a4)
 @NoLastEntry:
     move.w  (FileListLast), (a5)+
@@ -81,35 +83,31 @@ AddFileEntry:
 
 RefreshList:
     moveq   #0, d0                      ; Find first entry to put in
-    lea     (FileList), a1              ; the cache
+    moveq   #-1, d6                     ; the cache
+    lea     (FileList), a1
     move.w  (ScrollPos), d7
-    beq.s   @StartAt0
+    beq.s   @FindSkip
     subq.w  #1, d7
-    moveq   #-1, d1
 @FindStart:
-    move.w  2(a1), d1
-    move.l  d1, a1
+    move.w  2(a1), d6
+    beq.s   @FindSkip
+    move.l  d6, a1
     addq.w  #2, d0
     dbf     d7, @FindStart
-@StartAt0:
+@FindSkip:
     
     lea     (FileListPtr), a0           ; Cache the offsets to the entries
-    move.w  (NumFiles), d7
-    beq.s   @NoFiles
-    cmp.w   #FLIST_H, d7
-    blo.s   @ShortScan
-    moveq   #FLIST_H, d7
-@ShortScan:
-    subq.w  #1, d7
+    moveq   #FLIST_H-1, d7
     moveq   #-1, d6
 @ScanFiles:
     and.w   #$1F<<1, d0
     move.w  a1, (a0,d0.w)
     addq.w  #2, d0
     move.w  2(a1), d6
+    beq.s   @ScanStop
     move.l  d6, a1
     dbf     d7, @ScanFiles
-@NoFiles:
+@ScanStop:
     
     moveq   #FLIST_H-1, d0              ; Rerender whole list
     move.w  (ScrollPos), d1
