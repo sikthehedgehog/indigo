@@ -34,7 +34,7 @@
     dcb.b   $180-*, $20
     dc.b    'OS SIK-INDI-00'
     dc.w    $0000
-    dc.b    'M'
+    dc.b    'MK'
     dcb.b   $1A0-*, $20
     dc.l    $000000, $1FFFFF
     dc.l    $FF0000, $FFFFFF
