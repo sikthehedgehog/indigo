@@ -109,3 +109,112 @@ SetGuiState:
     move.b  d6, (a6,d7.w)
     
     bra     DrawWidgetsById             ; Redraw any affected widgets
+
+;****************************************************************************
+; FindWidgetById
+; Looks for the first widget with the given ID.
+;----------------------------------------------------------------------------
+; input d7.b .... Widget ID
+;----------------------------------------------------------------------------
+; output a6.l ... Pointer to widget (0 if not found)
+;----------------------------------------------------------------------------
+; breaks: d6-d7
+;****************************************************************************
+
+FindWidgetById:
+    cmp.b   #-1, d7                     ; ID -1 is not valid
+    beq.s   @NotFound
+    
+    lea     (Widgets), a6               ; Scan every widget to see if any
+    moveq   #MAX_WIDGETS-1, d6          ; has the specified ID
+@Loop:
+    tst.b   WIDGET_TYPE(a6)
+    beq.s   @Skip
+    cmp.b   WIDGET_ID(a6), d7
+    beq.s   @Found
+@Skip:
+    lea     WIDGET_SIZE(a6), a6
+    dbf     d6, @Loop
+    
+@NotFound:
+    move.l  #0, a6                      ; Widget not found
+    
+@Found:
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; GetWidgetXY
+; Gets the position and dimension of a widget.
+;----------------------------------------------------------------------------
+; input d7.b .... Widget ID
+;----------------------------------------------------------------------------
+; output d7.b ... X coordinate
+; output d6.b ... Y coordinate
+; output a6.w ... Width
+; output a5.w ... Height
+;----------------------------------------------------------------------------
+; breaks: d5, a4
+;****************************************************************************
+
+GetWidgetXY:
+    bsr     FindWidgetById              ; Look for the widget
+    move.l  a6, d7
+    beq.s   @NotFound
+    
+    moveq   #0, d7                      ; Ensure values are zero extended
+    moveq   #0, d6
+    
+    move.b  WIDGET_X2(a6), d7           ; Calculate dimensions
+    move.b  WIDGET_Y2(a6), d6           ; (we store boundaries usually)
+    sub.b   WIDGET_X1(a6), d7
+    sub.b   WIDGET_Y1(a6), d6
+    move.w  d7, a4
+    move.w  d6, a5
+    
+    move.b  WIDGET_X1(a6), d7           ; Get position
+    move.b  WIDGET_Y1(a6), d6
+    
+    exg.l   a4, a6                      ; Put argument where expected
+    rts                                 ; End of subroutine
+    
+@NotFound:
+    moveq   #0, d7                      ; Return bogus values if not found
+    moveq   #0, d6
+    move.w  d7, a6
+    move.w  d6, a5
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; SetWidgetXY
+; Moves and resizes a widget. Note that only the first widget with the
+; given ID is affected.
+;----------------------------------------------------------------------------
+; input d7.b ... Widget ID
+; input d6.b ... New X coordinate
+; input d5.b ... New Y coordinate
+; input a6.w ... New width
+; input a5.w ... New height
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+SetWidgetXY:
+    exg.l   a6, a4                      ; Get pointer to widget
+    move.w  d6, -(sp)
+    bsr     FindWidgetById
+    move.w  (sp)+, d6
+    move.l  a6, d7
+    beq.s   @NotFound
+    
+    move.b  d6, WIDGET_X1(a6)           ; Store new position
+    move.b  d5, WIDGET_Y1(a6)
+    
+    add.w   a4, d6                      ; Store new dimensions
+    add.w   a5, d5
+    move.b  d6, WIDGET_X2(a6)
+    move.b  d5, WIDGET_Y2(a6)
+    
+    bsr     DrawWidget                  ; Redraw widget
+    
+@NotFound:
+    rts                                 ; End of subroutine

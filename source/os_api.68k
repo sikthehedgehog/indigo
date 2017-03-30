@@ -18,6 +18,8 @@ OS_GUILOOP:             equ 7       ; Run GUI main loop
 OS_GETSTATE:            equ 14      ; Retrieve a GUI state value
 OS_SETSTATE:            equ 15      ; Change a GUI state value
 OS_GETEVENTXY:          equ 40      ; Get cursor position for last GUI event
+OS_GETWIDGETXY:         equ 41      ; Get position and size of a widget
+OS_SETWIDGETXY:         equ 42      ; Change position and size of a widget
 
 OS_LOADPATTERNS:        equ 0       ; Loads patterns into VRAM
 OS_FILLPATTERNS:        equ 13      ; Fills patterns with a solid color
