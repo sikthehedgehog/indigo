@@ -45,16 +45,6 @@ Shuffle:
     addq.w  #1, d0
     dbf     d6, @PileLoop
     
-    lea     (Piles), a6                 ; Make sure the topmost card of
-    moveq   #$7F, d5                    ; each pile is not flipped
-    moveq   #7-1, d7
-@UnflipLoop:
-    move.b  (a6), d6
-    and.b   d5, d6
-    move.b  d6, (a6)
-    lea     33(a6), a6
-    dbf     d7, @UnflipLoop
-    
     lea     (StockLen), a6              ; Set up the card counts
     move.b  #24, (a6)+
     move.b  #0, (a6)+
@@ -65,6 +55,9 @@ Shuffle:
     move.b  #5, (a6)+
     move.b  #6, (a6)+
     move.b  #7, (a6)+
+    
+    bsr     UncoverPiles                ; Make sure the topmost card of
+                                        ; every pile is not flipped
     
     rts                                 ; End of subroutine
 
@@ -117,6 +110,31 @@ StockToHeap:
 @HeapEmpty:
     bsr     DrawStock                   ; Redraw stock and heap
     bra     DrawHeap
+
+;****************************************************************************
+; UncoverPiles
+; Makes the topmost card of each pile to be uncovered.
+;----------------------------------------------------------------------------
+; breaks: all?
+;****************************************************************************
+
+UncoverPiles:
+    moveq   #7-1, d7                    ; Scan through all piles
+    lea     (Piles), a6
+    lea     (PileLen), a5
+@Loop:
+    moveq   #0, d6                      ; Check if this pile has cards
+    move.b  (a5)+, d6
+    beq.s   @Skip
+    
+    move.b  -1(a6,d6.w), d5             ; Uncover topmost card (if not
+    and.b   #$7F, d5                    ; already uncovered)
+    move.b  d5, -1(a6,d6.w)
+@Skip:
+    lea     32(a6), a6                  ; Go for next pile
+    dbf     d7, @Loop
+    
+    rts                                 ; End of subroutine
 
 ;****************************************************************************
 ; DrawTable
