@@ -76,7 +76,8 @@ ParseGuiLayout:
     dc.l    ParseGuiLayout_KeyDown      ; OSUI_KeyDown
     dc.l    ParseGuiLayout_KeyUp        ; OSUI_KeyUp
     dc.l    ParseGuiLayout_Ascii        ; OSUI_Ascii
-    dc.l    ParseGuiLayout_ClickArea    ; OSUI_Clickable
+    dc.l    ParseGuiLayout_Clickable    ; OSUI_Clickable
+    dc.l    ParseGuiLayout_Draggable    ; OSUI_Draggable
 
 ;----------------------------------------------------------------------------
 ; Generic parser for most clickable widgets
@@ -315,9 +316,19 @@ ParseGuiLayout_Ascii:
     rts                                 ; End of subroutine
 
 ;----------------------------------------------------------------------------
-; OSUI_ClickArea
+; OSUI_Clickable
 ;----------------------------------------------------------------------------
 
-ParseGuiLayout_ClickArea:
+ParseGuiLayout_Clickable:
     move.w  #0, -(sp)
     bra     ParseGuiLayout_Generic
+
+;----------------------------------------------------------------------------
+; OSUI_Draggable
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_Draggable:
+    bsr     ParseGuiLayout_Clickable
+    bset.b  #WFLAG_HOLD, WIDGET_FLAGS-WIDGET_SIZE(a5)
+    bset.b  #WFLAG_DRAG, WIDGET_FLAGS-WIDGET_SIZE(a5)
+    rts

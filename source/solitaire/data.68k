@@ -22,7 +22,7 @@ ID_HEAP:            rs.b 1              ; Heap
 Layout:
     OSUI_Button ID_NEW, 15,1, 3,2, VramNew+$2000
     OSUI_Clickable ID_STOCK, 2,1, 4,6
-    OSUI_Clickable ID_HEAP, 7,1, 4,6
+    OSUI_Draggable ID_HEAP, 7,1, 4,6
     OSUI_End
 
 ;****************************************************************************

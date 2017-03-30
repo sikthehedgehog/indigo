@@ -174,11 +174,8 @@ RunGuiLoop:
     move.l  a0, a6
     bsr     DrawWidget
     
-    btst.b  #WFLAG_DRAG, WIDGET_FLAGS(a0) ; Draggable action?
-    bne.s   @HoverNotNeeded
     cmp.l   (Hovering), d2              ; Did the user cancel the action?
     bne     @NoInteractStop
-@HoverNotNeeded:
     
     moveq   #0, d6                      ; Let program know that
                                         ; interaction is over
@@ -338,6 +335,14 @@ CheckHover:
     swap    d0
     move.w  d0, (EventX)
     move.w  d1, (EventY)
+    
+    move.l  (Interacting), d7           ; Draggable widget active? Act like
+    beq.s   @NoDragging                 ; we keep hovering on it then
+    move.l  d7, a6
+    btst.b  #WFLAG_DRAG, WIDGET_FLAGS(a6)
+    beq.s   @NoDragging
+    rts
+@NoDragging:
     
     cmp.w   #200, d1                    ; No widgets in this area
     blo.s   @HoverOk                    ; (hack for the taskbar)
