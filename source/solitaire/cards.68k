@@ -393,6 +393,9 @@ DragCard:
 ;----------------------------------------------------------------------------
 
 @DropIt:
+    tst.b   (DraggedCard)               ; Make sure a card was even being
+    beq.s   @NotEvenDragging            ; dragged for starters
+    
     moveq   #0, d6                      ; Put card back on its pile
     and.w   #$FF, d7
     sub.w   #ID_HEAP, d7
@@ -415,4 +418,5 @@ DragCard:
     addq.w  #1, d0
     dbf     d1, @RemoveSprite
     
+@NotEvenDragging:
     rts                                 ; End of subroutine
