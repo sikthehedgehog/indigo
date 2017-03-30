@@ -5,6 +5,8 @@
                     rsreset
 
 ID_NEW:             rs.b 1              ; New game
+ID_STOCK:           rs.b 1              ; Stock
+ID_HEAP:            rs.b 1              ; Draggong from heap
 ID_PILE1:           rs.b 1              ; Dragging from each pile
 ID_PILE2:           rs.b 1
 ID_PILE3:           rs.b 1
@@ -12,8 +14,6 @@ ID_PILE4:           rs.b 1
 ID_PILE5:           rs.b 1
 ID_PILE6:           rs.b 1
 ID_PILE7:           rs.b 1
-ID_STOCK:           rs.b 1              ; Stock
-ID_HEAP:            rs.b 1              ; Heap
 
 ;****************************************************************************
 ; Interface layout

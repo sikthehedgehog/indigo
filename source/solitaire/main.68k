@@ -36,6 +36,8 @@ MainLoop:
 
 @Handlers:
     bra.w   NewGame                     ; ID_NEW
+    bra.w   StockToHeap                 ; ID_STOCK
+    bra.w   @Dummy                      ; ID_HEAP
     bra.w   DragCard                    ; ID_PILE1
     bra.w   DragCard                    ; ID_PILE2
     bra.w   DragCard                    ; ID_PILE3
@@ -43,8 +45,6 @@ MainLoop:
     bra.w   DragCard                    ; ID_PILE5
     bra.w   DragCard                    ; ID_PILE6
     bra.w   DragCard                    ; ID_PILE7
-    bra.w   StockToHeap                 ; ID_STOCK
-    bra.w   @Dummy                      ; ID_HEAP
 
 @Dummy:
     rts

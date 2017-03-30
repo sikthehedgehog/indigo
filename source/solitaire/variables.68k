@@ -1,7 +1,7 @@
                     rsset $FF0000
 
 Stock:              rs.b 52             ; Cards on the stock
-Heap:               rs.b 52             ; Cards on the heap
+Heap:               rs.b 32             ; Cards on the heap
 Piles:              rs.b 7*32           ; Cards on each of the piles
 StockLen:           rs.b 1              ; Number of cards on the stock
 HeapLen:            rs.b 1              ; Number of cards on the heap
