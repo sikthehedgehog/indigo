@@ -177,7 +177,7 @@ OSUI_Ascii: macro id
     endm
 
 ;----------------------------------------------------------------------------
-; ClickableArea
+; Clickable area
 ;----------------------------------------------------------------------------
 
 OSUI_Clickable: macro id, x,y,width,height
