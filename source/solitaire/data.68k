@@ -21,8 +21,17 @@ ID_PILE7:           rs.b 1
 
 Layout:
     OSUI_Button ID_NEW, 15,1, 3,2, VramNew+$2000
+    
     OSUI_Clickable ID_STOCK, 2,1, 4,6
     OSUI_Draggable ID_HEAP, 7,1, 4,6
+    
+    OSUI_Draggable ID_PILE1, 4,8, 4,6
+    OSUI_Draggable ID_PILE2, 9,9, 4,6
+    OSUI_Draggable ID_PILE3, 14,10, 4,6
+    OSUI_Draggable ID_PILE4, 19,11, 4,6
+    OSUI_Draggable ID_PILE5, 24,12, 4,6
+    OSUI_Draggable ID_PILE6, 29,13, 4,6
+    OSUI_Draggable ID_PILE7, 34,14, 4,6
     OSUI_End
 
 ;****************************************************************************

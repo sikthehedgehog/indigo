@@ -26,9 +26,10 @@ MainLoop:
     syscall OS_GUILOOP                  ; Keep the GUI going
     
     and.w   #$FF, d7                    ; Handle the event
-    lsl.w   #2, d7
+    move.w  d7, d5
+    lsl.w   #2, d5
     lea     @Handlers(pc), a6
-    jsr     (a6,d7.w)
+    jsr     (a6,d5.w)
     
     bra.s   MainLoop                    ; Back to the GUI
 
@@ -37,7 +38,7 @@ MainLoop:
 @Handlers:
     bra.w   NewGame                     ; ID_NEW
     bra.w   StockToHeap                 ; ID_STOCK
-    bra.w   @Dummy                      ; ID_HEAP
+    bra.w   DragCard                    ; ID_HEAP
     bra.w   DragCard                    ; ID_PILE1
     bra.w   DragCard                    ; ID_PILE2
     bra.w   DragCard                    ; ID_PILE3

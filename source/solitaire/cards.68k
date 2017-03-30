@@ -326,47 +326,93 @@ DrawPile:
 ; DragCard
 ; Updates the card being dragged.
 ;----------------------------------------------------------------------------
+; input d7.b ... Widget ID
+; input d6.w ... $FFxx when dragging, $00xx when dropping
+;----------------------------------------------------------------------------
 ; breaks: all
 ;****************************************************************************
 
 DragCard:
-
-;----------------------------------------------------------------------------
-
-@NotDragging:
-    moveq   #6-1, d2                    ; Move all sprites off-screen
-    move.b  (DragSprite), d3
-@NoDragLoop:
-    move.b  d3, d7
-    moveq   #-128, d6
-    moveq   #-128, d5
+    tst.w   d6                          ; Drop the card?
+    bpl     @DropIt
+    
+    moveq   #0, d0                      ; Is any card being dragged already?
+    move.b  (DraggedCard), d0
+    bne.s   @Dragging
+    
+    moveq   #0, d6                      ; Check if there are cards we
+    and.w   #$FF, d7                    ; can start dragging
+    sub.w   #ID_HEAP, d7
+    lea     (HeapLen), a0
+    move.b  (a0,d7.w), d6
+    bne.s   @CanDrag
+    rts
+@CanDrag:
+    
+    subq.b  #1, d6                      ; Take the topmost card
+    move.b  d6, (a0,d7.w)
+    lsl.w   #5, d7
+    lea     (Heap), a0
+    lea     (a0,d7.w), a0
+    move.b  (a0,d6.w), d0
+    move.b  d0, (DraggedCard)
+    
+    bsr     DrawTable                   ; Just redraw whole table
+    move.b  (DraggedCard), d0
+    
+@Dragging:
+    subq.w  #1, d0                      ; Determine card graphic
+    lsl.w   #3, d0
+    move.w  d0, d1
+    add.w   d1, d0
+    add.w   d1, d0
+    add.w   #VramCards, d0
+    
+    syscall OS_GETCURSORPOS             ; Get card position on screen
+    move.w  d7, d2
+    move.w  d6, d3
+    sub.w   #12, d2
+    subq.w  #4, d3
+    
+    move.b  (DragSprite), d1            ; Put card under the cursor
+    moveq   #6-1, d4
+@SpriteLoop:
+    move.b  d1, d7
+    move.w  d2, d6
+    move.w  d3, d5
+    move.w  d0, a6
+    move.w  #%1100, a5
     syscall OS_SETSPRITE
-    dbf     d2, @NoDragLoop
+    addq.w  #4, d0
+    addq.w  #1, d1
+    addq.w  #8, d3
+    dbf     d4, @SpriteLoop
     
     rts                                 ; End of subroutine
 
 ;----------------------------------------------------------------------------
 
-@Dragging:
-    syscall OS_GETCURSORPOS             ; Get card position
-    moveq   #-16, d0
-    moveq   #-4, d1
-    add.w   d7, d0
-    add.w   d6, d1
+@DropIt:
+    moveq   #0, d6                      ; Put card back on its pile
+    and.w   #$FF, d7
+    sub.w   #ID_HEAP, d7
+    lea     (HeapLen), a0
+    move.b  (a0,d7.w), d6
+    addq.b  #1, d6
+    move.b  d6, (a0,d7.w)
     
-    moveq   #6-1, d2                    ; Move card alongside cursor
-    move.b  (DragSprite), d3
-    move.w  #VramCards, d4
-@DragLoop:
-    move.b  d3, d7
-    move.w  d0, d6
-    move.w  d1, d5
-    move.w  d4, a6
-    move.w  #%1100, a5
+    clr.b   (DraggedCard)               ; Not dragging a card anymore
+    bsr     UncoverPiles                ; Ensure all piles are uncovered
+    bsr     DrawTable                   ; Update table state
+    
+    move.b  (DragSprite), d0            ; Get rid of dragged card sprite
+    moveq   #6-1, d1
+@RemoveSprite:
+    move.w  d0, d7
+    moveq   #-128, d6
+    moveq   #-128, d5
     syscall OS_SETSPRITE
-    addq.w  #1, d3
-    addq.w  #8, d1
-    addq.w  #4, d4
-    dbf     d2, @DragLoop
+    addq.w  #1, d0
+    dbf     d1, @RemoveSprite
     
     rts                                 ; End of subroutine

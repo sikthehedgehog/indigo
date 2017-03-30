@@ -7,3 +7,5 @@ StockLen:           rs.b 1              ; Number of cards on the stock
 HeapLen:            rs.b 1              ; Number of cards on the heap
 PileLen:            rs.b 7              ; Number of cards on each pile
 DragSprite:         rs.b 1              ; 1st sprite ID of dragged card
+DraggedCard:        rs.b 1              ; Card being dragged
+                    rs.b 1
