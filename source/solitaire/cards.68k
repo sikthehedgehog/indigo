@@ -55,8 +55,9 @@ Shuffle:
     lea     33(a6), a6
     dbf     d7, @UnflipLoop
     
-    lea     (StockLen), a6              ; Set up the stock's and piles'
-    move.b  #24, (a6)+                  ; card counts
+    lea     (StockLen), a6              ; Set up the card counts
+    move.b  #24, (a6)+
+    move.b  #0, (a6)+
     move.b  #1, (a6)+
     move.b  #2, (a6)+
     move.b  #3, (a6)+
@@ -66,6 +67,56 @@ Shuffle:
     move.b  #7, (a6)+
     
     rts                                 ; End of subroutine
+
+;****************************************************************************
+; StockToHeap
+; Moves a card from the stock to the heap. When the stock is empty, it moves
+; the heap back to it. Basically, what happens when you click on the stock.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+StockToHeap:
+    moveq   #0, d7                      ; Check if there are cards
+    move.b  (StockLen), d7              ; on the stock
+    beq.s   @StockEmpty
+
+;----------------------------------------------------------------------------
+
+    moveq   #0, d6                      ; Move card from stock to heap
+    move.b  (HeapLen), d6
+    lea     (Stock), a6
+    lea     (Heap), a5
+    move.b  -1(a6,d7.w), (a5,d6.w)
+    
+    subq.b  #1, d7                      ; Update stock and heap sizes
+    addq.b  #1, d6
+    move.b  d7, (StockLen)
+    move.b  d6, (HeapLen)
+    
+    bsr     DrawStock                   ; Redraw stock and heap
+    bra     DrawHeap
+
+;----------------------------------------------------------------------------
+
+@StockEmpty:
+    moveq   #0, d6                      ; Check if there are cards
+    move.b  (HeapLen), d6               ; on the heap
+    beq.s   @HeapEmpty
+    
+    lea     (Stock), a6                 ; Move the heap back to the stock
+    lea     (Heap), a5
+    lea     (a5,d6.w), a5
+    move.b  d6, (StockLen)
+    clr.b   (HeapLen)
+    subq.b  #1, d6
+@Restock:
+    move.b  -(a5), (a6)+
+    dbf     d6, @Restock
+
+@HeapEmpty:
+    bsr     DrawStock                   ; Redraw stock and heap
+    bra     DrawHeap
 
 ;****************************************************************************
 ; DrawTable
@@ -96,6 +147,7 @@ DrawTable:
     dbf     d0, @DrawFreeSlots
     
     bsr     DrawStock                   ; Draw the stock
+    bsr     DrawHeap                    ; Draw the heap
     
     moveq   #7-1, d7                    ; Draw all piles
 @DrawPiles:
@@ -125,8 +177,8 @@ DrawTable:
 
 DrawCard:
     tst.b   d5                          ; Is the card reversed or not?
-    bpl.s   @Facing
     beq.s   @Empty
+    bpl.s   @Facing
     
     moveq   #0, d5                      ; Reversed cards just show their
     move.w  #2, a6                      ; back (without revealing their
@@ -154,9 +206,16 @@ DrawCard:
     move.w  #6, a5
     syscall OS_DRAWTILES
     
+    rts                                 ; End of subroutine
+
 ;----------------------------------------------------------------------------
 
 @Empty:
+    moveq   #0, d5                      ; Clear the space
+    move.w  #4, a6
+    move.w  #6, a5
+    syscall OS_ERASETILES
+    
     rts                                 ; End of subroutine
 
 ;****************************************************************************
@@ -167,28 +226,36 @@ DrawCard:
 ;****************************************************************************
 
 DrawStock:
-    moveq   #2, d7                      ; Remove leftovers
+    tst.b   (StockLen)                  ; Check if there are cards on
+    sne.b   d5                          ; the stock
+    
+    moveq   #2, d7                      ; Draw stock
+    moveq   #1, d6
+    bra     DrawCard
+
+;****************************************************************************
+; DrawHeap
+; Draws the heap.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DrawHeap:
+    moveq   #0, d7                      ; Check if there are cards
+    move.b  (HeapLen), d7               ; on the heap
+    beq.s   @Empty
+    
+    lea     (Heap), a6                  ; Draw topmost card
+    move.b  -1(a6,d7.w), d5
+    moveq   #7, d7
+    moveq   #1, d6
+    bra     DrawCard
+    
+@Empty:
+    moveq   #7, d7                      ; Clear the heap
     moveq   #1, d6
     moveq   #0, d5
-    move.w  #9, a6
-    move.w  #6, a5
-    syscall OS_ERASETILES
-    
-    tst.b   (StockLen)                  ; Check if there are unturned
-    beq.s   @NoUnturned                 ; cards in the stock
-    
-    moveq   #2, d7                      ; Draw them if so
-    moveq   #1, d6
-    moveq   #-1, d5
-    bsr     DrawCard
-@NoUnturned:
-    
-;    moveq   #7, d7                      ; Draw the topmost unturned card
-;    moveq   #1, d6
-;    moveq   #-1, d5
-;    bsr     DrawCard
-    
-    rts                                 ; End of subroutine
+    bra     DrawCard
 
 ;****************************************************************************
 ; DrawPile

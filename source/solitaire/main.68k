@@ -43,8 +43,8 @@ MainLoop:
     bra.w   DragCard                    ; ID_PILE5
     bra.w   DragCard                    ; ID_PILE6
     bra.w   DragCard                    ; ID_PILE7
-    bra.w   @Dummy                      ; ID_STOCK1
-    bra.w   @Dummy                      ; ID_STOCK2
+    bra.w   StockToHeap                 ; ID_STOCK
+    bra.w   @Dummy                      ; ID_HEAP
 
 @Dummy:
     rts
