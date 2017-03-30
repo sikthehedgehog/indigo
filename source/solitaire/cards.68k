@@ -59,6 +59,7 @@ Shuffle:
     bsr     UncoverPiles                ; Make sure the topmost card of
                                         ; every pile is not flipped
     
+    bsr     UpdateAllWidgets            ; Get all widgets ready
     rts                                 ; End of subroutine
 
 ;****************************************************************************
@@ -88,7 +89,8 @@ StockToHeap:
     move.b  d6, (HeapLen)
     
     bsr     DrawStock                   ; Redraw stock and heap
-    bra     DrawHeap
+    bsr     DrawHeap
+    bra     UpdateHeapWidget
 
 ;----------------------------------------------------------------------------
 
@@ -109,7 +111,8 @@ StockToHeap:
 
 @HeapEmpty:
     bsr     DrawStock                   ; Redraw stock and heap
-    bra     DrawHeap
+    bsr     DrawHeap
+    bra     UpdateHeapWidget
 
 ;****************************************************************************
 ; UncoverPiles
@@ -135,6 +138,45 @@ UncoverPiles:
     dbf     d7, @Loop
     
     rts                                 ; End of subroutine
+
+;****************************************************************************
+; UpdateAllWidgets
+; Repositions all widgets as needed based on the cards.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+UpdateAllWidgets:
+    bsr     UpdateHeapWidget
+    rts
+
+;****************************************************************************
+; UpdateHeapWidget
+; Makes the heap widget available depending on whether it has cards left.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+UpdateHeapWidget:
+    tst.b   (HeapLen)                   ; Does the heap have cards?
+    beq.s   @Empty
+    
+    moveq   #ID_HEAP, d7                ; If the heap has any cards on it
+    moveq   #7, d6                      ; make its widget clickable
+    moveq   #2, d5
+    move.w  #4, a6
+    move.w  #6, a5
+    syscall OS_SETWIDGETXY
+    rts
+    
+@Empty:
+    moveq   #ID_HEAP, d7                ; If the heap is empty then put
+    moveq   #40, d6                     ; the widget away
+    moveq   #0, d5
+    move.w  #0, a6
+    move.w  #0, a5
+    syscall OS_SETWIDGETXY
+    rts
 
 ;****************************************************************************
 ; DrawTable
@@ -419,4 +461,4 @@ DragCard:
     dbf     d1, @RemoveSprite
     
 @NotEvenDragging:
-    rts                                 ; End of subroutine
+    bra     UpdateAllWidgets            ; Refresh all widgets
