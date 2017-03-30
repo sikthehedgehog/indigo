@@ -331,4 +331,6 @@ ParseGuiLayout_Draggable:
     bsr     ParseGuiLayout_Clickable
     bset.b  #WFLAG_HOLD, WIDGET_FLAGS-WIDGET_SIZE(a5)
     bset.b  #WFLAG_DRAG, WIDGET_FLAGS-WIDGET_SIZE(a5)
+    move.b  #CURSOR_HAND, WIDGET_CURSOR1-WIDGET_SIZE(a5)
+    move.b  #CURSOR_GRAB, WIDGET_CURSOR2-WIDGET_SIZE(a5)
     rts
