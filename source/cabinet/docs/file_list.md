@@ -29,7 +29,8 @@ following format, *not aligned*:
 
 The icon pretty much just maps to the relevant icon in VRAM. Icon `$00` is
 blank (for unused entries when the list is too short), icon `$01` is a folder
-(for directories), the rest just indicate for different file types.
+(for directories), the rest just indicate for different file types (you can
+see a list of them in `data.68k`).
 
 The `$20` (an ASCII space) is just used to add padding between the icon and
 the filename in the list (Indigo is told to render it).

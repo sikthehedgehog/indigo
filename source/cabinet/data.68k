@@ -9,6 +9,18 @@ ID_SCROLL_U:        rs.b 1                ; ↑ button
 ID_SCROLL_D:        rs.b 1                ; ↓ button
 
 ;****************************************************************************
+; Icon IDs
+;****************************************************************************
+
+                    rsreset
+                    rs.b 1              ; Not used
+ICON_FOLDER:        rs.b 1              ; Directory
+ICON_UNKNOWN:       rs.b 1              ; Unknown file
+
+ICON_IXEC:          rs.b 1              ; Programs
+NUM_ICONS:          rs.b 0
+
+;****************************************************************************
 ; Interface layout
 ;****************************************************************************
 
@@ -41,7 +53,7 @@ InvPalette:
 
                     rsreset
 
-VramIcons:          rs.b 4              ; File type icons
+VramIcons:          rs.b NUM_ICONS      ; File type icons
 VramUp:             rs.b 4*2            ; Scrollbar ↑ button
 VramDown:           rs.b 4*2            ; Scrollbar ↓ button
 VramScroller:       rs.b 4              ; Scrollbar knob
