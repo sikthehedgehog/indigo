@@ -1,12 +1,12 @@
                     rsset $FF0000
 
-FileListPtr:        rs.w 32             ; Offsets to visible file entries
-FileListLast:       rs.w 1              ; Offset to last entry
-FileListNext:       rs.w 1              ; Offset where new entry will go
-NumFiles:           rs.w 1              ; Number of file entries
+NumFiles:           rs.w 1              ; Number of files in the list
+NextFile:           rs.l 0              ; Pointer to next new file entry
+OffsetPtr:          rs.l 1              ; Pointer to offsets to each entry
+SelectPtr:          rs.l 1              ; Pointer to list of selected files
 
-ScrollPos:          rs.w 1              ; Scroll position
-ScrollMax:          rs.w 1              ; Maximum scroll position (min is 0)
-ScrollDelay:        rs.w 1              ; Delay to avoid scrolling too fast
+ScrollPos:          rs.w 1              ; Current scroll position
+ScrollMax:          rs.w 1              ; Maximum scroll position
+OldScroll:          rs.w 1              ; Previous scroll position
 
-FileList:           rs.b 0              ; *Full* list of file entries
+FileList:           rs.b 0              ; Where the file list starts

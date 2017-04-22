@@ -3,114 +3,32 @@ EntryPoint:
     move.w  #NumPatterns, d6
     lea     Patterns(pc), a6
     syscall OS_LOADPATTERNS
-    lea     LabelText(pc), a6
-    move.w  #VramDrives, d7
-    syscall OS_LOADTEXTLIST
     moveq   #1, d7
     lea     InvPalette(pc), a6
-    syscall OS_LOADPALETTE
-    moveq   #2, d7
-    lea     OpenPalette(pc), a6
     syscall OS_LOADPALETTE
     
     lea     Layout(pc), a6              ; Load interface
     syscall OS_PARSELAYOUT
-    lea     LabelList(pc), a6
-    syscall OS_DRAWLABELS
     
-    moveq   #FLIST_X-2, d7              ; Draw frame for main list
+    moveq   #FLIST_X-2, d7              ; Draw frame for file list
     moveq   #FLIST_Y-1, d6
     moveq   #0, d5
-    move.w  #FLIST_W, a6
+    move.w  #FLIST_W+1, a6
     move.w  #FLIST_H, a5
     move.w  #VramFrame, a4
     syscall OS_FILLFRAME
     
-    moveq   #30, d7                     ; Draw frame for drive list
-    moveq   #5, d6
-    moveq   #0, d5
-    move.w  #6, a6
-    move.w  #6, a5
-    move.w  #VramFrame, a4
-    syscall OS_FILLFRAME
-    
-    if 0
-    moveq   #2, d7                      ; Draw sides of the filename field
-    moveq   #1, d6
-    moveq   #0, d5
-    move.w  #1, a6
-    move.w  #2, a5
-    move.w  #VramNameLeft+$8000, a4
-    syscall OS_DRAWTILES
-    moveq   #26, d7
-    moveq   #1, d6
-    moveq   #0, d5
-    move.w  #1, a6
-    move.w  #2, a5
-    move.w  #VramNameRight+$8000, a4
-    syscall OS_DRAWTILES
-    
-    moveq   #3, d7                      ; Draw filename field itself
-    moveq   #1, d6
-    moveq   #0, d5
-    move.w  #NAMEFIELD_LEN, a6
-    move.w  #2, a5
-    move.w  #VramNameField+$8000, a4
-    syscall OS_DRAWTILES
-    bsr     BlankFilename
-    
-    lea     @Test(pc), a6
-    bsr     DrawFilename
-    endc
-    
-    bsr     ClearFileList
-    
-    moveq   #15-1,d0
-    moveq   #0, d1
-@TestLoop:
-    move.w  d1, d7                      ; Test
-    lea     @TestFile1(pc), a6
-    bsr     AddFileEntry
-    move.w  d1, d7
-    lea     @TestFile2(pc), a6
-    bsr     AddFileEntry
-    move.w  d1, d7
-    lea     @TestFile3(pc), a6
-    bsr     AddFileEntry
-    move.w  d1, d7
-    lea     @TestFile4(pc), a6
-    bsr     AddFileEntry
-    move.w  d1, d7
-    lea     @TestFile5(pc), a6
-    bsr     AddFileEntry
-    addq.w  #1, d1
-    divu.w  #6, d1
-    clr.w   d1
-    swap    d1
-;    dbf     d0, @TestLoop
-    
-    clr.w   (ScrollPos)
-    bsr     CalcMaxScroll
-    bsr     DeselectAll
-    bsr     RefreshList
-    
-    bra.s   MainLoop
-
-@Test:              dc.b 'File Cabinet is not ready yet', 0
-
-@TestFile1:         dc.b '68000.text',0
-@TestFile2:         dc.b 'joypad.text',0
-@TestFile3:         dc.b 'sound.text',0
-@TestFile4:         dc.b 'video.text',0
-@TestFile5:         dc.b 'z80.text',0
-                    even
+    bsr     ClearFileList               ; Set up the file list
+    bsr     MakeTestList
+    bsr     GetFileListReady
+    bsr     RefreshFileList
 
 ;----------------------------------------------------------------------------
 
 MainLoop:
     syscall OS_GUILOOP                  ; Let the GUI run
     
-    and.w   #$FF, d7                    ; Run the handler for this event
+    and.w   #$FF, d7                    ; Jump to the relevant event handler
     lsl.w   #2, d7
     lea     @Handlers(pc), a6
     lea     (a6,d7.w), a6
@@ -121,12 +39,54 @@ MainLoop:
 ;----------------------------------------------------------------------------
 
 @Handlers:
-    bra.w   SelectFile                  ; ID_FILELIST
-    bra.w   ScrollScroller              ; ID_SCROLL
-    bra.w   ScrollUpButton              ; ID_SCROLL_U
-    bra.w   ScrollDownButton            ; ID_SCROLL_D
-    bra.w   @Dummy                      ; ID_PARENT
-    bra.w   @Dummy                      ; ID_OPEN
+    bra.w   @Dummy                      ; ID_FILELIST
+    bra.w   ScrollerMoved               ; ID_SCROLL
+    bra.w   ScrollUp                    ; ID_SCROLL_U
+    bra.w   ScrollDown                  ; ID_SCROLL_D
 
 @Dummy:
     rts
+
+;****************************************************************************
+; MakeTestList
+; Adds fake entries to the file list. Will be removed once we have real
+; directories to be displayed.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+MakeTestList:
+    moveq   #5-1, d2
+@Loop2:
+    moveq   #1, d1
+    moveq   #3-1, d0
+@Loop:
+    move.w  d1, d7
+    lea     @FakeFile1(pc), a6
+    bsr     AddFileEntry
+    move.w  d1, d7
+    lea     @FakeFile2(pc), a6
+    bsr     AddFileEntry
+    move.w  d1, d7
+    lea     @FakeFile3(pc), a6
+    bsr     AddFileEntry
+    move.w  d1, d7
+    lea     @FakeFile4(pc), a6
+    bsr     AddFileEntry
+    move.w  d1, d7
+    lea     @FakeFile5(pc), a6
+    bsr     AddFileEntry
+    addq.w  #1, d1
+    dbf     d0, @Loop
+    dbf     d2, @Loop2
+    
+    rts
+
+;----------------------------------------------------------------------------
+
+@FakeFile1:         dc.b '68000.text',0
+@FakeFile2:         dc.b 'z80.text',0
+@FakeFile3:         dc.b 'video.text',0
+@FakeFile4:         dc.b 'sound.text',0
+@FakeFile5:         dc.b 'joypad.text',0
+                    even

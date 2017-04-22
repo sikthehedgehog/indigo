@@ -1,0 +1,267 @@
+FLIST_W:            equ 23              ; Width of list in tiles
+FLIST_H:            equ 18              ; Height of list in tiles
+FLIST_X:            equ 4               ; X coordinate of list
+FLIST_Y:            equ 5               ; Y coordinate of list
+
+;****************************************************************************
+; ClearFileList
+; Resets the file list.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ClearFileList:
+    clr.w   (NumFiles)                  ; Reset file count
+    move.l  #FileList, (NextFile)       ; Where the first entry will go
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; AddFileEntry
+; Adds a new entry to the file list.
+;----------------------------------------------------------------------------
+; input a6.l ... Pointer to filename
+; input d7.b ... Icon to show
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+AddFileEntry:
+    move.l  (NextFile), a5              ; Get pointer to new entry
+    
+    move.b  d7, (a5)+                   ; Store icon to show
+    move.b  #$20, (a5)+                 ; Store space for padding
+    
+    move.l  a6, a4                      ; Find where the extension starts,
+    moveq   #'.', d6                    ; if any (must search for the *last*
+    moveq   #0, d5                      ; point, not the first)
+@FindExt:
+    move.b  (a4)+, d7
+    beq.s   @NameEnd
+    cmp.b   d6, d7
+    bne.s   @FindExt
+    move.w  a4, d5
+@NameEnd:
+    
+    subq.w  #1, d5                      ; Going back one character so the
+                                        ; point is included too
+    
+    sub.w   a6, d5                      ; Copy filename into the entry.
+@CopyLoop:                              ; Insert a formatting character to
+    move.b  (a6)+, (a5)+                ; make the extension look different
+    beq.s   @CopyDone
+    subq.w  #1, d5
+    bne.s   @CopyLoop
+    move.b  #$13, (a5)+
+    bra.s   @CopyLoop
+@CopyDone:
+    
+    addq.w  #1, (NumFiles)              ; Increase file count
+    move.l  a5, (NextFile)              ; Store pointer for next entry
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; GetFileListReady
+; Gets the file list into an usable state once all entries are in it.
+; Do *not* use the file list before calling this!
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+GetFileListReady:
+    lea     (FileList), a0              ; Pointer to file list
+    move.l  (OffsetPtr), a1             ; Pointer to offset list
+    
+    move.w  a1, d7                      ; Make sure the other lists don't
+    and.w   #1, d7                      ; end up unaligned
+    beq.s   @NoAlign
+    addq.w  #1, a1
+    move.l  a1, (OffsetPtr)
+@NoAlign:
+    
+    move.w  (NumFiles), d0              ; Fill in the offset table
+    beq.s   @NoOffsets
+    subq.w  #1, d0
+@OffsetLoop:
+    move.w  a0, (a1)+
+    addq.w  #2, a0
+@FindNul:
+    tst.b   (a0)+
+    bne.s   @FindNul
+    dbf     d0, @OffsetLoop
+@NoOffsets:
+    
+    move.l  a1, (SelectPtr)             ; The selection list will go here
+    
+    move.w  (NumFiles), d0              ; Mark all files as unselected
+    or.w    #$07, d0
+    addq.w  #1, d0
+    lsr.w   #3, d0
+    subq.w  #1, d0
+    moveq   #0, d1
+@SelectLoop:
+    move.b  d1, (a1)+
+    dbf     d0, @SelectLoop
+    
+    clr.w   (ScrollPos)                 ; Reset scrolling
+    clr.w   (OldScroll)
+    
+    move.w  (NumFiles), d7              ; Determine maximum scroll position
+    sub.w   #FLIST_H, d7
+    bge.s   @MaxScrollOk
+    clr.w   d7
+@MaxScrollOk:
+    move.w  d7, (ScrollMax)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; RefreshFileList
+; Rerenders and redraws the whole file list.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+RefreshFileList:
+    move.w  (ScrollPos), d1             ; Go through every visible entry and
+    moveq   #FLIST_H-1, d0              ; rerender and redraw them
+@Loop:
+    move.w  d1, d7
+    bsr     RenderFileEntry
+    move.w  d1, d7
+    bsr     DrawFileEntry
+    addq.w  #1, d1
+    dbf     d0, @Loop
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; RedrawFileList
+; Redraws (but doesn't rerender) the whole file list.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+RedrawFileList:
+    move.w  (ScrollPos), d1             ; Go through every visible entry and
+    moveq   #FLIST_H-1, d0              ; rerender and redraw them
+@Loop:
+    move.w  d1, d7
+    bsr     DrawFileEntry
+    addq.w  #1, d1
+    dbf     d0, @Loop
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; RenderFileEntry
+; Renders the text for a file entry.
+;----------------------------------------------------------------------------
+; input d7.w ... File entry ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+RenderFileEntry:
+    cmp.w   (NumFiles), d7              ; Check if this entry exists!
+    blo.s   @EntryExists                ; Otherwise draw a "dummy" entry
+    lea     @DummyEntry(pc), a6         ; (used for padding if the list is
+    bra.s   @UsedDummy                  ; too short to fill the screen)
+    
+@EntryExists:
+    moveq   #-1, d6                     ; Get pointer to entry
+    move.w  d7, d6
+    add.w   d6, d6
+    move.l  (OffsetPtr), a6
+    move.w  (a6,d6.w), d6
+    move.l  d6, a6
+    
+@UsedDummy:
+    addq.w  #1, a6                      ; Skip icon (but not the padding,
+                                        ; since we want to render it)
+    
+    lea     -FLIST_W*$20(sp), sp        ; Allocate buffer for patterns
+    move.l  sp, a5
+    
+    move.w  d7, -(sp)                   ; Render the filename
+    moveq   #FLIST_W, d7
+    syscall OS_RENDERTEXT
+    move.w  (sp)+, d7
+    
+    move.l  sp, a6                      ; Load the patterns into VRAM
+    and.w   #$1F, d7
+    mulu.w  #FLIST_W, d7
+    add.w   #VramFileList, d7
+    moveq   #FLIST_W, d6
+    syscall OS_LOADPATTERNS
+    
+    lea     FLIST_W*$20(sp), sp         ; Done with the buffer
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@DummyEntry:
+    dc.w    $0000
+
+;****************************************************************************
+; DrawFileEntry
+; Draws the tiles for a file entry in the list. Note that the text has to be
+; rendered separately (see RenderFileEntry).
+;----------------------------------------------------------------------------
+; input d7.w ... File entry ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+DrawFileEntry:
+    move.w  d7, d6                      ; Determine position on screen
+    sub.w   (ScrollPos), d6
+    add.w   #FLIST_Y, d6
+    
+    cmp.w   (NumFiles), d7              ; Check if this entry exists!
+    blo.s   @EntryExists                ; Otherwise draw a "dummy" entry
+    lea     @DummyEntry(pc), a6         ; (used for padding if the list is
+    bra.s   @UsedDummy                  ; too short to fill the screen)
+    
+@EntryExists:
+    moveq   #-1, d5                     ; Get pointer to entry
+    move.w  d7, d5
+    add.w   d5, d5
+    move.l  (OffsetPtr), a6
+    move.w  (a6,d5.w), d5
+    move.l  d5, a6
+    
+@UsedDummy:
+    lea     -2-2*FLIST_W(sp), sp        ; Allocate buffer for tiles
+    move.l  sp, a5
+    
+    move.b  #$80, (a5)+                 ; Store icon
+    move.b  (a6)+, (a5)+
+    
+    and.w   #$1F, d7                    ; Determine base pattern ID
+    mulu.w  #FLIST_W, d7
+    add.w   #$8000+VramFileList, d7
+    
+    moveq   #FLIST_W-1, d5              ; Put in all the tiles needed
+@Loop:
+    move.w  d7, (a5)+
+    addq.w  #1, d7
+    dbf     d5, @Loop
+    
+    moveq   #FLIST_X-1, d7              ; Draw the row of tiles
+    moveq   #1, d5
+    move.w  #FLIST_W, a6
+    move.w  #1, a5
+    move.l  sp, a4
+    syscall OS_DRAWTILEMAP
+    
+    lea     2+FLIST_W*2(sp), sp         ; Done with the buffer
+    
+@DontDraw:
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@DummyEntry:
+    dc.w    $0000

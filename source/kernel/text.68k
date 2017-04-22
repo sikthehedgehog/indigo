@@ -15,6 +15,7 @@ RenderText:
     movem.l d0-d4/a0-a3, -(sp)          ; Save registers
     
     lea     (Font), a0                  ; Pointer to default font
+    lea     @NormalGlyph(pc), a3        ; Default to normal text
     lea     @Offsets(pc), a1            ; Offsets between each column
     
     lsl.w   #2, d7                      ; Convert width into columns
@@ -43,10 +44,16 @@ RenderText:
     sub.w   d0, d7
     subq.w  #1, d0
     
-    lea     (a0,d1.w), a2               ; Draw glyph
+    lea     (a0,d1.w), a2               ; Get glyph data
+    jmp     (a3)                        ; Go to the relevant loop to copy
+                                        ; it (depending on the text color)
+
+;----------------------------------------------------------------------------
+
+@NormalGlyph:
     moveq   #0, d1
-@GlyphLoop:
-    move.b  (a2)+, (a5)
+@NormalLoop:
+    move.b  (a2)+, (a5)                 ; Just blit it as-is
     move.b  (a2)+, 4(a5)
     move.b  (a2)+, 8(a5)
     move.b  (a2)+, 12(a5)
@@ -54,11 +61,49 @@ RenderText:
     move.b  (a2)+, 20(a5)
     move.b  (a2)+, 24(a5)
     move.b  (a2)+, 28(a5)
-    move.b  (a1)+, d1
-    lea     (a5,d1.w), a5
-    dbf     d0, @GlyphLoop
     
-    bra     @Loop                       ; Try next glyph
+    move.b  (a1)+, d1                   ; Go to next column
+    lea     (a5,d1.w), a5
+    dbf     d0, @NormalLoop
+    
+    bra     @Loop                       ; Go do next glyph
+
+;----------------------------------------------------------------------------
+
+@GhostGlyph:
+    moveq   #0, d1
+    moveq   #$22, d2
+@GhostLoop:
+    move.b  (a2)+, d3                   ; Blit glyph data AND'd with a gray
+    and.b   d2, d3                      ; color (here is where I wish I could
+    move.b  d3, (a5)                    ; use assembler directives, but they
+    move.b  (a2)+, d3                   ; aren't exactly portable... we need
+    and.b   d2, d3                      ; to settle on a good assembler)
+    move.b  d3, 4(a5)
+    move.b  (a2)+, d3
+    and.b   d2, d3
+    move.b  d3, 8(a5)
+    move.b  (a2)+, d3
+    and.b   d2, d3
+    move.b  d3, 12(a5)
+    move.b  (a2)+, d3
+    and.b   d2, d3
+    move.b  d3, 16(a5)
+    move.b  (a2)+, d3
+    and.b   d2, d3
+    move.b  d3, 20(a5)
+    move.b  (a2)+, d3
+    and.b   d2, d3
+    move.b  d3, 24(a5)
+    move.b  (a2)+, d3
+    and.b   d2, d3
+    move.b  d3, 28(a5)
+    
+    move.b  (a1)+, d1                   ; Go to next column
+    lea     (a5,d1.w), a5
+    dbf     d0, @GhostLoop
+    
+    bra     @Loop                       ; Go do next glyph
 
 ;----------------------------------------------------------------------------
 
@@ -98,6 +143,10 @@ RenderText:
     beq.s   @EmphasisOn
     cmp.b   #$EF, d0                    ; SO = emphasis off
     beq.s   @EmphasisOff
+    cmp.b   #$F1, d0                    ; XON = normal text
+    beq.s   @GhostOff
+    cmp.b   #$F3, d0                    ; XOFF = ghost text
+    beq.s   @GhostOn
     
     moveq   #$5F, d0                    ; Unrecognized...?
     bra     @GlyphOk
@@ -107,6 +156,13 @@ RenderText:
     bra     @Loop
 @EmphasisOff:
     lea     (Font), a0
+    bra     @Loop
+
+@GhostOn:
+    lea     @GhostGlyph(pc), a3
+    bra     @Loop
+@GhostOff:
+    lea     @NormalGlyph(pc), a3
     bra     @Loop
 
 ;----------------------------------------------------------------------------

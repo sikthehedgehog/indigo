@@ -1,0 +1,181 @@
+;****************************************************************************
+; ScrollUp
+; Scroll up button.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ScrollUp:
+    move.w  (ScrollPos), d7             ; See if we can scroll up
+    bne.s   @CanScroll
+    rts
+@CanScroll:
+    
+    subq.w  #1, d7                      ; Go up one row
+    move.w  d7, (ScrollPos)
+    
+    bsr     UpdateScroller              ; Put scroller where it should
+    bra     RefreshOnScroll             ; Go refresh the file list
+
+;****************************************************************************
+; ScrollDown
+; Scroll down button.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ScrollDown:
+    move.w  (ScrollPos), d7             ; Set if we can scroll down
+    cmp.w   (ScrollMax), d7
+    blo.s   @CanScroll
+    rts
+@CanScroll:
+    
+    addq.w  #1, d7                      ; Go down one row
+    move.w  d7, (ScrollPos)
+    
+    bsr     UpdateScroller              ; Put scroller where it should
+    bra     RefreshOnScroll             ; Go refresh the file list
+
+;****************************************************************************
+; ScrollerMoved
+; Handler when the scroller moves.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ScrollerMoved:
+    bsr     GetScrollerPos              ; Where to scroll?
+    move.w  d7, (ScrollPos)             ; Set new scroll position
+    
+    bra     RefreshOnScroll             ; Refresh the file list
+
+;****************************************************************************
+; RefreshOnScroll
+; Refreshes the file list when scrolling. It may decide to take a slow or a
+; fast path depending how much has been scrolled.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+RefreshOnScroll:
+    move.w  (ScrollPos), d1             ; Check how much we scrolled
+    move.w  (OldScroll), d2
+    move.w  d1, (OldScroll)
+    move.w  d1, d0
+    sub.w   d2, d0
+    
+    beq.s   @DoNothing                  ; Didn't scroll?
+    cmp.w   #-8, d0                     ; Scrolled up a bit?
+    bhs.s   @GoingUp
+    cmp.w   #+8, d0                     ; Scrolled down a bit?
+    bls.s   @GoingDown
+    
+@SlowPath:
+    bra     RefreshFileList             ; Take the slow path and rerender
+                                        ; everything then...
+
+;----------------------------------------------------------------------------
+
+@GoingUp:
+    neg.w   d0                          ; Render new file entries
+    subq.w  #1, d0
+@UpLoop:
+    subq.w  #1, d1
+    move.w  d1, d7
+    bsr     RenderFileEntry
+    dbf     d0, @UpLoop
+    
+    bra     RedrawFileList              ; Update the list
+
+;----------------------------------------------------------------------------
+
+@GoingDown:
+    add.w   #FLIST_H-1, d1              ; Render new file entries
+    subq.w  #1, d0
+@DownLoop:
+    move.w  d1, d7
+    bsr     RenderFileEntry
+    addq.w  #1, d1
+    dbf     d0, @DownLoop
+    
+    bra     RedrawFileList              ; Update the list
+
+;----------------------------------------------------------------------------
+
+@DoNothing:
+    rts                                 ; Just do nothing and return
+
+;****************************************************************************
+; UpdateScroller
+; Moves the scroller to match the current position of the file list.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+UpdateScroller:
+    move.w  (ScrollPos), d6             ; Get scroll position
+    move.w  (ScrollMax), d7             ; Get scroll steps
+    beq.s   @CantScroll                 ; Check if it can scroll...
+    
+    mulu.w  #SCROLL_MAX, d6             ; Determine scroller position for
+    divu.w  d7, d6                      ; this step (good that multiply is
+                                        ; 16×16 → 32 and that divide is
+                                        ; 32÷16 → 16, saves me from having
+                                        ; to cope with overflow)
+    
+    moveq   #ID_SCROLL, d7              ; Put the scroller in the correct
+    syscall OS_SETSTATE                 ; location
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@CantScroll:
+    moveq   #ID_SCROLL, d7              ; Can't scroll, leave scroller at
+    moveq   #0, d6                      ; the top instead
+    syscall OS_SETSTATE
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; GetScrollerPos
+; Determines which row to scroll to based on the scroller position.
+;----------------------------------------------------------------------------
+; output d7.w ... Scroll position
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a6
+;****************************************************************************
+
+GetScrollerPos:
+    moveq   #ID_SCROLL, d7              ; Request scroller position
+    syscall OS_GETSTATE
+    
+    move.w  (ScrollMax), d6             ; Can we even scroll?
+    beq.s   @CantScroll
+    
+    cmp.b   #SCROLL_MAX, d7             ; Force the end of the scroller to
+    beq.s   @GoToEnd                    ; always go to the last entry (just
+                                        ; in case the list grows large enough
+                                        ; that rounding backfires)
+    
+    and.w   #$FF, d7                    ; Determine the scroll position that
+    addq.w  #1, d6                      ; should show here. Note that we do
+    mulu.w  d6, d7                      ; two ugly +1 in order to distribute
+    divu.w  #SCROLL_MAX+1, d7           ; the range more evenly (otherwise
+                                        ; the very last value will get only
+                                        ; 1 pixel of coverage at most)
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@CantScroll:
+    moveq   #0, d7                      ; Return only valid value
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@GoToEnd:
+    move.w  (ScrollMax), d7             ; Go directly to the end
+    rts                                 ; End of subroutine
