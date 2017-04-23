@@ -13,6 +13,9 @@ syscall:    macro call
 OS_LOADPROCESS:         equ 10      ; Load new process
 OS_QUITPROCESS:         equ 11      ; Quit current process
 
+OS_OPENDIR:             equ 43      ; Open directory for listing
+OS_READDIR:             equ 44      ; Read file entry from directory
+
 OS_PARSELAYOUT:         equ 6       ; Parse GUI layout
 OS_GUILOOP:             equ 7       ; Run GUI main loop
 OS_GETSTATE:            equ 14      ; Retrieve a GUI state value

@@ -46,3 +46,5 @@
     jmp     GetEventXY                  ; OS_GETEVENTXY
     jmp     GetWidgetXY                 ; OS_GETWIDGETXY
     jmp     SetWidgetXY                 ; OS_SETWIDGETXY
+    jmp     OpenDir                     ; OS_OPENDIR
+    jmp     ReadDir                     ; OS_READDIR

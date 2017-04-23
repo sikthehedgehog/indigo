@@ -46,6 +46,7 @@ EntryPoint:
     bsr     InitSound
     bsr     InitVideo
     bsr     InitCursor
+    bsr     InitHandles
     
     move.w  #$8174, ($C00004)           ; Turn on screen
     move.w  #$2000, sr                  ; Enable interrupts

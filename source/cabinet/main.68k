@@ -18,10 +18,7 @@ EntryPoint:
     move.w  #VramFrame, a4
     syscall OS_FILLFRAME
     
-    bsr     ClearFileList               ; Set up the file list
-    bsr     MakeTestList
-    bsr     GetFileListReady
-    bsr     RefreshFileList
+    bsr     LoadDirectory               ; Load initial files
 
 ;----------------------------------------------------------------------------
 
@@ -90,3 +87,49 @@ MakeTestList:
 @FakeFile4:         dc.b 'sound.text',0
 @FakeFile5:         dc.b 'joypad.text',0
                     even
+
+;****************************************************************************
+; LoadDirectory
+; Loads the file list from the current directory.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+LoadDirectory:
+    lea     @RootFilename(pc), a6       ; Hardcoded path for now
+    syscall OS_OPENDIR                  ; Open the directory
+    tst.b   d7
+    beq.s   @Error
+    
+    move.w  d7, -(sp)                   ; Init the list
+    bsr     ClearFileList
+    move.w  (sp)+, d0
+    
+@Loop:
+    move.b  d0, d7                      ; Read next entry
+    syscall OS_READDIR
+    cmp.w   #$FFFF, d7
+    beq.s   @End
+    
+    tst.w   d7                          ; Which icon to show? (for now just
+    spl.b   d7                          ; tell apart folders from files)
+    and.w   #1, d7
+    addq.w  #1, d7
+    
+    bsr     AddFileEntry                ; Add file to the list
+    bra.s   @Loop                       ; Keep reading!
+    
+@End:
+    bsr     GetFileListReady            ; Done adding files
+    bra     RefreshFileList             ; Redraw the list
+
+;----------------------------------------------------------------------------
+
+@RootFilename:
+    dc.b    '/',0
+    even
+
+;----------------------------------------------------------------------------
+
+@Error:
+    illegal                             ; For now...

@@ -47,6 +47,7 @@ FILESYS_ROM:        rs.b 1              ; ROM filesystem
 ;****************************************************************************
 
 GetHandlePtr: macro
+    and.w   #$FF, d7
     add.w   d7, d7
     add.w   d7, d7
     lea     HandlePtrTable(pc), a6
@@ -63,10 +64,75 @@ HandlePtrTable:
     dc.l    Handles+HANDLE_SIZE*3
 
 ;****************************************************************************
+; InitHandles
+; Initializes the file handles.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+InitHandles:
+    lea     (Handles), a6               ; Mark all handles as free
+    moveq   #MAX_HANDLES-1, d7
+@Loop:
+    clr.b   HANDLE_MODE(a6)
+    lea     HANDLE_SIZE(a6), a6
+    dbf     d7, @Loop
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; OpenDir
+; Opens a directory for reading its entries.
+;----------------------------------------------------------------------------
+; input a6.l .... Pointer to filename
+;----------------------------------------------------------------------------
+; output d7.b ... Handle ID (0 on failure)
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a6
+;****************************************************************************
+
+OpenDir:
+    cmpi.b  #'/', (a6)+                 ; Absolute paths only, sorry
+    bne.s   @Error
+    
+    tst.b   (a6)                        ; Open the root directory?
+    beq.s   @Root
+
+;----------------------------------------------------------------------------
+
+@Error:
+    moveq   #0, d7                      ; For now only root supported, sorry
+    moveq   #0, d6
+    moveq   #0, d5
+    move.l  d7, a6
+    move.l  d7, a5
+    move.l  d7, a4
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Root:
+    bsr     AllocHandle                 ; Get a new handle
+    move.l  a6, d6
+    beq.s   @Error
+    
+    move.b  #HMODE_READDIR, HANDLE_MODE(a6) ; Set up handle
+    move.b  #FILESYS_ROOT, HANDLE_FS(a6)
+    
+    moveq   #0, d6                      ; Clear up registers
+    moveq   #0, d5
+    move.l  d6, a6
+    move.l  d6, a5
+    move.l  d6, a4
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
 ; ReadDir
 ; Reads the next file entry from a directory.
 ;----------------------------------------------------------------------------
-; input d7.w .... Handle ID
+; input d7.b .... Handle ID
 ;----------------------------------------------------------------------------
 ; output a6.l ... Pointer to filename
 ; output d7.w ... File attributes
@@ -87,15 +153,15 @@ ReadDir:
     move.b  HANDLE_FS(a6), d7           ; read a directory entry
     add.w   d7, d7
     add.w   d7, d7
-    lea     @Handlers(pc), a6
-    jsr     (a6,d7.w)
+    lea     @Handlers(pc), a5
+    jsr     (a5,d7.w)
     
     cmp.w   #$FFFF, d7                  ; Are there more entries?
     beq.s   @Error
     
     move.l  a5, a6                      ; We want the filename here
     
-    clr.l   d5                          ; Just in case (don't accidentally
+    moveq   #0, d5                      ; Just in case (don't accidentally
     move.l  d5, a5                      ; leak internal information)
     move.l  d5, a4
     
@@ -129,20 +195,25 @@ ReadDir:
 ; Allocates a file handle.
 ;----------------------------------------------------------------------------
 ; output a6.l ... Pointer to handle (0 on failure)
+; output d7.w ... Handle ID
 ;----------------------------------------------------------------------------
 ; breaks: d5-d7, a4-a5
 ;****************************************************************************
 
 AllocHandle:
     lea     (Handles), a6               ; Scan for a free handle
-    moveq   #MAX_HANDLES-1, d7
+    moveq   #MAX_HANDLES-1, d6
+    moveq   #1, d7
 @Loop:
     tst.b   HANDLE_MODE(a6)
     beq.s   @Found
     lea     HANDLE_SIZE(a6), a6
-    dbf     d7, @Loop
+    addq.w  #1, d7
+    dbf     d6, @Loop
     
     move.l  #0, a6                      ; No free handle
+    moveq   #0, d7
+    
     rts                                 ; End of subroutine
 
 ;----------------------------------------------------------------------------
