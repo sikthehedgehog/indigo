@@ -25,7 +25,7 @@ RootFS_ReadDir:
     move.w  #$C000, d7                  ; Attributes for /rom
     moveq   #0, d6
     moveq   #0, d5
-    lea     @RomName(pc), a6
+    lea     @RomName(pc), a5
     
     addq.b  #1, HANDLE_POS(a6)          ; Advance to next entry
     rts                                 ; End of subroutine
