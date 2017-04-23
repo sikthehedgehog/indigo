@@ -1,4 +1,5 @@
 MAX_HANDLES:        equ 4               ; Maximum allowed handles (sowwy)
+                                        ; Make sure to update GetHandlePtr!
 
 ;****************************************************************************
 ; Status of a handle
@@ -33,6 +34,33 @@ HMODE_WRITEDIR:     rs.b 1              ; For writing (directory)
                     rs.b 1              ; Invalid
 FILESYS_ROOT:       rs.b 1              ; Root directory
 FILESYS_ROM:        rs.b 1              ; ROM filesystem
+
+;****************************************************************************
+; GetHandlePtr [macro]
+; Converts a handle ID to a pointer.
+;----------------------------------------------------------------------------
+; input d7.w .... Handle ID
+;----------------------------------------------------------------------------
+; output a6.l ... Handle pointer
+;----------------------------------------------------------------------------
+; breaks: d7
+;****************************************************************************
+
+GetHandlePtr: macro
+    add.w   d7, d7
+    add.w   d7, d7
+    lea     HandlePtrTable(pc), a6
+    move.l  (a6,d7.w), a6
+    endm
+
+;----------------------------------------------------------------------------
+
+HandlePtrTable:
+    dc.l    0
+    dc.l    Handles+HANDLE_SIZE*0
+    dc.l    Handles+HANDLE_SIZE*1
+    dc.l    Handles+HANDLE_SIZE*2
+    dc.l    Handles+HANDLE_SIZE*3
 
 ;****************************************************************************
 ; AllocHandle
