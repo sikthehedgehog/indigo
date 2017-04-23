@@ -1,0 +1,50 @@
+;****************************************************************************
+; RomFS_ReadDir
+; Reads a directory entry from the ROM filesystem.
+;----------------------------------------------------------------------------
+; input a6.l .... Pointer to file handle
+;----------------------------------------------------------------------------
+; output a6.l ... Pointer to file handle (intact)
+; output a5.l ... Pointer to filename
+; output d7.w ... File attributes
+; output d6.w ... First cluster
+; output d5.l ... Filesize in bytes
+;----------------------------------------------------------------------------
+; breaks: a4
+;----------------------------------------------------------------------------
+; notes: attributes are $FFFF if no more entries
+;****************************************************************************
+
+RomFS_ReadDir:
+    move.l  HANDLE_ADDR(a6), a4         ; Get current pointer
+    
+    move.w  (a4)+, d7                   ; Get attributes
+    cmp.w   #$FFFF, d7
+    beq.s   @NoEntry
+    
+    move.w  (a4)+, d6                   ; Get cluster
+    move.l  (a4)+, d5                   ; Get filesize
+    move.l  a4, a5                      ; Get filename
+    
+@SkipName:                              ; Skip over the filename
+    tst.b   (a4)+
+    bne.s   @SkipName
+    exg.l   a4, d7
+    subq.l  #1, d7
+    or.w    #7, d7
+    addq.l  #1, d7
+    exg.l   a4, d7
+    
+    move.l  a4, HANDLE_ADDR(a6)         ; Update current pointer
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@NoEntry:
+    move.b  #HMODE_ERROR, HANDLE_MODE(a6) ; Mark handle as done
+    
+    moveq   #0, d6                      ; Just in case
+    moveq   #0, d5
+    move.l  d6, a5
+    
+    rts                                 ; End of subroutine

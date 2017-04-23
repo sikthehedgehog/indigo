@@ -1,0 +1,48 @@
+;****************************************************************************
+; RootFS_ReadDir
+; Reads a directory entry from the root directory.
+;----------------------------------------------------------------------------
+; input a6.l .... Pointer to file handle
+;----------------------------------------------------------------------------
+; output a6.l ... Pointer to file handle (intact)
+; output a5.l ... Pointer to filename
+; output d7.w ... File attributes
+; output d6.w ... First cluster
+; output d5.l ... Filesize in bytes
+;----------------------------------------------------------------------------
+; breaks: a4
+;----------------------------------------------------------------------------
+; notes: attributes are $FFFF if no more entries
+;****************************************************************************
+
+RootFS_ReadDir:
+    move.b  HANDLE_POS(a6), d7          ; Get which entry is it
+    bne.s   @NoEntry                    ; For now only one entry exists
+
+;----------------------------------------------------------------------------
+
+@RomFS:
+    move.w  #$C000, d7                  ; Attributes for /rom
+    moveq   #0, d6
+    moveq   #0, d5
+    lea     @RomName(pc), a6
+    
+    addq.b  #1, HANDLE_POS(a6)          ; Advance to next entry
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@NoEntry:
+    move.b  #HMODE_ERROR, HANDLE_MODE(a6) ; Mark handle as done
+    
+    moveq   #-1, d7                     ; Return "no entry"
+    moveq   #0, d6
+    moveq   #0, d5
+    move.l  d6, a5
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@RomName:           dc.b 'rom',0
+                    even

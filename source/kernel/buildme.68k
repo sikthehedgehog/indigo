@@ -1,5 +1,6 @@
     include "kernel/header.68k"
     include "kernel/syscall.68k"
+    
     include "kernel/main.68k"
     include "kernel/memory.68k"
     include "kernel/video.68k"
@@ -8,16 +9,23 @@
     include "kernel/keyboard.68k"
     include "kernel/mouse.68k"
     include "kernel/sound.68k"
+    
     include "kernel/cursor.68k"
     include "kernel/gui.68k"
     include "kernel/gui_parse.68k"
     include "kernel/gui_loop.68k"
     include "kernel/gui_draw.68k"
     include "kernel/gui_event.68k"
+    
     include "kernel/filesystem.68k"
+    include "kernel/filesystem_root.68k"
+    include "kernel/filesystem_rom.68k"
+    
     include "kernel/process.68k"
     include "kernel/taskbar.68k"
+    
     include "kernel/bluescreen.68k"
+    
     include "kernel/variables.68k"
     include "kernel/data.68k"
     
