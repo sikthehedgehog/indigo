@@ -7,8 +7,8 @@
 ; output a6.l ... Pointer to file handle (intact)
 ; output a5.l ... Pointer to filename
 ; output d7.w ... File attributes
-; output d6.w ... First cluster
-; output d5.l ... Filesize in bytes
+; output d6.l ... Filesize in bytes
+; output d5.w ... First cluster
 ;----------------------------------------------------------------------------
 ; breaks: a4
 ;----------------------------------------------------------------------------
@@ -22,8 +22,8 @@ RomFS_ReadDir:
     cmp.w   #$FFFF, d7
     beq.s   @NoEntry
     
-    move.w  (a4)+, d6                   ; Get cluster
-    move.l  (a4)+, d5                   ; Get filesize
+    move.w  (a4)+, d5                   ; Get cluster
+    move.l  (a4)+, d6                   ; Get filesize
     move.l  a4, a5                      ; Get filename
     
 @SkipName:                              ; Skip over the filename
@@ -41,8 +41,6 @@ RomFS_ReadDir:
 ;----------------------------------------------------------------------------
 
 @NoEntry:
-    move.b  #HMODE_ERROR, HANDLE_MODE(a6) ; Mark handle as done
-    
     moveq   #0, d6                      ; Just in case
     moveq   #0, d5
     move.l  d6, a5

@@ -63,6 +63,68 @@ HandlePtrTable:
     dc.l    Handles+HANDLE_SIZE*3
 
 ;****************************************************************************
+; ReadDir
+; Reads the next file entry from a directory.
+;----------------------------------------------------------------------------
+; input d7.w .... Handle ID
+;----------------------------------------------------------------------------
+; output a6.l ... Pointer to filename
+; output d7.w ... File attributes
+; output d6.l ... Filesize in bytes
+;----------------------------------------------------------------------------
+; breaks: d5, a4-a5
+;****************************************************************************
+
+ReadDir:
+    GetHandlePtr                        ; Convert ID to pointer
+    
+    move.l  a6, d7                      ; Valid handler?
+    beq.s   @Error
+    cmpi.b  #HMODE_READDIR, HANDLE_MODE(a6)
+    bne.s   @Error
+    
+    moveq   #0, d7                      ; Ask the filesystem driver to
+    move.b  HANDLE_FS(a6), d7           ; read a directory entry
+    add.w   d7, d7
+    add.w   d7, d7
+    lea     @Handlers(pc), a6
+    jsr     (a6,d7.w)
+    
+    cmp.w   #$FFFF, d7                  ; Are there more entries?
+    beq.s   @Error
+    
+    move.l  a5, a6                      ; We want the filename here
+    
+    clr.l   d5                          ; Just in case (don't accidentally
+    move.l  d5, a5                      ; leak internal information)
+    move.l  d5, a4
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Error:
+    moveq   #-1, d7                     ; Return reasonable values
+    moveq   #0, d6
+    moveq   #0, d5
+    move.l  d6, a4
+    move.l  d6, a5
+    move.l  d6, a6
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Handlers:
+    bra.w   @Dummy
+    bra.w   RootFS_ReadDir              ; FILESYS_ROOT
+    bra.w   RomFS_ReadDir               ; FILESYS_ROM
+
+@Dummy:
+    moveq   #-1, d7                     ; Return "no entry"
+    rts                                 ; End of dummy handler
+
+;****************************************************************************
 ; AllocHandle
 ; Allocates a file handle.
 ;----------------------------------------------------------------------------

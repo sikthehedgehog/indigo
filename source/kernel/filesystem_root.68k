@@ -7,8 +7,8 @@
 ; output a6.l ... Pointer to file handle (intact)
 ; output a5.l ... Pointer to filename
 ; output d7.w ... File attributes
-; output d6.w ... First cluster
-; output d5.l ... Filesize in bytes
+; output d6.l ... Filesize in bytes
+; output d5.w ... First cluster
 ;----------------------------------------------------------------------------
 ; breaks: a4
 ;----------------------------------------------------------------------------
@@ -33,8 +33,6 @@ RootFS_ReadDir:
 ;----------------------------------------------------------------------------
 
 @NoEntry:
-    move.b  #HMODE_ERROR, HANDLE_MODE(a6) ; Mark handle as done
-    
     moveq   #-1, d7                     ; Return "no entry"
     moveq   #0, d6
     moveq   #0, d5
