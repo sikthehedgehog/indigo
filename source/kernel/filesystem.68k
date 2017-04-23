@@ -1,3 +1,77 @@
+MAX_HANDLES:        equ 4               ; Maximum allowed handles (sowwy)
+
+;****************************************************************************
+; Status of a handle
+;****************************************************************************
+
+                    rsreset
+HANDLE_MODE:        rs.b 1              ; Handle mode (see HMODE_*)
+HANDLE_FS:          rs.b 1              ; Filesystem (see FILESYS_*)
+HANDLE_ADDR:        rs.l 1              ; Address within filesystem
+HANDLE_POS:         rs.l 1              ; Current position in bytes
+HANDLE_LEN:         rs.l 1              ; File length in bytes
+
+HANDLE_SIZE:        rs.b 0              ; Size of handle data
+
+;****************************************************************************
+; Possible modes in which a handle may be open
+;****************************************************************************
+
+                    rsreset
+                    rs.b 1              ; Not in use
+HMODE_ERROR:        rs.b 1              ; Unusable (EOF?)
+HMODE_READ:         rs.b 1              ; For reading (file)
+HMODE_READDIR:      rs.b 1              ; For reading (directory)
+HMODE_WRITE:        rs.b 1              ; For writing (file)
+HMODE_WRITEDIR:     rs.b 1              ; For writing (directory)
+
+;****************************************************************************
+; Possible filesystems
+;****************************************************************************
+
+                    rsreset
+                    rs.b 1              ; Invalid
+FILESYS_ROOT:       rs.b 1              ; Root directory
+FILESYS_ROM:        rs.b 1              ; ROM filesystem
+
+;****************************************************************************
+; AllocHandle
+; Allocates a file handle.
+;----------------------------------------------------------------------------
+; output a6.l ... Pointer to handle (0 on failure)
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a5
+;****************************************************************************
+
+AllocHandle:
+    lea     (Handles), a6               ; Scan for a free handle
+    moveq   #MAX_HANDLES-1, d7
+@Loop:
+    tst.b   HANDLE_MODE(a6)
+    beq.s   @Found
+    lea     HANDLE_SIZE(a6), a6
+    dbf     d7, @Loop
+    
+    move.l  #0, a6                      ; No free handle
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Found:
+    move.b  #HMODE_ERROR, HANDLE_MODE(a6)   ; Initialize handle
+    clr.b   HANDLE_FS(a6)
+    clr.l   HANDLE_ADDR(a6)
+    clr.l   HANDLE_POS(a6)
+    clr.l   HANDLE_LEN(a6)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; The functions below are from Indigo 0.10 and may be replaced by proper
+; alternatives once the filesystem support is working properly. Should have
+; thought twice about it >_>;
+;****************************************************************************
+
 ;****************************************************************************
 ; ScanForFile
 ; Scans for a file entry in a directory.

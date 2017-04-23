@@ -55,6 +55,8 @@ BeepTimer:          rs.b 1              ; How long before resetting beep?
 BeepVolume:         rs.b 1              ; PSG volume for beeping
                     rs.b 1
 
+Handles:            rs.b HANDLE_SIZE*MAX_HANDLES    ; File handles
+
 KernelUsage:        rs.b 0              ; To help keep track of how much RAM
                                         ; the kernel is using (this address
                                         ; is stored at the end of the header)
