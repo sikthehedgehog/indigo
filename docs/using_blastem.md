@@ -9,9 +9,9 @@ version from here:
 
 [https://www.retrodev.com/blastem/nightlies]
 
-**Note:** currently the list is not sorted by date... It builds once a day so
-try searching for the latest date (which would be either today, yesterday or
-the day before that, depending on the current time and your timezone).
+**Note:** currently the list is not sorted by date... Try searching for the
+date: first try today, then yesterday, and so on. Eventually you'll run into
+the newest build.
 
 ## Set up BlastEm
 
