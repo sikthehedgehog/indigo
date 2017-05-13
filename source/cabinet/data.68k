@@ -7,6 +7,7 @@ ID_FILELIST:        rs.b 1              ; File list
 ID_SCROLL:          rs.b 1              ; Scrollbar
 ID_SCROLL_U:        rs.b 1                ; ↑ button
 ID_SCROLL_D:        rs.b 1                ; ↓ button
+ID_OPEN:            rs.b 1              ; Open/Save button
 
 ;****************************************************************************
 ; Icon IDs
@@ -34,6 +35,7 @@ Layout:
     OSUI_VScroll ID_SCROLL, SCROLL_X,SCROLL_Y+2,SCROLL_LEN, VramScroller,VramScrollBg
     OSUI_Hold ID_SCROLL_U, SCROLL_X,SCROLL_Y, 2,2, VramUp
     OSUI_Hold ID_SCROLL_D, SCROLL_X,SCROLL_Y+SCROLL_LEN+4, 2,2, VramDown
+    OSUI_Button ID_OPEN, 31,1, 7,2, $4000+VramOpen
     
     OSUI_End
 
@@ -48,6 +50,14 @@ InvPalette:
     dc.w    $000,$022,$244,$466,$688,$8AA,$E20,$EC2
     dc.w    $E4C,$2EC,$E60,$8E6,$E08,$04C,$000,$EEE
 
+OpenPalette:
+    dc.w    $000,$0C0,$0A0,$080,$060,$040,$020,$000
+    dc.w    $000,$000,$000,$000,$000,$0CE,$EEE,$000
+
+SavePalette:
+    dc.w    $000,$E66,$C44,$A22,$800,$600,$400,$000
+    dc.w    $000,$000,$000,$000,$CAA,$866,$EEE,$000
+
 ;****************************************************************************
 ; Pattern IDs
 ;****************************************************************************
@@ -61,6 +71,8 @@ VramScroller:       rs.b 4              ; Scrollbar knob
 VramScrollBg:       rs.b 6              ; Scrollbar bar
 VramFrame:          rs.b 9              ; Frame for the lists
 VramRow:            rs.b 2              ; File list row backgrounds
+VramOpen:           rs.b 14*2           ; Open button
+VramSave:           rs.b 14*2           ; Save button
 
 NumPatterns:        rs.b 0              ; Number of patterns
 VramFileList:       rs.b 32*16          ; File list

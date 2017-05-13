@@ -6,6 +6,12 @@ EntryPoint:
     moveq   #1, d7
     lea     InvPalette(pc), a6
     syscall OS_LOADPALETTE
+    moveq   #2, d7
+    lea     OpenPalette(pc), a6
+    syscall OS_LOADPALETTE
+    moveq   #3, d7
+    lea     SavePalette(pc), a6
+    syscall OS_LOADPALETTE
     
     lea     Layout(pc), a6              ; Load interface
     syscall OS_PARSELAYOUT
@@ -41,6 +47,7 @@ MainLoop:
     bra.w   ScrollerMoved               ; ID_SCROLL
     bra.w   ScrollUp                    ; ID_SCROLL_U
     bra.w   ScrollDown                  ; ID_SCROLL_D
+    bra.w   @Dummy                      ; ID_OPEN
 
 @Dummy:
     rts

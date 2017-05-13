@@ -31,3 +31,12 @@ tiles 0 0 3 3
 input "cabinet/data/row.png"
 layout tilemap
 tiles 0 0 2 1
+
+input "cabinet/data/open.png"
+layout tilemap
+tiles 0 0 7 2
+tiles 0 2 7 2
+input "cabinet/data/save.png"
+layout tilemap
+tiles 0 0 7 2
+tiles 0 2 7 2
