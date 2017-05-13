@@ -24,15 +24,16 @@ NUM_ICONS:          rs.b 0
 ; Interface layout
 ;****************************************************************************
 
-SCROLL_LEN: equ 14
+SCROLL_LEN: equ FLIST_H-2
 SCROLL_MAX: equ SCROLL_LEN*8
 SCROLL_X: equ FLIST_X+FLIST_W+1
+SCROLL_Y: equ FLIST_Y-3
 
 Layout:
-    OSUI_Clickable ID_FILELIST, FLIST_X-1,FLIST_Y, FLIST_W+1,FLIST_H
-    OSUI_VScroll ID_SCROLL, SCROLL_X,6,SCROLL_LEN, VramScroller,VramScrollBg
-    OSUI_Hold ID_SCROLL_U, SCROLL_X,4, 2,2, VramUp
-    OSUI_Hold ID_SCROLL_D, SCROLL_X,22, 2,2, VramDown
+    OSUI_Clickable ID_FILELIST, FLIST_X,FLIST_Y, FLIST_W,FLIST_H
+    OSUI_VScroll ID_SCROLL, SCROLL_X,SCROLL_Y+2,SCROLL_LEN, VramScroller,VramScrollBg
+    OSUI_Hold ID_SCROLL_U, SCROLL_X,SCROLL_Y, 2,2, VramUp
+    OSUI_Hold ID_SCROLL_D, SCROLL_X,SCROLL_Y+SCROLL_LEN+4, 2,2, VramDown
     
     OSUI_End
 
@@ -62,4 +63,4 @@ VramFrame:          rs.b 9              ; Frame for the lists
 VramRow:            rs.b 2              ; File list row backgrounds
 
 NumPatterns:        rs.b 0              ; Number of patterns
-VramFileList:       rs.b FLIST_W*32     ; File list
+VramFileList:       rs.b 32*16          ; File list

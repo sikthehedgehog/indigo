@@ -1,7 +1,7 @@
-FLIST_W:            equ 23              ; Width of list in tiles
-FLIST_H:            equ 18              ; Height of list in tiles
-FLIST_X:            equ 4               ; X coordinate of list
-FLIST_Y:            equ 5               ; Y coordinate of list
+FLIST_W:            equ 32              ; Width of list in tiles
+FLIST_H:            equ 16              ; Height of list in tiles
+FLIST_X:            equ 3               ; X coordinate of list
+FLIST_Y:            equ 7               ; Y coordinate of list
 
 ;****************************************************************************
 ; ClearFileList
@@ -185,15 +185,15 @@ RenderFileEntry:
     move.l  sp, a5
     
     move.w  d7, -(sp)                   ; Render the filename
-    moveq   #FLIST_W, d7
+    moveq   #FLIST_W-1, d7
     syscall OS_RENDERTEXT
     move.w  (sp)+, d7
     
     move.l  sp, a6                      ; Load the patterns into VRAM
-    and.w   #$1F, d7
-    mulu.w  #FLIST_W, d7
+    and.w   #$0F, d7
+    lsl.w   #5, d7
     add.w   #VramFileList, d7
-    moveq   #FLIST_W, d6
+    moveq   #FLIST_W-1, d6
     syscall OS_LOADPATTERNS
     
     lea     FLIST_W*$20(sp), sp         ; Done with the buffer
@@ -239,17 +239,17 @@ DrawFileEntry:
     move.b  #$80, (a5)+                 ; Store icon
     move.b  (a6)+, (a5)+
     
-    and.w   #$1F, d7                    ; Determine base pattern ID
-    mulu.w  #FLIST_W, d7
+    and.w   #$0F, d7                    ; Determine base pattern ID
+    lsl.w   #5, d7
     add.w   #$8000+VramFileList, d7
     
-    moveq   #FLIST_W-1, d5              ; Put in all the tiles needed
+    moveq   #FLIST_W-2, d5              ; Put in all the tiles needed
 @Loop:
     move.w  d7, (a5)+
     addq.w  #1, d7
     dbf     d5, @Loop
     
-    moveq   #FLIST_X-1, d7              ; Draw the row of tiles
+    moveq   #FLIST_X, d7                ; Draw the row of tiles
     moveq   #1, d5
     move.w  #FLIST_W, a6
     move.w  #1, a5

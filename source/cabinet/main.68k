@@ -10,15 +10,16 @@ EntryPoint:
     lea     Layout(pc), a6              ; Load interface
     syscall OS_PARSELAYOUT
     
-    moveq   #FLIST_X-2, d7              ; Draw frame for file list
+    moveq   #FLIST_X-1, d7              ; Draw frame for file list
     moveq   #FLIST_Y-1, d6
     moveq   #0, d5
-    move.w  #FLIST_W+1, a6
+    move.w  #FLIST_W, a6
     move.w  #FLIST_H, a5
     move.w  #VramFrame, a4
     syscall OS_FILLFRAME
     
-    bsr     LoadDirectory               ; Load initial files
+    ;bsr     LoadDirectory               ; Load initial files
+    bsr     MakeTestList
 
 ;----------------------------------------------------------------------------
 
@@ -53,6 +54,8 @@ MainLoop:
 ;****************************************************************************
 
 MakeTestList:
+    bsr     ClearFileList
+    
     moveq   #5-1, d2
 @Loop2:
     moveq   #1, d1
@@ -77,6 +80,8 @@ MakeTestList:
     dbf     d0, @Loop
     dbf     d2, @Loop2
     
+    bsr     GetFileListReady            ; Done adding files
+    bra     RefreshFileList             ; Redraw the list
     rts
 
 ;----------------------------------------------------------------------------
