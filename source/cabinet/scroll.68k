@@ -81,8 +81,8 @@ RefreshOnScroll:
     neg.w   d0                          ; Render new file entries
     subq.w  #1, d0
 @UpLoop:
-    subq.w  #1, d1
-    move.w  d1, d7
+    subq.w  #1, d2
+    move.w  d2, d7
     bsr     RenderFileEntry
     dbf     d0, @UpLoop
     
@@ -91,12 +91,12 @@ RefreshOnScroll:
 ;----------------------------------------------------------------------------
 
 @GoingDown:
-    add.w   #FLIST_H-1, d1              ; Render new file entries
+    add.w   #FLIST_H, d2                ; Render new file entries
     subq.w  #1, d0
 @DownLoop:
-    move.w  d1, d7
+    move.w  d2, d7
     bsr     RenderFileEntry
-    addq.w  #1, d1
+    addq.w  #1, d2
     dbf     d0, @DownLoop
     
     bra     RedrawFileList              ; Update the list
