@@ -94,16 +94,6 @@ GetFileListReady:
     
     move.l  a1, (SelectPtr)             ; The selection list will go here
     
-    move.w  (NumFiles), d0              ; Mark all files as unselected
-    or.w    #$07, d0
-    addq.w  #1, d0
-    lsr.w   #3, d0
-    subq.w  #1, d0
-    moveq   #0, d1
-@SelectLoop:
-    move.b  d1, (a1)+
-    dbf     d0, @SelectLoop
-    
     clr.w   (ScrollPos)                 ; Reset scrolling
     clr.w   (OldScroll)
     
@@ -114,6 +104,7 @@ GetFileListReady:
 @MaxScrollOk:
     move.w  d7, (ScrollMax)
     
+    bsr     SelectNone                  ; Mark all files as unselected
     rts                                 ; End of subroutine
 
 ;****************************************************************************
@@ -215,9 +206,33 @@ RenderFileEntry:
 ;****************************************************************************
 
 DrawFileEntry:
+    move.w  d7, -(sp)                   ; Check if the entry is selected
+    bsr     IsSelected
+    move.w  d7, d5
+    move.w  (sp)+, d7
+    
     move.w  d7, d6                      ; Determine position on screen
     sub.w   (ScrollPos), d6
     add.w   #FLIST_Y, d6
+    
+    move.w  d5, -(sp)                   ; What background color to use for
+    add.w   #VramRow, d5                ; this entry? (depending if it's
+    move.w  d5, a4                      ; selected or not)
+    
+    move.w  d6, -(sp)                   ; Draw background color
+    move.w  d7, -(sp)
+    moveq   #FLIST_X, d7
+    moveq   #0, d5
+    move.w  #FLIST_W, a6
+    move.w  #1, a5
+    syscall OS_FILLTILES
+    move.w  (sp)+, d7
+    move.w  (sp)+, d6
+    move.w  (sp)+, d5
+    
+    ror.w   #3, d5                      ; Determine base palette
+    add.w   #$8000, d5
+    move.w  d5, a4
     
     cmp.w   (NumFiles), d7              ; Check if this entry exists!
     blo.s   @EntryExists                ; Otherwise draw a "dummy" entry
@@ -233,17 +248,19 @@ DrawFileEntry:
     move.l  d5, a6
     
 @UsedDummy:
-    lea     -2-2*FLIST_W(sp), sp        ; Allocate buffer for tiles
+    lea     -2*FLIST_W(sp), sp          ; Allocate buffer for tiles
     move.l  sp, a5
     
-    move.b  #$80, (a5)+                 ; Store icon
-    move.b  (a6)+, (a5)+
+    move.w  a4, d5                      ; Store icon
+    move.b  (a6)+, d5
+    move.w  d5, (a5)+
     
     and.w   #$0F, d7                    ; Determine base pattern ID
     lsl.w   #5, d7
-    add.w   #$8000+VramFileList, d7
+    add.w   a4, d7
+    add.w   #VramFileList, d7
     
-    moveq   #FLIST_W-2, d5              ; Put in all the tiles needed
+    moveq   #FLIST_W-1-1, d5            ; Put in all the tiles needed
 @Loop:
     move.w  d7, (a5)+
     addq.w  #1, d7
@@ -256,7 +273,7 @@ DrawFileEntry:
     move.l  sp, a4
     syscall OS_DRAWTILEMAP
     
-    lea     2+FLIST_W*2(sp), sp         ; Done with the buffer
+    lea     FLIST_W*2(sp), sp           ; Done with the buffer
     
 @DontDraw:
     rts                                 ; End of subroutine
@@ -265,3 +282,21 @@ DrawFileEntry:
 
 @DummyEntry:
     dc.w    $0000
+
+;****************************************************************************
+; FileListClick
+; Handler for clicking on the file list.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+FileListClick:
+    syscall OS_GETEVENTXY               ; Which entry was clicked?
+    sub.w   #FLIST_Y, d6
+    add.w   (ScrollPos), d6
+    
+    move.w  d6, d7                      ; Make that entry selected
+    bsr     SelectOne
+    bsr     RedrawFileList
+    
+    rts                                 ; End of subroutine

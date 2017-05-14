@@ -43,7 +43,7 @@ MainLoop:
 ;----------------------------------------------------------------------------
 
 @Handlers:
-    bra.w   @Dummy                      ; ID_FILELIST
+    bra.w   FileListClick               ; ID_FILELIST
     bra.w   ScrollerMoved               ; ID_SCROLL
     bra.w   ScrollUp                    ; ID_SCROLL_U
     bra.w   ScrollDown                  ; ID_SCROLL_D

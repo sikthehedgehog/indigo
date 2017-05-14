@@ -1,0 +1,92 @@
+;****************************************************************************
+; SelectNone
+; Deselects every entry. Note that you'll need to redraw the whole file list
+; since all entries will have been affected.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+SelectNone:
+    move.w  (NumFiles), d7              ; How much to clear?
+    add.w   #$1F, d7
+    lsr.w   #5, d7
+    
+    subq.w  #1, d7                      ; Mark all entries as unselected
+    moveq   #0, d6
+    move.l  (SelectPtr), a6
+@Loop:
+    move.l  d6, (a6)+
+    dbf     d7, @Loop
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; SelectEntry
+; Marks a file entry as selected. You should redraw it later.
+;----------------------------------------------------------------------------
+; input d7.w .... File entry ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+SelectEntry:
+    cmp.w   (NumFiles), d7              ; Invalid entry?
+    bhs.s   @Invalid
+    
+    move.w  d7, d6                      ; Figure out where the bit is
+    lsr.w   #3, d6
+    and.w   #7, d7
+    
+    move.l  (SelectPtr), a6             ; Mark entry as selected
+    bset.b  d7, (a6,d6.w)
+    
+@Invalid:
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; SelectOne
+; Marks a file entry as selected and deselects all the others. You should
+; redraw the whole file list after this.
+;----------------------------------------------------------------------------
+; input d7.w .... File entry ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+SelectOne:
+    move.w  d7, -(sp)
+    bsr     SelectNone
+    move.w  (sp)+, d7
+    bra     SelectEntry
+
+;****************************************************************************
+; IsSelected
+; Checks if a file entry is selected.
+;----------------------------------------------------------------------------
+; input d7.w .... File entry ID
+;----------------------------------------------------------------------------
+; output d7.w ... 1 if selected, 0 if not
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a6
+;****************************************************************************
+
+IsSelected:
+    cmp.w   (NumFiles), d7              ; Invalid entry?
+    bhs.s   @Dummy
+    
+    move.w  d7, d6                      ; Figure out where the bit is
+    lsr.w   #3, d6
+    and.w   #7, d7
+    
+    move.l  (SelectPtr), a6             ; Check if entry is selected
+    btst.b  d7, (a6,d6.w)
+    sne.b   d7
+    and.w   #1, d7
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Dummy:
+    moveq   #0, d7                      ; Dummy entry is never selected
+    rts                                 ; End of subroutine
