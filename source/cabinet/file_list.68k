@@ -231,7 +231,6 @@ DrawFileEntry:
     move.w  (sp)+, d5
     
     ror.w   #3, d5                      ; Determine base palette
-    add.w   #$8000, d5
     move.w  d5, a4
     
     cmp.w   (NumFiles), d7              ; Check if this entry exists!
@@ -252,13 +251,15 @@ DrawFileEntry:
     move.l  sp, a5
     
     move.w  a4, d5                      ; Store icon
+    add.w   d5, d5
+    add.w   #$8000, d5
     move.b  (a6)+, d5
     move.w  d5, (a5)+
     
     and.w   #$0F, d7                    ; Determine base pattern ID
     lsl.w   #5, d7
     add.w   a4, d7
-    add.w   #VramFileList, d7
+    add.w   #$8000+VramFileList, d7
     
     moveq   #FLIST_W-1-1, d5            ; Put in all the tiles needed
 @Loop:

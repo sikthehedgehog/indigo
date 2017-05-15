@@ -38,7 +38,7 @@ Layout:
     OSUI_Hold ID_SCROLL_U, SCROLL_X,SCROLL_Y, 2,2, VramUp
     OSUI_Hold ID_SCROLL_D, SCROLL_X,SCROLL_Y+SCROLL_LEN+4, 2,2, VramDown
     OSUI_Button ID_PARENT, 2,1, 4,2, VramParent
-    OSUI_Button ID_OPEN, 31,1, 7,2, $4000+VramOpen
+    OSUI_Button ID_OPEN, 31,1, 7,2, $2000+VramOpen
     
     OSUI_End
 
@@ -54,12 +54,12 @@ InvPalette:
     dc.w    $E4C,$2EC,$E60,$8E6,$E08,$04C,$000,$EEE
 
 OpenPalette:
-    dc.w    $000,$0C0,$0A0,$080,$060,$040,$020,$000
-    dc.w    $000,$000,$000,$000,$000,$0CE,$EEE,$000
+    dc.w    $000,$0CE,$E66,$CAA,$866,$000,$000,$000
+    dc.w    $0C0,$0A0,$080,$060,$040,$020,$000,$EEE
 
 SavePalette:
-    dc.w    $000,$E66,$C44,$A22,$800,$600,$400,$000
-    dc.w    $000,$000,$000,$000,$CAA,$866,$EEE,$000
+    dc.w    $000,$0CE,$E66,$CAA,$866,$000,$000,$000
+    dc.w    $E66,$C44,$A22,$800,$600,$400,$000,$EEE
 
 ;****************************************************************************
 ; Pattern IDs

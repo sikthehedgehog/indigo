@@ -3,14 +3,11 @@ EntryPoint:
     move.w  #NumPatterns, d6
     lea     Patterns(pc), a6
     syscall OS_LOADPATTERNS
-    moveq   #1, d7
+    moveq   #2, d7
     lea     InvPalette(pc), a6
     syscall OS_LOADPALETTE
-    moveq   #2, d7
+    moveq   #1, d7
     lea     OpenPalette(pc), a6
-    syscall OS_LOADPALETTE
-    moveq   #3, d7
-    lea     SavePalette(pc), a6
     syscall OS_LOADPALETTE
     
     lea     Layout(pc), a6              ; Load interface
