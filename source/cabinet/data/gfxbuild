@@ -4,6 +4,8 @@ input "cabinet/data/type_unused.png"
 tiles 0 0 1 1
 input "cabinet/data/type_folder.png"
 tiles 0 0 1 1
+input "cabinet/data/type_drive.png"
+tiles 0 0 1 1
 input "cabinet/data/type_unknown.png"
 tiles 0 0 1 1
 input "cabinet/data/type_ixec.png"

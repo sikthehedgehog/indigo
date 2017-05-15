@@ -17,6 +17,7 @@ ID_OPEN:            rs.b 1              ; Open/Save button
                     rsreset
                     rs.b 1              ; Not used
 ICON_FOLDER:        rs.b 1              ; Directory
+ICON_DRIVE:         rs.b 1              ; Drive (e.g. /rom)
 ICON_UNKNOWN:       rs.b 1              ; Unknown file
 
 ICON_IXEC:          rs.b 1              ; Programs
