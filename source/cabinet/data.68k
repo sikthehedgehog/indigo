@@ -7,6 +7,7 @@ ID_FILELIST:        rs.b 1              ; File list
 ID_SCROLL:          rs.b 1              ; Scrollbar
 ID_SCROLL_U:        rs.b 1                ; ↑ button
 ID_SCROLL_D:        rs.b 1                ; ↓ button
+ID_PARENT:          rs.b 1              ; Parent button
 ID_OPEN:            rs.b 1              ; Open/Save button
 
 ;****************************************************************************
@@ -35,6 +36,7 @@ Layout:
     OSUI_VScroll ID_SCROLL, SCROLL_X,SCROLL_Y+2,SCROLL_LEN, VramScroller,VramScrollBg
     OSUI_Hold ID_SCROLL_U, SCROLL_X,SCROLL_Y, 2,2, VramUp
     OSUI_Hold ID_SCROLL_D, SCROLL_X,SCROLL_Y+SCROLL_LEN+4, 2,2, VramDown
+    OSUI_Button ID_PARENT, 2,1, 4,2, VramParent
     OSUI_Button ID_OPEN, 31,1, 7,2, $4000+VramOpen
     
     OSUI_End
@@ -71,6 +73,7 @@ VramScroller:       rs.b 4              ; Scrollbar knob
 VramScrollBg:       rs.b 6              ; Scrollbar bar
 VramFrame:          rs.b 9              ; Frame for the lists
 VramRow:            rs.b 2              ; File list row backgrounds
+VramParent:         rs.b 8*2            ; Parent button
 VramOpen:           rs.b 14*2           ; Open button
 VramSave:           rs.b 14*2           ; Save button
 

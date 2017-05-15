@@ -32,6 +32,11 @@ input "cabinet/data/row.png"
 layout tilemap
 tiles 0 0 2 1
 
+input "cabinet/data/parent.png"
+layout tilemap
+tiles 0 0 4 2
+tiles 0 2 4 2
+
 input "cabinet/data/open.png"
 layout tilemap
 tiles 0 0 7 2
