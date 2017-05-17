@@ -47,3 +47,7 @@ input "cabinet/data/save.png"
 layout tilemap
 tiles 0 0 7 2
 tiles 0 2 7 2
+
+input "cabinet/data/filename.png"
+layout tilemap
+tiles 0 0 3 2

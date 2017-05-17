@@ -21,6 +21,13 @@ EntryPoint:
     move.w  #VramFrame, a4
     syscall OS_FILLFRAME
     
+    moveq   #FLIST_X-1, d7              ; Placeholder where filename will go
+    moveq   #FLIST_Y-3, d6
+    moveq   #0, d5
+    move.w  #FLIST_W, a6
+    move.w  #VramFilename, a5
+    syscall OS_DRAWHBAR
+    
     bsr     LoadDirectory               ; Load initial files
     ;bsr     MakeTestList
 

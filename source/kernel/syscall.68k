@@ -48,3 +48,5 @@
     jmp     SetWidgetXY                 ; OS_SETWIDGETXY
     jmp     OpenDir                     ; OS_OPENDIR
     jmp     ReadDir                     ; OS_READDIR
+    jmp     DrawHBar                    ; OS_DRAWHBAR
+    jmp     DrawVBar                    ; OS_DRAWVBAR

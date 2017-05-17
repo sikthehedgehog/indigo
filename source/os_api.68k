@@ -36,6 +36,8 @@ OS_FILLTILES:           equ 2       ; Fills tiles with a single pattern
 OS_ERASETILES:          equ 3       ; Fills tiles with a blank pattern
 OS_DRAWTILEMAP:         equ 5       ; Draws tiles using the given mappings
 OS_FILLFRAME:           equ 8       ; Fills tiles with a frame
+OS_DRAWHBAR:            equ 45      ; Draws a horizontal bar
+OS_DRAWVBAR:            equ 46      ; Draws a vertical bar
 OS_DRAWLABELS:          equ 16      ; Draws a bunch of labels
 OS_FILLBACKGROUND:      equ 9       ; Fills plane B with 2×2 tiles
 
