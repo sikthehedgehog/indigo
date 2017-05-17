@@ -28,6 +28,8 @@ EntryPoint:
     move.w  #VramFilename, a5
     syscall OS_DRAWHBAR
     
+    move.w  #'/'<<8, (CurrDir)          ; Default path
+    
     bsr     LoadDirectory               ; Load initial files
     ;bsr     MakeTestList
 
@@ -113,8 +115,8 @@ MakeTestList:
 ;****************************************************************************
 
 LoadDirectory:
-    lea     @RootFilename(pc), a6       ; Hardcoded path for now
-    syscall OS_OPENDIR                  ; Open the directory
+    lea     (CurrDir), a6               ; Open the current directory
+    syscall OS_OPENDIR
     tst.b   d7
     beq.s   @Error
     
@@ -139,13 +141,6 @@ LoadDirectory:
 @End:
     bsr     GetFileListReady            ; Done adding files
     bra     RefreshFileList             ; Redraw the list
-
-;----------------------------------------------------------------------------
-
-@RootFilename:
-;    dc.b    '/',0
-    dc.b    '/rom',0
-    even
 
 ;----------------------------------------------------------------------------
 

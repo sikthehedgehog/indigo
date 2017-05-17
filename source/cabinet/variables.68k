@@ -1,6 +1,7 @@
                     rsset $FF0000
 
 NumFiles:           rs.w 1              ; Number of files in the list
+FilePtr:            rs.l 1              ; Pointer to list of filenames
 NextFile:           rs.l 0              ; Pointer to next new file entry
 OffsetPtr:          rs.l 1              ; Pointer to offsets to each entry
 SelectPtr:          rs.l 1              ; Pointer to list of selected files
@@ -9,4 +10,4 @@ ScrollPos:          rs.w 1              ; Current scroll position
 ScrollMax:          rs.w 1              ; Maximum scroll position
 OldScroll:          rs.w 1              ; Previous scroll position
 
-FileList:           rs.b 0              ; Where the file list starts
+CurrDir:            rs.b 0              ; Current directory path

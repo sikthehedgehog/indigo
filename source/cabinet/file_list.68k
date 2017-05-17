@@ -12,7 +12,14 @@ FLIST_Y:            equ 7               ; Y coordinate of list
 
 ClearFileList:
     clr.w   (NumFiles)                  ; Reset file count
-    move.l  #FileList, (NextFile)       ; Where the first entry will go
+    
+    lea     (CurrDir), a6               ; Skip directory path
+@SkipDir:
+    tst.b   (a6)+
+    bne.s   @SkipDir
+    
+    move.l  a6, (FilePtr)               ; Where the first entry will go
+    move.l  a6, (NextFile)
     
     rts                                 ; End of subroutine
 
@@ -70,7 +77,7 @@ AddFileEntry:
 ;****************************************************************************
 
 GetFileListReady:
-    lea     (FileList), a0              ; Pointer to file list
+    move.l  (FilePtr), a0               ; Pointer to file list
     move.l  (OffsetPtr), a1             ; Pointer to offset list
     
     move.w  a1, d7                      ; Make sure the other lists don't
