@@ -28,10 +28,7 @@ EntryPoint:
     move.w  #VramFilename, a5
     syscall OS_DRAWHBAR
     
-    ;move.w  #'/'<<8, (CurrDir)          ; Default path
-    move.l  #'/rom', (CurrDir)          ; Temp default path
-    ;move.w  #'/'<<8, (CurrDir+4)
-    move.b  #0, (CurrDir+4)
+    move.w  #'/'<<8, (CurrDir)          ; Default path
     
     bsr     LoadDirectory               ; Load initial files
     ;bsr     MakeTestList
@@ -57,7 +54,7 @@ MainLoop:
     bra.w   ScrollUp                    ; ID_SCROLL_U
     bra.w   ScrollDown                  ; ID_SCROLL_D
     bra.w   GoToParent                  ; ID_PARENT
-    bra.w   @Dummy                      ; ID_OPEN
+    bra.w   DoOpen                      ; ID_OPEN
 
 @Dummy:
     rts
@@ -152,6 +149,65 @@ LoadDirectory:
 
 @Error:
     illegal                             ; For now...
+
+;****************************************************************************
+; DoOpen
+; Opens the selected entry.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DoOpen:
+    cmpi.w  #1, (NumSelected)           ; Is there an entry selected? (only
+    beq.s   @HasOneSelected             ; exactly one must be!)
+    syscall OS_BEEP
+    rts
+@HasOneSelected:
+    
+    moveq   #0, d0                      ; Get pointer to entry
+    moveq   #-1, d7
+    move.w  (LastSelected), d0
+    add.w   d0, d0
+    move.l  (OffsetPtr), a0
+    move.w  (a0,d0.l), d7
+    move.l  d7, a0
+
+;----------------------------------------------------------------------------
+
+    cmpi.b  #ICON_FOLDER, (a0)          ; Is it a folder?
+    bne.s   @NotFolder
+    
+    lea     (CurrDir), a1               ; Get where current path ends
+@SkipDirName:
+    tst.b   (a1)+
+    bne.s   @SkipDirName
+    
+    subq.w  #1, a1                      ; Add slash if needed
+    cmpi.b  #'/', -1(a1)
+    beq.s   @SlashOk
+    move.b  #'/', (a1)+
+@SlashOk:
+    
+    addq.w  #2, a0                      ; Append folder's name to it
+    moveq   #$20, d6
+@AppendDir:
+    move.b  (a0)+, d7
+    beq.s   @AppendEnd
+    cmp.b   d6, d7
+    blo.s   @AppendDir
+    move.b  d7, (a1)+
+    bra.s   @AppendDir
+@AppendEnd:
+    move.b  #'/', (a1)+
+    clr.b   (a1)
+    
+    bra     LoadDirectory               ; Load the new directory
+
+;----------------------------------------------------------------------------
+
+@NotFolder:
+    syscall OS_BEEP                     ; Whoops!
+    rts                                 ; Can't open for now...
 
 ;****************************************************************************
 ; GoToParent

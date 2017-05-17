@@ -18,6 +18,7 @@ SelectNone:
     move.l  d6, (a6)+
     dbf     d7, @Loop
     
+    clr.w   (NumSelected)               ; No files selected
     rts                                 ; End of subroutine
 
 ;****************************************************************************
@@ -33,12 +34,16 @@ SelectEntry:
     cmp.w   (NumFiles), d7              ; Invalid entry?
     bhs.s   @Invalid
     
+    move.w  d7, (LastSelected)          ; Keep track of which entry just
+                                        ; got selected
+    
     move.w  d7, d6                      ; Figure out where the bit is
     lsr.w   #3, d6
     and.w   #7, d7
     
     move.l  (SelectPtr), a6             ; Mark entry as selected
     bset.b  d7, (a6,d6.w)
+    addq.w  #1, (NumSelected)
     
 @Invalid:
     rts                                 ; End of subroutine
