@@ -95,13 +95,24 @@ OpenDir:
     cmpi.b  #'/', (a6)+                 ; Absolute paths only, sorry
     bne.s   @Error
     
-    tst.b   (a6)                        ; Open the root directory?
-    beq.s   @Root
+    tst.b   (a6)                        ; Open "/"?
+    beq     @Root
+    
+    move.b  (a6)+, -(sp)                ; Get next four characters
+    move.w  (sp)+, d7
+    move.b  (a6)+, d7
+    swap    d7
+    move.b  (a6)+, -(sp)
+    move.w  (sp)+, d7
+    move.b  (a6)+, d7
+    
+    cmp.l   #'rom'<<8, d7               ; Open "/rom"?
+    beq     @RomRoot
 
 ;----------------------------------------------------------------------------
 
 @Error:
-    moveq   #0, d7                      ; For now only root supported, sorry
+    moveq   #0, d7                      ; For now not supported, sorry
     moveq   #0, d6
     moveq   #0, d5
     move.l  d7, a6
@@ -115,11 +126,26 @@ OpenDir:
 @Root:
     bsr     AllocHandle                 ; Get a new handle
     move.l  a6, d6
-    beq.s   @Error
+    beq     @Error
     
     move.b  #HMODE_READDIR, HANDLE_MODE(a6) ; Set up handle
     move.b  #FILESYS_ROOT, HANDLE_FS(a6)
+    bra     @Success
+
+;----------------------------------------------------------------------------
+
+@RomRoot:
+    bsr     AllocHandle                 ; Get a new handle
+    move.l  a6, d6
+    beq     @Error
     
+    move.b  #HMODE_READDIR, HANDLE_MODE(a6) ; Set up handle
+    move.b  #FILESYS_ROM, HANDLE_FS(a6)
+    move.l  #RomFilesystem, HANDLE_ADDR(a6)
+
+;----------------------------------------------------------------------------
+
+@Success:
     moveq   #0, d6                      ; Clear up registers
     moveq   #0, d5
     move.l  d6, a6

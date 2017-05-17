@@ -21,8 +21,8 @@ EntryPoint:
     move.w  #VramFrame, a4
     syscall OS_FILLFRAME
     
-    ;bsr     LoadDirectory               ; Load initial files
-    bsr     MakeTestList
+    bsr     LoadDirectory               ; Load initial files
+    ;bsr     MakeTestList
 
 ;----------------------------------------------------------------------------
 
@@ -136,7 +136,8 @@ LoadDirectory:
 ;----------------------------------------------------------------------------
 
 @RootFilename:
-    dc.b    '/',0
+;    dc.b    '/',0
+    dc.b    '/rom',0
     even
 
 ;----------------------------------------------------------------------------
