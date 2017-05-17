@@ -142,6 +142,9 @@ LoadDirectory:
     bra.s   @Loop                       ; Keep reading!
     
 @End:
+    move.b  d0, d7                      ; Done with directory
+    syscall OS_CLOSEDIR
+    
     bsr     GetFileListReady            ; Done adding files
     bra     RefreshFileList             ; Redraw the list
 

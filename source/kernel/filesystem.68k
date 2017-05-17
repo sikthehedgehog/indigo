@@ -219,6 +219,35 @@ ReadDir:
     rts                                 ; End of dummy handler
 
 ;****************************************************************************
+; CloseDir
+; Closes a directory handle.
+;----------------------------------------------------------------------------
+; input d7.b .... Handle ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+CloseDir:
+    GetHandlePtr                        ; Convert ID to pointer
+    
+    move.l  a6, d7                      ; Valid handle?
+    beq.s   @Error
+    
+    clr.b   HANDLE_MODE(a6)             ; Mark handle as free
+
+;----------------------------------------------------------------------------
+
+@Error:
+    moveq   #0, d7                      ; Zero out registers
+    moveq   #0, d6
+    moveq   #0, d5
+    move.l  d7, a6
+    move.l  d7, a5
+    move.l  d7, a4
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
 ; AllocHandle
 ; Allocates a file handle.
 ;----------------------------------------------------------------------------

@@ -50,3 +50,4 @@
     jmp     ReadDir                     ; OS_READDIR
     jmp     DrawHBar                    ; OS_DRAWHBAR
     jmp     DrawVBar                    ; OS_DRAWVBAR
+    jmp     CloseDir                    ; OS_CLOSEDIR
