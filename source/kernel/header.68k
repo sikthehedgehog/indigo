@@ -27,7 +27,7 @@
 ;****************************************************************************
 
     dc.b    'SEGA MEGA DRIVE '
-    dc.b    '(C) SIK 2017.MAR'
+    dc.b    '(C) SIK 2017.MAY'
     dc.b    'INDIGO OPERATING SYSTEM 0.10+'
     dcb.b   $150-*, $20
     dc.b    'INDIGO OPERATING SYSTEM 0.10+'

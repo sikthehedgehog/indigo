@@ -28,7 +28,10 @@ EntryPoint:
     move.w  #VramFilename, a5
     syscall OS_DRAWHBAR
     
-    move.w  #'/'<<8, (CurrDir)          ; Default path
+    ;move.w  #'/'<<8, (CurrDir)          ; Default path
+    move.l  #'/rom', (CurrDir)          ; Temp default path
+    ;move.w  #'/'<<8, (CurrDir+4)
+    move.b  #0, (CurrDir+4)
     
     bsr     LoadDirectory               ; Load initial files
     ;bsr     MakeTestList
@@ -53,7 +56,7 @@ MainLoop:
     bra.w   ScrollerMoved               ; ID_SCROLL
     bra.w   ScrollUp                    ; ID_SCROLL_U
     bra.w   ScrollDown                  ; ID_SCROLL_D
-    bra.w   @Dummy                      ; ID_PARENT
+    bra.w   GoToParent                  ; ID_PARENT
     bra.w   @Dummy                      ; ID_OPEN
 
 @Dummy:
@@ -146,3 +149,33 @@ LoadDirectory:
 
 @Error:
     illegal                             ; For now...
+
+;****************************************************************************
+; GoToParent
+; Goes to the parent directory.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+GoToParent:
+    lea     (CurrDir), a0               ; Check that it's not the root (we
+    cmpi.w  #'/'<<8, (a0)               ; can't go up from here)
+    bne.s   @NotRoot
+    rts
+@NotRoot:
+    
+    lea     1(a0), a1                   ; Find where the last separator is
+    moveq   #'/', d6                    ; (note that we have to handle the
+@FindLoop:                              ; special case where the path ends in
+    move.b  (a0)+, d7                   ; /, which shouldn't be counted)
+    beq.s   @FindEnd
+    cmp.b   d6, d7
+    bne.s   @FindLoop
+    tst.b   (a0)
+    beq.s   @FindEnd
+    move.l  a0, a1
+    bra.s   @FindLoop
+@FindEnd:
+    
+    clr.b   (a1)                        ; Cut the path at the last separator
+    bra     LoadDirectory               ; Load the new directory
