@@ -20,7 +20,7 @@ HANDLE_SIZE:        rs.b 0              ; Size of handle data
 
                     rsreset
                     rs.b 1              ; Not in use
-HMODE_ERROR:        rs.b 1              ; Unusable (EOF?)
+HMODE_NULL:         rs.b 1              ; Unusable
 HMODE_READ:         rs.b 1              ; For reading (file)
 HMODE_READDIR:      rs.b 1              ; For reading (directory)
 HMODE_WRITE:        rs.b 1              ; For writing (file)
@@ -92,61 +92,18 @@ InitHandles:
 ;****************************************************************************
 
 OpenDir:
-    cmpi.b  #'/', (a6)+                 ; Absolute paths only, sorry
-    bne.s   @Error
+    bsr     OpenHandle                  ; Try to open the directory
+    move.l  a6, d6
+    beq.s   @Error
     
-    tst.b   (a6)                        ; Open "/"?
-    beq     @Root
-    
-    move.b  (a6)+, -(sp)                ; Get next four characters
-    move.w  (sp)+, d7
-    move.b  (a6)+, d7
-    swap    d7
-    move.b  (a6)+, -(sp)
-    move.w  (sp)+, d7
-    move.b  (a6)+, d7
-    
-    cmp.l   #'rom'<<8, d7               ; Open "/rom"?
-    beq     @RomRoot
-    cmp.l   #'rom/', d7
-    beq     @RomRoot
+    cmpi.b  #HMODE_READDIR, HANDLE_MODE(a6) ; Make sure it's a directory
+    beq.s   @Success
 
 ;----------------------------------------------------------------------------
 
 @Error:
-    moveq   #0, d7                      ; For now not supported, sorry
-    moveq   #0, d6
-    moveq   #0, d5
-    move.l  d7, a6
-    move.l  d7, a5
-    move.l  d7, a4
+    moveq   #0, d7                      ; No handle :(
     
-    rts                                 ; End of subroutine
-
-;----------------------------------------------------------------------------
-
-@Root:
-    bsr     AllocHandle                 ; Get a new handle
-    move.l  a6, d6
-    beq     @Error
-    
-    move.b  #HMODE_READDIR, HANDLE_MODE(a6) ; Set up handle
-    move.b  #FILESYS_ROOT, HANDLE_FS(a6)
-    bra     @Success
-
-;----------------------------------------------------------------------------
-
-@RomRoot:
-    bsr     AllocHandle                 ; Get a new handle
-    move.l  a6, d6
-    beq     @Error
-    
-    move.b  #HMODE_READDIR, HANDLE_MODE(a6) ; Set up handle
-    move.b  #FILESYS_ROM, HANDLE_FS(a6)
-    move.l  #RomFilesystem, HANDLE_ADDR(a6)
-
-;----------------------------------------------------------------------------
-
 @Success:
     moveq   #0, d6                      ; Clear up registers
     moveq   #0, d5
@@ -167,14 +124,56 @@ OpenDir:
 ; output d6.l ... Filesize in bytes
 ;----------------------------------------------------------------------------
 ; breaks: d5, a4-a5
+;----------------------------------------------------------------------------
+; notes: returns $FFFF in the attributes when there are no more entries, or
+; when the handle is invalid or broken
 ;****************************************************************************
 
 ReadDir:
     GetHandlePtr                        ; Convert ID to pointer
-    
-    move.l  a6, d7                      ; Valid handler?
+    move.l  a6, d7
     beq.s   @Error
-    cmpi.b  #HMODE_READDIR, HANDLE_MODE(a6)
+    
+    bsr     ReadDirByHandle             ; Read next entry
+    cmp.w   #-1, d7                     ; No more entries?
+    beq.s   @Error
+    
+    moveq   #0, d5                      ; Clear up registers
+    move.l  d5, a5
+    move.l  d5, a4
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Error:
+    moveq   #-1, d7                     ; Clear up registers
+    moveq   #0, d6
+    moveq   #0, d5
+    move.l  d5, a6
+    move.l  d5, a5
+    move.l  d5, a4
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; ReadDirByHandle
+; Same as ReadDir, but using a handle pointer (and exposes some more info).
+;----------------------------------------------------------------------------
+; input a6.l .... Pointer to handle
+;----------------------------------------------------------------------------
+; output a6.l ... Pointer to filename
+; output d7.w ... File attributes
+; output d6.l ... Filesize in bytes
+; output d5.w ... First cluster
+;----------------------------------------------------------------------------
+; breaks: a4-a5
+;----------------------------------------------------------------------------
+; notes: returns $FFFF in the attributes when there are no more entries.
+;****************************************************************************
+
+ReadDirByHandle:
+    cmpi.b  #HMODE_READDIR, HANDLE_MODE(a6) ; Make sure it's a directory
     bne.s   @Error
     
     moveq   #0, d7                      ; Ask the filesystem driver to
@@ -188,11 +187,6 @@ ReadDir:
     beq.s   @Error
     
     move.l  a5, a6                      ; We want the filename here
-    
-    moveq   #0, d5                      ; Just in case (don't accidentally
-    move.l  d5, a5                      ; leak internal information)
-    move.l  d5, a4
-    
     rts                                 ; End of subroutine
 
 ;----------------------------------------------------------------------------
@@ -276,13 +270,217 @@ AllocHandle:
 ;----------------------------------------------------------------------------
 
 @Found:
-    move.b  #HMODE_ERROR, HANDLE_MODE(a6)   ; Initialize handle
+    move.b  #HMODE_NULL,HANDLE_MODE(a6) ; Initialize handle
     clr.b   HANDLE_FS(a6)
     clr.l   HANDLE_ADDR(a6)
     clr.l   HANDLE_POS(a6)
     clr.l   HANDLE_LEN(a6)
     
     rts                                 ; End of subroutine
+
+;****************************************************************************
+; OpenHandle
+; Allocates a file handle and makes it point to a file/directory. This
+; subroutine can fail if the requested file doesn't exist.
+;----------------------------------------------------------------------------
+; input a6.l .... Pointer to filename
+;----------------------------------------------------------------------------
+; output a6.l ... Pointer to handle (0 on failure)
+; output d7.w ... Handle ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a5
+;****************************************************************************
+
+OpenHandle:
+    cmpi.b  #'/', (a6)+                 ; Absolute paths only, sorry
+    bne.s   @Error
+    
+    tst.b   (a6)                        ; Open "/"?
+    beq     @Root
+    
+    move.b  (a6)+, -(sp)                ; Get next four characters
+    move.w  (sp)+, d7
+    move.b  (a6)+, d7
+    swap    d7
+    move.b  (a6)+, -(sp)
+    move.w  (sp)+, d7
+    move.b  (a6)+, d7
+    
+    cmp.l   #'rom'<<8, d7               ; Open "/rom"?
+    beq     @RomRoot
+    cmp.l   #'rom/', d7
+    beq     @RomRoot
+
+;----------------------------------------------------------------------------
+
+@Error:
+    moveq   #0, d7                      ; For now not supported, sorry
+    moveq   #0, d6
+    moveq   #0, d5
+    move.l  d7, a6
+    move.l  d7, a5
+    move.l  d7, a4
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Root:
+    bsr     AllocHandle                 ; Get a new handle
+    move.l  a6, d6
+    beq     @Error
+    
+    move.b  #HMODE_READDIR, HANDLE_MODE(a6) ; Set up handle
+    move.b  #FILESYS_ROOT, HANDLE_FS(a6)
+    
+    rts                                 ; Return handle
+
+;----------------------------------------------------------------------------
+
+@RomRoot:
+    move.l  a6, -(sp)                   ; Get a new handle
+    bsr     AllocHandle
+    move.l  (sp)+, a5
+    move.l  a6, d6
+    beq     @Error
+    
+    move.b  #HMODE_READDIR, HANDLE_MODE(a6) ; Set up handle
+    move.b  #FILESYS_ROM, HANDLE_FS(a6)
+    move.l  #RomFilesystem, HANDLE_ADDR(a6)
+    
+    tst.b   -1(a5)                      ; Check if it's the end of the path
+    beq.s   @NoRomSubdir
+    move.w  d7, -(sp)
+    bsr     IntoSubdir
+    move.w  (sp)+, d7
+@NoRomSubdir:
+    
+    rts                                 ; Return handle
+
+;****************************************************************************
+;----------------------------------------------------------------------------
+; input a6.l .... Pointer to handle
+; input a5.l .... Pointer to path portion
+;----------------------------------------------------------------------------
+; output a6.l ... Pointer to handle (0 if failed)
+; output a5.l ... Pointer to next path portion
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a5
+;****************************************************************************
+
+IntoSubdir:
+    tst.b   (a5)                        ; Was it just a path ended in "/"?
+    bne.s   @HasSubpath
+    rts
+@HasSubpath:
+    
+    movem.l d0-d4/a0-a3, -(sp)          ; Save registers
+    move.l  a6, a0                      ; Put these where they're less
+    move.l  a5, a1                      ; prone to get clobbered
+
+;----------------------------------------------------------------------------
+
+    move.l  a1, a6                      ; Get length of subpath (note:
+    moveq   #'/', d7                    ; including the terminator!)
+@FindSubpathEnd:
+    move.b  (a6)+, d6
+    beq.s   @FoundSubpathEnd
+    cmp.b   d7, d6
+    bne.s   @FindSubpathEnd
+@FoundSubpathEnd:
+    move.w  a6, d7
+    sub.w   a1, d7
+    
+    move.w  d7, d0                      ; Allocate buffer for subpath
+    or.w    #1, d0
+    addq.w  #1, d0
+    neg.w   d0
+    lea     (sp,d0.w), sp
+    
+    move.l  sp, a6                      ; Copy subpath into buffer
+    subq.w  #1+1, d7
+@CopySubpath:
+    move.b  (a1)+, (a6)+
+    dbf     d7, @CopySubpath
+    clr.b   (a6)
+    addq.l  #1, a1
+
+;----------------------------------------------------------------------------
+
+@Loop:
+    move.l  a0, a6                      ; Get next entry
+    bsr     ReadDirByHandle
+    cmp.w   #$FFFF, d7
+    beq.s   @NoEntry
+    
+    move.w  d7, d1                      ; Prevent these from getting
+    move.l  d6, d2                      ; clobbered
+    move.w  d5, d3
+    
+    move.l  sp, a5                      ; Is this the entry we want?
+    bsr     AreStringsEqual
+    tst.w   d7
+    beq.s   @Loop
+    bra.s   @FoundIt
+
+;----------------------------------------------------------------------------
+
+@NoEntry:
+    clr.b   HANDLE_MODE(a0)             ; Free the handle
+    move.w  #0, a0                      ; No handle to give back
+    moveq   #0, d7
+    bra.s   @End
+
+;----------------------------------------------------------------------------
+
+@FoundIt:
+    moveq   #HMODE_READ, d7             ; Update handle mode accordingly
+    tst.w   d1
+    bpl.s   @ReopenFile
+    addq.b  #1, d7
+@ReopenFile:
+    move.b  d7, HANDLE_MODE(a0)
+    
+    moveq   #0, d7                      ; Determine filesystem-specific
+    move.b  HANDLE_FS(a0), d7           ; callback for reopening
+    add.w   d7, d7
+    add.w   d7, d7
+    lea     @Handlers(pc), a4
+    lea     (a4,d7.w), a4
+    
+    move.w  d1, d7                      ; Reopen the handle
+    move.l  d2, d6
+    move.w  d3, d5
+    move.l  a0, a6
+    jsr     (a4)
+
+;----------------------------------------------------------------------------
+
+@End:
+    neg.w   d0                          ; Done with the buffer
+    lea     (sp,d0.w), sp
+    
+    move.l  a0, a6                      ; Put these back where they belong
+    move.l  a1, a5
+    movem.l (sp)+, d0-d4/a0-a3          ; Restore registers
+    
+    move.l  a6, d6                      ; Stop here if failed already
+    beq.s   @Failed
+    tst.b   -1(a5)                      ; Was it the end of the path?
+    bne     IntoSubdir
+@Failed:
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Handlers:
+    bra.w   @BadHandler
+    bra.w   @BadHandler                 ; FILESYS_ROOT
+    bra.w   RomFS_ReopenHandle          ; FILESYS_ROM
+
+@BadHandler:
+    illegal
 
 ;****************************************************************************
 ; The functions below are from Indigo 0.10 and may be replaced by proper

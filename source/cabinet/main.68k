@@ -115,6 +115,9 @@ MakeTestList:
 ;****************************************************************************
 
 LoadDirectory:
+    moveq   #OSCURSOR_BUSY, d7          ; This will take a while...
+    syscall OS_SETCURSOR
+    
     lea     (CurrDir), a6               ; Open the current directory
     syscall OS_OPENDIR
     tst.b   d7
@@ -148,7 +151,10 @@ LoadDirectory:
 ;----------------------------------------------------------------------------
 
 @Error:
-    illegal                             ; For now...
+    syscall OS_BEEP                     ; For now...
+    moveq   #OSCURSOR_ARROW, d7
+    syscall OS_SETCURSOR
+    bra.s   *
 
 ;****************************************************************************
 ; DoOpen

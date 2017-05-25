@@ -8,6 +8,7 @@
 
 SelectNone:
     move.w  (NumFiles), d7              ; How much to clear?
+    beq.s   @Nothing
     add.w   #$1F, d7
     lsr.w   #5, d7
     
@@ -18,6 +19,7 @@ SelectNone:
     move.l  d6, (a6)+
     dbf     d7, @Loop
     
+@Nothing:
     clr.w   (NumSelected)               ; No files selected
     rts                                 ; End of subroutine
 

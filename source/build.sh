@@ -4,6 +4,12 @@ gfx() { ./mdtiler $1 ; }
 
 rm -rf rom
 mkdir -p rom
+mkdir -p rom/apps
+mkdir -p rom/dummy/dummy
+mkdir -p rom/dummy/empty
+cp dummy.text rom/dummy
+cp dummy.text rom/dummy/dummy/dummy1.text
+cp dummy.text rom/dummy/dummy/dummy2.text
 
 gfx cabinet/data/gfxbuild
 asm cabinet/buildme.68k rom/cabinet.ixec

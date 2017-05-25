@@ -46,3 +46,28 @@ RomFS_ReadDir:
     move.l  d6, a5
     
     rts                                 ; End of subroutine
+
+;****************************************************************************
+; RomFS_ReopenHandle
+; Reopens an existing handle to point to the specified entry.
+;----------------------------------------------------------------------------
+; input a6.l .... Pointer to file handle
+; input d7.w .... File attributes
+; input d6.l .... Filesize in bytes
+; input d5.w .... First cluster
+;----------------------------------------------------------------------------
+; output a6.l ... Pointer to file handle (intact)
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a5
+;****************************************************************************
+
+RomFS_ReopenHandle:
+    and.l   #$FFFF, d5                  ; Set file pointer
+    lsl.l   #5, d5
+    add.l   #RomFilesystem, d5
+    move.l  d5, HANDLE_ADDR(a6)
+    
+    move.l  d6, HANDLE_LEN(a6)          ; Store file length
+    clr.l   HANDLE_POS(a6)              ; Back to the beginning
+    
+    rts                                 ; End of subroutine
