@@ -12,4 +12,7 @@ ScrollPos:          rs.w 1              ; Current scroll position
 ScrollMax:          rs.w 1              ; Maximum scroll position
 OldScroll:          rs.w 1              ; Previous scroll position
 
+PathSpr:            rs.b 1              ; 1st sprite ID for path field
+                    rs.b 1
+
 CurrDir:            rs.b 0              ; Current directory path

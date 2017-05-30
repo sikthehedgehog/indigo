@@ -1,0 +1,63 @@
+PATH_X:             equ FLIST_X
+PATH_Y:             equ FLIST_Y-3
+PATH_W:             equ 32
+
+;****************************************************************************
+; InitPath
+; Initializes the path widget
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+InitPath:
+    syscall OS_ALLOCSPRITE              ; Allocate sprites for the path text
+    move.b  d7, (PathSpr)               ; Because I can't be arsed to figure
+    syscall OS_ALLOCSPRITE              ; out a proper place to allocate text
+    syscall OS_ALLOCSPRITE
+    syscall OS_ALLOCSPRITE
+    syscall OS_ALLOCSPRITE
+    syscall OS_ALLOCSPRITE
+    syscall OS_ALLOCSPRITE
+    syscall OS_ALLOCSPRITE
+    
+    moveq   #PATH_X*8, d0               ; Set up sprites
+    moveq   #PATH_Y*8+4, d1
+    move.w  #VramPath, d2
+    move.b  (PathSpr), d3
+    moveq   #8-1, d4
+@Loop:
+    move.b  d3, d7
+    move.w  d0, d6
+    move.w  d1, d5
+    move.w  d2, a6
+    move.w  #%1100, a5
+    syscall OS_SETSPRITE
+    add.w   #$20, d0
+    addq.w  #4, d2
+    addq.b  #1, d3
+    dbf     d4, @Loop
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; RenderPath
+; Rerenders the text for the path field.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+RenderPath:
+    lea     -$20*PATH_W(sp), sp         ; Allocate room for buffer
+    
+    lea     (CurrDir), a6               ; For now just draw the current
+    move.l  sp, a5                      ; directory (path will be editable in
+    moveq   #PATH_W, d7                 ; a later version)
+    syscall OS_RENDERTEXT
+    
+    move.w  #VramPath, d7               ; Load text into video memory
+    move.w  #PATH_W, d6
+    move.l  sp, a6
+    syscall OS_LOADPATTERNS
+    
+    lea     $20*PATH_W(sp), sp          ; Done with buffer
+    rts                                 ; End of subroutine

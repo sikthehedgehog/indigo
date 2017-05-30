@@ -3,5 +3,6 @@
     include "cabinet/file_list.68k"
     include "cabinet/scroll.68k"
     include "cabinet/select.68k"
+    include "cabinet/path.68k"
     include "cabinet/data.68k"
     include "cabinet/variables.68k"

@@ -78,6 +78,7 @@ VramParent:         rs.b 8*2            ; Parent button
 VramOpen:           rs.b 14*2           ; Open button
 VramSave:           rs.b 14*2           ; Save button
 VramFilename:       rs.b 6              ; Filename field placeholder
+VramPath:           rs.b PATH_W         ; Current path
 
 NumPatterns:        rs.b 0              ; Number of patterns
 VramFileList:       rs.b 32*16          ; File list

@@ -21,12 +21,13 @@ EntryPoint:
     move.w  #VramFrame, a4
     syscall OS_FILLFRAME
     
-    moveq   #FLIST_X-1, d7              ; Placeholder where filename will go
-    moveq   #FLIST_Y-3, d6
+    moveq   #PATH_X-1, d7               ; Draw path widget
+    moveq   #PATH_Y, d6
     moveq   #0, d5
-    move.w  #FLIST_W, a6
+    move.w  #PATH_W, a6
     move.w  #VramFilename, a5
     syscall OS_DRAWHBAR
+    bsr     InitPath
     
     move.w  #'/'<<8, (CurrDir)          ; Default path
     
@@ -146,7 +147,10 @@ LoadDirectory:
     syscall OS_CLOSEDIR
     
     bsr     GetFileListReady            ; Done adding files
-    bra     RefreshFileList             ; Redraw the list
+    bsr     RefreshFileList             ; Redraw the list
+    bsr     RenderPath                  ; Update the path
+    
+    rts                                 ; End of subroutine
 
 ;----------------------------------------------------------------------------
 
