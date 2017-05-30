@@ -134,11 +134,44 @@ LoadDirectory:
     cmp.w   #$FFFF, d7
     beq.s   @End
     
-    tst.w   d7                          ; Which icon to show? (for now just
-    spl.b   d7                          ; tell apart folders from files)
-    and.w   #1, d7
-    addq.w  #1, d7
+    tst.w   d7                          ; Is it a folder?
+    bpl.s   @IsAFile
+    moveq   #ICON_FOLDER, d7
+    bra.s   @TypeReady
     
+@IsAFile:
+    moveq   #ICON_UNKNOWN, d7           ; Default icon for files
+    
+    move.l  a6, a5                      ; Check for known types
+@FindNameEnd:
+    tst.b   (a5)+
+    bne.s   @FindNameEnd
+    subq.w  #5+1, a5
+    cmpi.b  #'.', (a5)+
+    bne.s   @TypeReady
+    
+    move.b  (a5)+, d6                   ; Get extension
+    move.b  d6, -(sp)
+    move.w  (sp)+, d6
+    move.b  (a5)+, d6
+    swap    d6
+    move.b  (a5)+, d6
+    move.b  d6, -(sp)
+    move.w  (sp)+, d6
+    move.b  (a5)+, d6
+    
+    cmpi.l  #'ixec', d6                 ; Program?
+    bne.s   @NotIxec
+    moveq   #ICON_IXEC, d7
+    bra.s   @TypeReady
+@NotIxec:
+    cmpi.l  #'text', d6                 ; Text file?
+    bne.s   @NotText
+    moveq   #ICON_TEXT, d7
+    ;bra.s   @TypeReady
+@NotText:
+    
+@TypeReady:
     bsr     AddFileEntry                ; Add file to the list
     bra.s   @Loop                       ; Keep reading!
     
