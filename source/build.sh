@@ -19,7 +19,6 @@ asm calculator/buildme.68k rom/apps/calculator.ixec
 
 gfx desktop/data/gfxbuild
 asm desktop/buildme.68k rom/apps/desktop.ixec
-cp rom/apps/desktop.ixec rom/desktop.ixec
 
 gfx settings/data/gfxbuild
 asm settings/buildme.68k rom/apps/settings.ixec

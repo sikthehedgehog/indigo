@@ -84,5 +84,5 @@ QuitProcess:
 ;----------------------------------------------------------------------------
 
 @Default:
-    dc.b    '/rom/desktop.ixec',0
+    dc.b    '/rom/apps/desktop.ixec',0
     even
