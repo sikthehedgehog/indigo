@@ -8,11 +8,9 @@
 ;****************************************************************************
 
 LoadProcess:
-    move.l  ($0000).w, sp               ; Crunch the stack!
     move.l  a6, -(sp)                   ; We'll need this later
     
     move.b  #CURSOR_BUSY, (CursorShape) ; Show that we're busy
-    
     bsr     ClearScreen                 ; Remove any screen leftovers
     bsr     ResetSprites
     
@@ -52,19 +50,23 @@ LoadProcess:
     clr.w   (EventY)
     clr.b   (NextAscii)                 ; No text entered yet
     
-    move.l  (sp)+, a5                   ; Check if the program exists
-    lea     (RomFilesystem), a6         ; If not proceed to crash Indigo
-    bsr     ScanForFile
-    cmp.w   #$FFFF, d7
-    bne.s   @ProgramOk
-    illegal
-@ProgramOk:
+    move.l  (sp)+, a6                   ; Try to open the file
+    bsr     OpenHandle
+    move.l  a6, d7
+    beq.s   @Error
+    cmpi.b  #HMODE_READ, HANDLE_MODE(a6)
+    bne.s   @Error
     
-    and.l   #$FFFF, d6                  ; Start running the program!
-    lsl.l   #5, d6
-    lea     (RomFilesystem), a6
-    lea     (a6,d6.l), a6
-    jmp     (a6)
+    move.l  HANDLE_ADDR(a6), a0         ; Get pointer to program
+    clr.w   HANDLE_MODE(a6)             ; Get rid of the handle
+    
+    move.l  ($0000).w, sp               ; Crunch the stack!
+    jmp     (a0)                        ; Start running the program!
+
+;----------------------------------------------------------------------------
+
+@Error:
+    illegal
 
 ;****************************************************************************
 ; QuitProcess
@@ -82,5 +84,5 @@ QuitProcess:
 ;----------------------------------------------------------------------------
 
 @Default:
-    dc.b    'desktop.ixec', 0
+    dc.b    '/rom/desktop.ixec',0
     even

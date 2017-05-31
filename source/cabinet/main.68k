@@ -249,8 +249,64 @@ DoOpen:
 ;----------------------------------------------------------------------------
 
 @NotFolder:
+    cmpi.b  #ICON_IXEC, (a0)            ; Executable file?
+    beq     OpenIxec
+    
     syscall OS_BEEP                     ; Whoops!
     rts                                 ; Can't open for now...
+
+;****************************************************************************
+; OpenIxec
+; Opens an executable file.
+;----------------------------------------------------------------------------
+; input a0.l ... Pointer to file entry
+;----------------------------------------------------------------------------
+; notes: doesn't return
+;****************************************************************************
+
+OpenIxec:
+    addq.w  #2, a0                      ; Skip icon and padding
+    
+    moveq   #0, d7                      ; Determine size needed for buffer
+    move.l  a0, a6                      ; to hold the whole path (more or
+@GetFileLen:                            ; less, doesn't need to be exact as
+    addq.w  #1, d7                      ; long as the whole path will fit)
+    tst.b   (a6)+
+    bne.s   @GetFileLen
+    lea     (CurrDir), a6
+@GetDirLen:
+    addq.w  #1, d7
+    tst.b   (a6)+
+    bne.s   @GetDirLen
+    or.w    #1, d7
+    addq.w  #1, d7
+    
+    neg.w   d7                          ; Allocate buffer
+    lea     (sp,d7.w), sp
+    
+    move.l  sp, a6                      ; Copy directory into buffer
+    lea     (CurrDir), a5
+@CopyDir:
+    move.b  (a5)+, (a6)+
+    bne.s   @CopyDir
+    subq.w  #1, a6
+    
+    moveq   #$20, d7                    ; Copy filename into buffer
+@CopyFile:                              ; Note that we strip control
+    move.b  (a0)+, d6                   ; characters (which were using for
+    beq.s   @CopyFileEnd                ; pretty formatting on screen)
+    cmp.b   d7, d6
+    blo.s   @SkipCtrl
+    move.b  d6, (a6)+
+@SkipCtrl:
+    bra.s   @CopyFile
+@CopyFileEnd:
+    
+    clr.b   (a6)                        ; Insert terminating nul
+    
+    move.l  sp, a6                      ; Run program
+    syscall OS_LOADPROCESS
+    illegal
 
 ;****************************************************************************
 ; GoToParent

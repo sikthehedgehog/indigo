@@ -12,23 +12,24 @@ cp dummy.text rom/dummy/dummy/dummy1.text
 cp dummy.text rom/dummy/dummy/dummy2.text
 
 gfx cabinet/data/gfxbuild
-asm cabinet/buildme.68k rom/cabinet.ixec
+asm cabinet/buildme.68k rom/apps/cabinet.ixec
 
 gfx calculator/data/gfxbuild
-asm calculator/buildme.68k rom/calculator.ixec
+asm calculator/buildme.68k rom/apps/calculator.ixec
 
 gfx desktop/data/gfxbuild
-asm desktop/buildme.68k rom/desktop.ixec
+asm desktop/buildme.68k rom/apps/desktop.ixec
+cp rom/apps/desktop.ixec rom/desktop.ixec
 
 gfx settings/data/gfxbuild
-asm settings/buildme.68k rom/settings.ixec
+asm settings/buildme.68k rom/apps/settings.ixec
 
 gfx solitaire/data/gfxbuild
-asm solitaire/buildme.68k rom/solitaire.ixec
+asm solitaire/buildme.68k rom/apps/solitaire.ixec
 
 gfx terminal/data/gfxbuild
 php terminal/data/makefont.php
-asm terminal/buildme.68k rom/terminal.ixec
+asm terminal/buildme.68k rom/apps/terminal.ixec
 
 gfx kernel/data/gfxbuild
 php kernel/data/key2ascii.php

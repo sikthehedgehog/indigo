@@ -33,11 +33,11 @@ Filenames:
     dc.w    FileTerminal-Filenames
     dc.w    FileSettings-Filenames
 
-FileCabinet:        dc.b 'cabinet.ixec', 0
-FileCalculator:     dc.b 'calculator.ixec', 0
-FileSolitaire:      dc.b 'solitaire.ixec', 0
-FileTerminal:       dc.b 'terminal.ixec', 0
-FileSettings:       dc.b 'settings.ixec', 0
+FileCabinet:        dc.b '/rom/apps/cabinet.ixec', 0
+FileCalculator:     dc.b '/rom/apps/calculator.ixec', 0
+FileSolitaire:      dc.b '/rom/apps/solitaire.ixec', 0
+FileTerminal:       dc.b '/rom/apps/terminal.ixec', 0
+FileSettings:       dc.b '/rom/apps/settings.ixec', 0
                     even
 
 ;****************************************************************************
