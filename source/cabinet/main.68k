@@ -180,8 +180,8 @@ LoadDirectory:
     syscall OS_CLOSEDIR
     
     bsr     GetFileListReady            ; Done adding files
-    bsr     RefreshFileList             ; Redraw the list
     bsr     RenderPath                  ; Update the path
+    bsr     RefreshFileList             ; Redraw the list
     
     rts                                 ; End of subroutine
 
