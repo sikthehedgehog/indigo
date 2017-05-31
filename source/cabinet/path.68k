@@ -10,6 +10,11 @@ PATH_W:             equ 32
 ;****************************************************************************
 
 InitPath:
+    move.w  #VramPath, d7               ; Make path blank because otherwise
+    moveq   #PATH_W, d6                 ; garbage shows up and it's irking me
+    moveq   #0, d5
+    syscall OS_FILLPATTERNS
+    
     syscall OS_ALLOCSPRITE              ; Allocate sprites for the path text
     move.b  d7, (PathSpr)               ; Because I can't be arsed to figure
     syscall OS_ALLOCSPRITE              ; out a proper place to allocate text
