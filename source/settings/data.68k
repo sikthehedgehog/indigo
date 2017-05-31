@@ -28,9 +28,9 @@ Layout:
     OSUI_Hold ID_MOUSESENS_D, 2,17,2,2, VramLess
     OSUI_Hold ID_MOUSESENS_U, 14,17,2,2, VramMore
     
-    OSUI_HScroll ID_SOUNDVOL, 4,22,8, VramScroller,VramHScrollBg
-    OSUI_Hold ID_SOUNDVOL_D, 2,22,2,2, VramLess
-    OSUI_Hold ID_SOUNDVOL_U, 14,22,2,2, VramMore
+    OSUI_HScroll ID_SOUNDVOL, 24,22,8, VramScroller,VramHScrollBg
+    OSUI_Hold ID_SOUNDVOL_D, 22,22,2,2, VramLess
+    OSUI_Hold ID_SOUNDVOL_U, 34,22,2,2, VramMore
     OSUI_End
 
 ;----------------------------------------------------------------------------
@@ -79,7 +79,7 @@ LabelList:
     dc.b    2,15,0,11
     dc.w    VramMouseSensivity
     
-    dc.b    2,20,0,9
+    dc.b    22,20,0,9
     dc.w    VramSoundVolume
     
     dc.w    $FFFF
