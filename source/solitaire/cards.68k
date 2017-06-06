@@ -233,7 +233,14 @@ DropCards:
     move.b  d7, d0
     
     syscall OS_GETEVENTXY               ; Check in which region it landed
-    cmp.w   #7, d6
+    move.w  a6, d7                      ; Recalculating the tile-based
+    move.w  a5, d6                      ; coordinates in order to be a bit
+    addq.w  #4, d7                      ; more forgiving
+    addq.w  #4, d6
+    asr.w   #3, d7
+    asr.w   #3, d6
+    
+    cmp.w   #8, d6
     blo.s   @ReturnIt
 
 ;----------------------------------------------------------------------------
@@ -242,9 +249,7 @@ DropCards:
     blt     @ReturnIt
     and.l   #$FFFF, d7
     divu.w  #5, d7
-    cmp.l   #4<<16, d7
-    bhs     @ReturnIt
-    cmp.b   #6, d7
+    cmp.w   #6, d7
     bhi     @ReturnIt
     
     move.b  d7, d0                      ; Drop on this pile!
