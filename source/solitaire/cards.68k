@@ -1,263 +1,28 @@
 ;****************************************************************************
-; Shuffle
-; Shuffles the cards when starting a new game.
-;----------------------------------------------------------------------------
-; breaks: all
-;****************************************************************************
-
-Shuffle:
-    moveq   #1, d0                      ; Fill the stock with cards
-    lea     (Stock), a0
-    moveq   #52-1, d7
-@Fill:
-    move.b  d0, (a0)+
-    addq.b  #1, d0
-    dbf     d7, @Fill
-    
-    moveq   #52-1, d0                   ; Shuffle the cards!
-    lea     (Stock), a0                 ; We just go through the whole stock
-    move.l  a0, a1                      ; and swap each card with another
-@Loop:                                  ; random one (so literally shuffling)
-    syscall OS_RAND
-    and.l   #$FFFF, d7
-    divu.w  #52, d7
-    swap    d7
-    move.b  (a0), d1
-    move.b  (a1,d7.w), d2
-    move.b  d1, (a1,d7.w)
-    move.b  d2, (a0)+
-    dbf     d0, @Loop
-    
-    lea     (Stock+52), a0              ; Distribute the cards among
-    lea     (Piles), a1                 ; the piles
-    moveq   #1-1, d0
-    move.b  #$80, d1
-    moveq   #7-1, d6
-@PileLoop:
-    move.l  a1, a6
-    move.w  d0, d7
-@CardLoop:
-    move.b  -(a0), d5
-    or.b    d1, d5
-    move.b  d5, (a6)+
-    dbf     d7, @CardLoop
-    lea     32(a1), a1
-    addq.w  #1, d0
-    dbf     d6, @PileLoop
-    
-    lea     (StockLen), a6              ; Set up the card counts
-    move.b  #24, (a6)+
-    move.b  #0, (a6)+
-    move.b  #1, (a6)+
-    move.b  #2, (a6)+
-    move.b  #3, (a6)+
-    move.b  #4, (a6)+
-    move.b  #5, (a6)+
-    move.b  #6, (a6)+
-    move.b  #7, (a6)+
-    
-    bsr     UncoverPiles                ; Make sure the topmost card of
-                                        ; every pile is not flipped
-    
-    bsr     UpdateAllWidgets            ; Get all widgets ready
-    rts                                 ; End of subroutine
-
-;****************************************************************************
-; StockToHeap
-; Moves a card from the stock to the heap. When the stock is empty, it moves
-; the heap back to it. Basically, what happens when you click on the stock.
-;----------------------------------------------------------------------------
-; breaks: all
-;****************************************************************************
-
-StockToHeap:
-    moveq   #0, d7                      ; Check if there are cards
-    move.b  (StockLen), d7              ; on the stock
-    beq.s   @StockEmpty
-
-;----------------------------------------------------------------------------
-
-    moveq   #0, d6                      ; Move card from stock to heap
-    move.b  (HeapLen), d6
-    lea     (Stock), a6
-    lea     (Heap), a5
-    move.b  -1(a6,d7.w), (a5,d6.w)
-    
-    subq.b  #1, d7                      ; Update stock and heap sizes
-    addq.b  #1, d6
-    move.b  d7, (StockLen)
-    move.b  d6, (HeapLen)
-    
-    bsr     DrawStock                   ; Redraw stock and heap
-    bsr     DrawHeap
-    bra     UpdateHeapWidget
-
-;----------------------------------------------------------------------------
-
-@StockEmpty:
-    moveq   #0, d6                      ; Check if there are cards
-    move.b  (HeapLen), d6               ; on the heap
-    beq.s   @HeapEmpty
-    
-    lea     (Stock), a6                 ; Move the heap back to the stock
-    lea     (Heap), a5
-    lea     (a5,d6.w), a5
-    move.b  d6, (StockLen)
-    clr.b   (HeapLen)
-    subq.b  #1, d6
-@Restock:
-    move.b  -(a5), (a6)+
-    dbf     d6, @Restock
-
-@HeapEmpty:
-    bsr     DrawStock                   ; Redraw stock and heap
-    bsr     DrawHeap
-    bra     UpdateHeapWidget
-
-;****************************************************************************
-; UncoverPiles
-; Makes the topmost card of each pile to be uncovered.
-;----------------------------------------------------------------------------
-; breaks: all?
-;****************************************************************************
-
-UncoverPiles:
-    moveq   #7-1, d7                    ; Scan through all piles
-    lea     (Piles), a6
-    lea     (PileLen), a5
-@Loop:
-    moveq   #0, d6                      ; Check if this pile has cards
-    move.b  (a5)+, d6
-    beq.s   @Skip
-    
-    move.b  -1(a6,d6.w), d5             ; Uncover topmost card (if not
-    and.b   #$7F, d5                    ; already uncovered)
-    move.b  d5, -1(a6,d6.w)
-@Skip:
-    lea     32(a6), a6                  ; Go for next pile
-    dbf     d7, @Loop
-    
-    rts                                 ; End of subroutine
-
-;****************************************************************************
-; UpdateAllWidgets
-; Repositions all widgets as needed based on the cards.
-;----------------------------------------------------------------------------
-; breaks: all
-;****************************************************************************
-
-UpdateAllWidgets:
-    bsr     UpdateHeapWidget
-    rts
-
-;****************************************************************************
-; UpdateHeapWidget
-; Makes the heap widget available depending on whether it has cards left.
-;----------------------------------------------------------------------------
-; breaks: all
-;****************************************************************************
-
-UpdateHeapWidget:
-    tst.b   (HeapLen)                   ; Does the heap have cards?
-    beq.s   @Empty
-    
-    moveq   #ID_HEAP, d7                ; If the heap has any cards on it
-    moveq   #7, d6                      ; make its widget clickable
-    moveq   #2, d5
-    move.w  #4, a6
-    move.w  #6, a5
-    syscall OS_SETWIDGETXY
-    rts
-    
-@Empty:
-    moveq   #ID_HEAP, d7                ; If the heap is empty then put
-    moveq   #40, d6                     ; the widget away
-    moveq   #0, d5
-    move.w  #0, a6
-    move.w  #0, a5
-    syscall OS_SETWIDGETXY
-    rts
-
-;****************************************************************************
-; DrawTable
-; Draws the table (the background).
-;----------------------------------------------------------------------------
-; breaks: all
-;****************************************************************************
-
-DrawTable:
-    move.w  #VramBg+$2000, d7           ; Draw background
-    move.w  #VramBg+$2800, d6
-    move.w  #VramBg+$3000, a6
-    move.w  #VramBg+$3800, a5
-    syscall OS_FILLBACKGROUND
-    
-    moveq   #13-1, d0                   ; Draw all the free slots
-    lea     @FreeSlots(pc), a0
-@DrawFreeSlots:
-    moveq   #0, d7
-    moveq   #0, d6
-    move.b  (a0)+, d7
-    move.b  (a0)+, d6
-    moveq   #1, d5
-    move.w  #2, a6
-    move.w  #4, a5
-    move.w  #VramFree+$2000, a4
-    syscall OS_FILLFRAME
-    dbf     d0, @DrawFreeSlots
-    
-    bsr     DrawStock                   ; Draw the stock
-    bsr     DrawHeap                    ; Draw the heap
-    
-    moveq   #7-1, d7                    ; Draw all piles
-@DrawPiles:
-    move.w  d7, -(sp)
-    bsr     DrawPile
-    move.w  (sp)+, d7
-    dbf     d7, @DrawPiles
-    
-    rts                                 ; End of subroutines
-
-;----------------------------------------------------------------------------
-
-@FreeSlots:
-    dc.b    2,1, 7,1,       19,1, 24,1, 29,1, 34,1
-    dc.b    4,8, 9,8, 14,8, 19,8, 24,8, 29,8, 34,8
-
-;****************************************************************************
 ; DrawCard
-; Draws a card.
+; Draws a card on the table.
 ;----------------------------------------------------------------------------
 ; input d7.w ... X coordinate
 ; input d6.w ... Y coordinate
-; input d5.b ... Card's value
+; input d5.b ... Card value (set bit 7 to cover it)
 ;----------------------------------------------------------------------------
 ; breaks: d5-d7, a4-a6
 ;****************************************************************************
 
 DrawCard:
-    tst.b   d5                          ; Is the card reversed or not?
+    tst.b   d5                          ; Determine card type
     beq.s   @Empty
-    bpl.s   @Facing
-    
-    moveq   #0, d5                      ; Reversed cards just show their
-    move.w  #2, a6                      ; back (without revealing their
-    move.w  #4, a5                      ; actual value)
-    move.w  #VramReverse+$2000, a4
-    syscall OS_FILLFRAME
-    
-    rts                                 ; End of subroutine
+    bmi.s   @Covered
 
 ;----------------------------------------------------------------------------
 
-@Facing:
-    subq.b  #1, d5                      ; Card IDs start at 1
-    
-    and.w   #$FF, d5                    ; Determine patterns to use
+@Exposed:
+    subq.b  #1, d5                      ; Determine card graphic
+    and.w   #$FF, d5
     lsl.w   #3, d5
-    move.w  d5, a4
+    move.w  d5, a6
     add.w   d5, d5
-    add.w   a4, d5
+    add.w   a6, d5
     add.w   #VramCards, d5
     move.w  d5, a4
     
@@ -270,8 +35,22 @@ DrawCard:
 
 ;----------------------------------------------------------------------------
 
+@Covered:
+    and.b   #$7F, d5                    ; Corner case ($80 = empty)
+    beq.s   @Empty
+    
+    moveq   #0, d5                      ; Draw the card's back
+    move.w  #2, a6
+    move.w  #4, a5
+    move.w  #$2000+VramReverse, a4
+    syscall OS_FILLFRAME
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
 @Empty:
-    moveq   #0, d5                      ; Clear the space
+    moveq   #0, d5                      ; Blank the area
     move.w  #4, a6
     move.w  #6, a5
     syscall OS_ERASETILES
@@ -279,200 +58,190 @@ DrawCard:
     rts                                 ; End of subroutine
 
 ;****************************************************************************
-; DrawStock
-; Draws the stock.
+; UpdateAllWidgets
+; Updates the area covered by all the card widgets.
 ;----------------------------------------------------------------------------
 ; breaks: all
 ;****************************************************************************
 
-DrawStock:
-    tst.b   (StockLen)                  ; Check if there are cards on
-    sne.b   d5                          ; the stock
+UpdateAllWidgets:
+    bsr     UpdateStockWidget           ; Update stock
     
-    moveq   #2, d7                      ; Draw stock
-    moveq   #1, d6
-    bra     DrawCard
-
-;****************************************************************************
-; DrawHeap
-; Draws the heap.
-;----------------------------------------------------------------------------
-; breaks: all
-;****************************************************************************
-
-DrawHeap:
-    moveq   #0, d7                      ; Check if there are cards
-    move.b  (HeapLen), d7               ; on the heap
-    beq.s   @Empty
+    moveq   #8-1, d7                    ; Update heap and all piles
+@Piles:                                 ; (note that heap is pile #0)
+    move.w  d7, -(sp)
+    bsr     UpdatePileWidget
+    move.w  (sp)+, d7
+    dbf     d7, @Piles
     
-    lea     (Heap), a6                  ; Draw topmost card
-    move.b  -1(a6,d7.w), d5
-    moveq   #7, d7
-    moveq   #1, d6
-    bra     DrawCard
-    
-@Empty:
-    moveq   #7, d7                      ; Clear the heap
-    moveq   #1, d6
-    moveq   #0, d5
-    bra     DrawCard
-
-;****************************************************************************
-; DrawPile
-; Draws a pile.
-;----------------------------------------------------------------------------
-; input d7.b ... Which pile
-;----------------------------------------------------------------------------
-; breaks: all
-;****************************************************************************
-
-DrawPile:
-    cmp.b   #-1, d7                     ; Sometimes heap is the 0th pile so
-    beq     DrawHeap                    ; we have this hack to allow us to
-                                        ; treat it as such out of laziness
-    
-    and.w   #$FF, d7                    ; Get pile data
-    lea     (PileLen), a0
-    moveq   #0, d2
-    move.b  (a0,d7.w), d2
-    move.w  d7, d3
-    lsl.w   #5, d3
-    lea     (Piles), a0
-    lea     (a0,d3.w), a0
-    
-    and.w   #$FF, d7                    ; Determine coordinates
-    move.w  d7, d6
-    add.w   d7, d7
-    add.w   d7, d7
-    add.w   d6, d7
-    addq.w  #4, d7
-    move.w  d7, d0
-    moveq   #8, d1
-    
-    move.w  d1, d6                      ; Remove any leftovers
-    moveq   #0, d5
-    move.w  #4, a6
-    move.w  #17, a5
-    syscall OS_ERASETILES
-    
-    subq.w  #1, d2                      ; Draw all the cards
-    bmi.s   @Empty
-@Loop:
-    move.w  d0, d7
-    move.w  d1, d6
-    move.b  (a0)+, d5
-    bsr     DrawCard
-    addq.w  #1, d1
-    dbf     d2, @Loop
-    
-@Empty:
     rts                                 ; End of subroutine
 
 ;****************************************************************************
-; DragCard
-; Updates the card being dragged.
+; DoDragging
+; Handles dragging the cards around.
 ;----------------------------------------------------------------------------
-; input d7.b ... Widget ID
-; input d6.w ... $FFxx when dragging, $00xx when dropping
+; input d7.b ... Source pile
+; input d6.w ... $FFxx in the middle of dragging
+;                $00xx to drop the cards
 ;----------------------------------------------------------------------------
 ; breaks: all
 ;****************************************************************************
 
-DragCard:
-    tst.w   d6                          ; Drop the card?
-    bpl     @DropIt
+DoDragging:
+    tst.w   d6                          ; Drop the cards?
+    bpl     DropCards
     
-    moveq   #0, d0                      ; Is any card being dragged already?
-    move.b  (DraggedCard), d0
-    bne.s   @Dragging
+    moveq   #0, d1                      ; We'll need this later if we aren't
+    move.b  d7, d1                      ; dragging cards yet
     
-    moveq   #0, d6                      ; Check if there are cards we
-    and.w   #$FF, d7                    ; can start dragging
-    sub.w   #ID_HEAP, d7
-    lea     (HeapLen), a0
-    move.b  (a0,d7.w), d6
-    bne.s   @CanDrag
-    rts
-@CanDrag:
+    syscall OS_GETCURSORPOS             ; Where will cards show up?
+    moveq   #-16, d2
+    moveq   #-4, d3
+    add.w   d7, d2
+    add.w   d6, d3
     
-    move.w  d7, -(sp)                   ; We need this for redrawing
+    lea     (Dragging), a0              ; Pointer to dragged cards
+    moveq   #0, d0                      ; How many cards are being dragged?
+    move.b  (DragLen), d0
+    bne     @AlreadyPicked
+
+;----------------------------------------------------------------------------
+
+    tst.b   d1                          ; Grabbing from the heap?
+    bne.s   @NotHeap
     
-    subq.b  #1, d6                      ; Take the topmost card
-    move.b  d6, (a0,d7.w)
-    lsl.w   #5, d7
-    lea     (Heap), a0
-    lea     (a0,d7.w), a0
-    move.b  (a0,d6.w), d0
-    move.b  d0, (DraggedCard)
+    moveq   #1, d0                      ; Always pick one
+    move.b  d0, (DragLen)
     
-    move.w  (sp)+, d7                   ; Redraw pile we picked from
+    moveq   #0, d7                      ; Pick the top card from the heap
+    move.b  (HeapLen), d7
+    subq.b  #1, d7
+    move.b  d7, (HeapLen)
+    lea     (Heap), a6
+    move.b  (a6,d7.w), (a0)
+    
+    movem.l d0/d2-d3/a0, -(sp)          ; Update heap
+    bsr     UpdateHeapWidget
+    bsr     DrawHeap
+    movem.l (sp)+, d0/d2-d3/a0
+    
+    bra     @AlreadyPicked              ; Go drag it around
+
+;----------------------------------------------------------------------------
+
+@NotHeap:
+    syscall OS_GETEVENTXY               ; Determine from which card of the
+    subq.w  #8, d6                      ; pile we're picking
+    
+    subq.w  #1, d1                      ; Determine how many cards to pick
+    moveq   #0, d0
+    lea     (PileLen), a6
+    move.b  (a6,d1.w), d0
+    move.b  d6, (a6,d1.w)
+    sub.b   d6, d0
+    move.b  d0, (DragLen)
+    
+    move.w  d1, d7
+    lsl.w   #5, d7                      ; Pointer to cards from pile
+    lea     (Piles), a6
+    lea     (a6,d7.w), a6
+    lea     (a6,d6.w), a6
+    
+    move.l  a0, a5                      ; Move cards from pile to drag list
+    move.w  d0, d7
     subq.w  #1, d7
+@PickFromPile:
+    move.b  (a6)+, (a5)+
+    dbf     d7, @PickFromPile
+    
+    movem.l d0/d2-d3/a0, -(sp)          ; Update pile
+    addq.w  #1, d1
+    move.w  d1, d7
+    bsr     UpdatePileWidget
+    move.w  d1, d7
     bsr     DrawPile
+    movem.l (sp)+, d0/d2-d3/a0
+
+;----------------------------------------------------------------------------
+
+@AlreadyPicked:
+    move.b  (DragSpr), d1               ; ID of first sprite
     
-    move.b  (DraggedCard), d0
+    subq.w  #2, d0                      ; Dragging more than one card? (i.e.
+    bmi.s   @OneCard                    ; are there partially covered cards?)
     
-@Dragging:
-    subq.w  #1, d0                      ; Determine card graphic
-    lsl.w   #3, d0
-    move.w  d0, d1
-    add.w   d1, d0
-    add.w   d1, d0
-    add.w   #VramCards, d0
-    
-    syscall OS_GETCURSORPOS             ; Get card position on screen
-    move.w  d7, d2
-    move.w  d6, d3
-    sub.w   #12, d2
-    subq.w  #4, d3
-    
-    move.b  (DragSprite), d1            ; Put card under the cursor
-    moveq   #6-1, d4
-@SpriteLoop:
+@DrawCards:                             ; Draw all the partially covered
+    moveq   #0, d7                      ; cards (only the first row of each
+    move.b  (a0)+, d7                   ; is visible)
+    subq.w  #1, d7
+    lsl.w   #3, d7
+    move.w  d7, d6
+    add.w   d7, d7
+    add.w   d6, d7
+    add.w   #VramCards, d7
+    move.w  d7, a6
     move.b  d1, d7
     move.w  d2, d6
     move.w  d3, d5
-    move.w  d0, a6
     move.w  #%1100, a5
     syscall OS_SETSPRITE
-    addq.w  #4, d0
-    addq.w  #1, d1
+    addq.b  #1, d1
     addq.w  #8, d3
-    dbf     d4, @SpriteLoop
+    dbf     d0, @DrawCards
+    
+@OneCard:
+    moveq   #0, d7
+    move.b  (a0)+, d7
+    subq.w  #1, d7
+    lsl.w   #3, d7
+    move.w  d7, d6
+    add.w   d7, d7
+    add.w   d6, d7
+    add.w   #VramCards, d7
+    move.w  d7, d4
+    moveq   #6-1, d0
+@MainCard:
+    move.w  d1, d7
+    move.w  d2, d6
+    move.w  d3, d5
+    move.w  d4, a6
+    move.w  #%1100, a5
+    syscall OS_SETSPRITE
+    addq.b  #1, d1
+    addq.w  #8, d3
+    addq.w  #4, d4
+    dbf     d0, @MainCard
     
     rts                                 ; End of subroutine
 
+;****************************************************************************
+; DropCards
+; Called to drop the dragged cards.
 ;----------------------------------------------------------------------------
+; input d7.b ... Source pile
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
 
-@DropIt:
-    tst.b   (DraggedCard)               ; Make sure a card was even being
-    beq.s   @NotEvenDragging            ; dragged for starters
-    
-    moveq   #0, d6                      ; Put card back on its pile
-    and.w   #$FF, d7
-    sub.w   #ID_HEAP, d7
-    lea     (HeapLen), a0
-    move.b  (a0,d7.w), d6
-    addq.b  #1, d6
-    move.b  d6, (a0,d7.w)
-    
-    move.w  d7, -(sp)                   ; Keep it for redrawing later
-    
-    clr.b   (DraggedCard)               ; Not dragging a card anymore
-    bsr     UncoverPiles                ; Ensure all piles are uncovered
-    
-    move.w  (sp)+, d7                   ; Redraw pile we dropped onto
-    subq.w  #1, d7
-    bsr     DrawPile
-    
-    move.b  (DragSprite), d0            ; Get rid of dragged card sprite
-    moveq   #6-1, d1
-@RemoveSprite:
-    move.w  d0, d7
+DropCards:
+
+;****************************************************************************
+; ResetDragging
+; Initializes dragging state (to no cards being held).
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ResetDragging:
+    move.b  (DragSpr), d1               ; Get rid of sprites
+    moveq   #19-1, d0
+@RemoveSprites:
+    move.b  d1, d7
     moveq   #-128, d6
     moveq   #-128, d5
     syscall OS_SETSPRITE
-    addq.w  #1, d0
-    dbf     d1, @RemoveSprite
+    addq.b  #1, d1
+    dbf     d0, @RemoveSprites
     
-@NotEvenDragging:
-    bra     UpdateAllWidgets            ; Refresh all widgets
+    clr.b   (DragLen)                   ; No more dragged cards
+    rts                                 ; End of subroutine

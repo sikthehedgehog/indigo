@@ -1,0 +1,113 @@
+;****************************************************************************
+; DrawPile
+; Redraws a pile.
+;----------------------------------------------------------------------------
+; input d7.b ... Pile ID
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DrawPile:
+    subq.b  #1, d7                      ; Pile #0 is the heap which is
+    bmi.s   DrawHeap                    ; drawn in a different way
+    moveq   #0, d0
+    move.b  d7, d0
+    
+    move.w  d0, d1                      ; Get X coordinate of the pile
+    add.w   d1, d1
+    add.w   d1, d1
+    add.w   d0, d1
+    addq.w  #4, d1
+    
+    move.w  d1, d7                      ; Wipe the old pile
+    moveq   #8, d6
+    moveq   #0, d5
+    move.w  #4, a6
+    move.w  #17, a5
+    syscall OS_ERASETILES
+    
+    moveq   #0, d2                      ; Get number of cards
+    lea     (PileLen), a0
+    move.b  (a0,d0.w), d2
+    beq.s   @Empty
+    
+    move.w  d0, d7                      ; Get pointer to cards
+    lsl.w   #5, d7
+    lea     (Piles), a0
+    lea     (a0,d7.w), a0
+    
+    moveq   #8, d3                      ; Draw all cards (maybe I should find
+    subq.w  #1, d2                      ; a way to optimize it since most
+@Loop:                                  ; cards will show only one row)
+    move.b  (a0)+, d5
+    move.w  d1, d7
+    move.w  d3, d6
+    bsr     DrawCard
+    addq.w  #1, d3
+    dbf     d2, @Loop
+    
+@Empty:
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; UpdatePileWidget
+; Updates the area covered by the widget for a pile.
+;----------------------------------------------------------------------------
+; input d7.b ... Pile ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+UpdatePileWidget:
+    subq.b  #1, d7                      ; Pile #0 is the heap which has its
+    bmi     UpdateHeapWidget            ; own unique kind of widget
+    and.w   #$FF, d7
+    
+    moveq   #0, d6                      ; How many cards are in the pile?
+    lea     (PileLen), a6
+    move.b  (a6,d7.w), d6
+    beq.s   @Empty
+    
+    move.w  d7, d5                      ; Get pointer to the cards
+    lsl.w   #5, d5
+    lea     (Piles), a6
+    lea     (a6,d5.w), a6
+    
+    moveq   #0, d5                      ; Count how many cards are hidden
+@CountHidden:
+    tst.b   (a6)+
+    bpl.s   @NoHidden
+    addq.w  #1, d5
+    cmp.w   d6, d5
+    bne.s   @CountHidden
+    bra.s   @Empty
+@NoHidden:
+    
+    sub.w   d5, d6                      ; Determine dimensions of the widget
+    addq.w  #5, d6
+    move.w  d6, a5
+    move.w  #4, a6
+    
+    move.w  d7, d6                      ; Determine position of the widget
+    add.w   d6, d6
+    add.w   d6, d6
+    add.w   d7, d6
+    addq.w  #4, d6
+    addq.w  #8, d5
+    
+    addq.b  #ID_PILE, d7                ; Resize widget
+    syscall OS_SETWIDGETXY
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Empty:
+    addq.b  #ID_PILE, d7                ; Move widget out of the way if the
+    moveq   #$00, d6                    ; pile is empty
+    moveq   #$20, d5
+    move.w  #0, a6
+    move.w  #0, a5
+    syscall OS_SETWIDGETXY
+    
+    rts                                 ; End of subroutine

@@ -1,0 +1,85 @@
+;****************************************************************************
+; DealStock
+; Deals a card from the stock to the heap. If there are no cards left, it
+; moves the heap back to the stock (if possible).
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DealStock:
+    lea     (Stock), a0                 ; Pointer to stock cards
+    lea     (Heap), a1                  ; Pointer to heap cards
+    
+    moveq   #0, d1                      ; Get how many cards are in each
+    moveq   #0, d0
+    move.b  (HeapLen), d1
+    move.b  (StockLen), d0
+    beq.s   @Empty
+    
+    move.b  -1(a0,d0.w), (a1,d1.w)      ; Move card from stock to heap
+    
+    subq.b  #1, d0                      ; Update card count
+    addq.b  #1, d1
+    move.b  d0, (StockLen)
+    move.b  d1, (HeapLen)
+    
+@Done:
+    bsr     UpdateStockWidget           ; Update widgets
+    bsr     UpdateHeapWidget
+    bsr     DrawStock                   ; Redraw cards
+    bsr     DrawHeap
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Empty:
+    clr.b   (HeapLen)                   ; Reset the card counts
+    move.b  d1, (StockLen)
+    beq.s   @Done
+    
+    lea     (a1,d1.w), a1               ; Move the cards in the heap
+    subq.w  #1, d1                      ; back into the stock
+@MoveBack:
+    move.b  -(a1), (a0)+
+    dbf     d1, @MoveBack
+    
+    bra.s   @Done
+
+;****************************************************************************
+; DrawStock
+; Redraws the stock slot.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+DrawStock:
+    tst.b   (StockLen)                  ; Check if there are any cards left
+    sne.b   d5                          ; on the stock ($00 if empty, $FF
+                                        ; if any cards left)
+    
+    moveq   #2, d7                      ; Redraw stock slot
+    moveq   #1, d6
+    bra     DrawCard
+
+;****************************************************************************
+; UpdateStockWidget
+; Updates the area covered by the widget for the stock.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+UpdateStockWidget:
+    move.b  (StockLen), d5              ; Push widget outbounds depending on
+    or.b    (HeapLen), d5               ; whether there are cards on the
+    seq.b   d5                          ; stock and/or heap or not (if none
+    and.w   #$20, d5                    ; then the stock is unusable)
+    addq.w  #1, d5
+    
+    moveq   #ID_STOCK, d7               ; Move the widget
+    moveq   #2, d6
+    move.w  #4, a6
+    move.w  #6, a5
+    syscall OS_SETWIDGETXY
+    
+    rts                                 ; End of subroutine

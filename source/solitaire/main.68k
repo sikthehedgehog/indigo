@@ -10,16 +10,15 @@ EntryPoint:
     lea     Layout(pc), a6              ; Load interface
     syscall OS_PARSELAYOUT
     
-    syscall OS_ALLOCSPRITE              ; Allocate sprites for the card
-    move.b  d7, (DragSprite)            ; that's being dragged
+    syscall OS_ALLOCSPRITE              ; Allocate sprites for dragging
+    move.b  d7, (DragSpr)
+    moveq   #18-1, d0
+@GetSprites:
     syscall OS_ALLOCSPRITE
-    syscall OS_ALLOCSPRITE
-    syscall OS_ALLOCSPRITE
-    syscall OS_ALLOCSPRITE
-    syscall OS_ALLOCSPRITE
+    dbf     d0, @GetSprites
     
-    bsr     NewGame                     ; Start with a clean game
-    
+    bsr     NewGame                     ; Start with a new game
+
 ;----------------------------------------------------------------------------
 
 MainLoop:
@@ -36,29 +35,121 @@ MainLoop:
 ;----------------------------------------------------------------------------
 
 @Handlers:
+    bra.w   DoDragging                  ; ID_HEAP
+    bra.w   DoDragging                  ; ID_PILE+0
+    bra.w   DoDragging                  ; ID_PILE+1
+    bra.w   DoDragging                  ; ID_PILE+2
+    bra.w   DoDragging                  ; ID_PILE+3
+    bra.w   DoDragging                  ; ID_PILE+4
+    bra.w   DoDragging                  ; ID_PILE+5
+    bra.w   DoDragging                  ; ID_PILE+6
+    bra.w   DealStock                   ; ID_STOCK
     bra.w   NewGame                     ; ID_NEW
-    bra.w   StockToHeap                 ; ID_STOCK
-    bra.w   DragCard                    ; ID_HEAP
-    bra.w   DragCard                    ; ID_PILE1
-    bra.w   DragCard                    ; ID_PILE2
-    bra.w   DragCard                    ; ID_PILE3
-    bra.w   DragCard                    ; ID_PILE4
-    bra.w   DragCard                    ; ID_PILE5
-    bra.w   DragCard                    ; ID_PILE6
-    bra.w   DragCard                    ; ID_PILE7
 
 @Dummy:
     rts
 
 ;****************************************************************************
 ; NewGame
-; Starts a new game.
+; Starts a new game. Reshuffles and deals new cards.
 ;----------------------------------------------------------------------------
 ; breaks: all
 ;****************************************************************************
 
 NewGame:
-    bsr     Shuffle                     ; Shuffle all cards
+    lea     (Stock), a6                 ; Create the initial deck
+    moveq   #1, d7
+    moveq   #52-1, d6
+@DeckLoop:
+    move.b  d7, (a6)+
+    addq.b  #1, d7
+    dbf     d6, @DeckLoop
+    
+    lea     (Stock), a0                 ; Shuffle the cards
+    move.l  a0, a1
+    moveq   #52-1, d0
+@Shuffle:
+    syscall OS_RAND
+    and.l   #$FFFF, d7
+    divu.w  #52, d7
+    swap    d7
+    move.b  (a0,d7.w), d6
+    move.b  (a1), d5
+    move.b  d5, (a0,d7.w)
+    move.b  d6, (a1)+
+    dbf     d0, @Shuffle
+    
+    lea     (Stock+52), a0              ; Deal cards onto each pile
+    lea     (Piles), a1
+    moveq   #7-1, d0
+    moveq   #1-1, d1
+@DealOuter:
+    move.w  d1, d2
+    move.l  a1, a2
+@DealInner:
+    move.b  -(a0), (a2)+
+    dbf     d2, @DealInner
+    addq.w  #1, d1
+    lea     $20(a1), a1
+    dbf     d0, @DealOuter
+    
+    lea     (StockLen), a6              ; Set up all card counts
+    move.b  #24, (a6)+
+    move.b  #0, (a6)+
+    move.b  #1, (a6)+
+    move.b  #2, (a6)+
+    move.b  #3, (a6)+
+    move.b  #4, (a6)+
+    move.b  #5, (a6)+
+    move.b  #6, (a6)+
+    move.b  #7, (a6)+
+    
+    bsr     ResetDragging               ; No cards being dragged
+    bsr     UpdateAllWidgets            ; Get all widgets ready
     bsr     DrawTable                   ; Redraw everything
     
     rts                                 ; End of subroutine
+
+;****************************************************************************
+; DrawTable
+; Redraws the whole table.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+DrawTable:
+    move.w  #$2000+VramBg, d7           ; Draw background
+    move.w  #$2800+VramBg, d6
+    move.w  #$3000+VramBg, a6
+    move.w  #$3800+VramBg, a5
+    syscall OS_FILLBACKGROUND
+    
+    lea     @Slots(pc), a0              ; Draw the free slots
+    moveq   #13-1, d0
+@DrawSlots:
+    move.w  (a0)+, d7
+    move.w  (a0)+, d6
+    moveq   #1, d5
+    move.w  #2, a6
+    move.w  #4, a5
+    move.w  #$2000+VramFree, a4
+    syscall OS_FILLFRAME
+    dbf     d0, @DrawSlots
+    
+    bsr     DrawStock                   ; Redraw all cards
+    moveq   #8-1, d7
+@DrawPiles:
+    move.w  d7, -(sp)
+    bsr     DrawPile
+    move.w  (sp)+, d7
+    dbf     d7, @DrawPiles
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Slots:
+    dc.w    2,1
+    dc.w    7,1, 4,8, 9,8, 14,8
+    dc.w    19,8, 24,8, 29,8, 34,8
+    dc.w    19,1, 24,1, 29,1, 34,1

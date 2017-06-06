@@ -1,5 +1,8 @@
     include "os_api.68k"
     include "solitaire/main.68k"
     include "solitaire/cards.68k"
+    include "solitaire/stock.68k"
+    include "solitaire/heap.68k"
+    include "solitaire/piles.68k"
     include "solitaire/data.68k"
     include "solitaire/variables.68k"

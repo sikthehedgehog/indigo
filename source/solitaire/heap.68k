@@ -1,0 +1,41 @@
+;****************************************************************************
+; DrawHeap
+; Redraws the heap slot.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+DrawHeap:
+    moveq   #0, d5                      ; Check if there are cards
+    tst.b   (HeapLen)                   ; on the heap
+    beq.s   @Empty
+    
+    move.b  (HeapLen), d5               ; Get topmost card on heap
+    lea     (Heap-1), a6
+    move.b  (a6,d5.w), d5
+    
+@Empty:
+    moveq   #7, d7                      ; Redraw heap slot
+    moveq   #1, d6
+    bra     DrawCard
+
+;****************************************************************************
+; UpdateHeapWidget
+; Updates the area covered by the widget for the heap.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+UpdateHeapWidget:
+    tst.b   (HeapLen)                   ; Push widget outbounds depending
+    seq.b   d5                          ; on whether there are cards on the
+    and.w   #$20, d5                    ; heap or not
+    addq.w  #1, d5
+    
+    moveq   #ID_HEAP, d7                ; Move the widget
+    moveq   #7, d6
+    move.w  #4, a6
+    move.w  #5, a5
+    syscall OS_SETWIDGETXY
+    
+    rts                                 ; End of subroutine

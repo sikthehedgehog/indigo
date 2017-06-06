@@ -1,11 +1,13 @@
                     rsset $FF0000
 
-Stock:              rs.b 52             ; Cards on the stock
-Heap:               rs.b 32             ; Cards on the heap
-Piles:              rs.b 7*32           ; Cards on each of the piles
 StockLen:           rs.b 1              ; Number of cards on the stock
 HeapLen:            rs.b 1              ; Number of cards on the heap
 PileLen:            rs.b 7              ; Number of cards on each pile
-DragSprite:         rs.b 1              ; 1st sprite ID of dragged card
-DraggedCard:        rs.b 1              ; Card being dragged
-                    rs.b 1
+DragLen:            rs.b 1              ; Number of cards being dragged
+
+Stock:              rs.b 24             ; Cards on the stock
+Heap:               rs.b $20            ; Cards on the heap
+Piles:              rs.b $20*7          ; Cards on each pile
+Dragging:           rs.b 13             ; Cards being dragged
+
+DragSpr:            rs.b 1              ; First sprite for dragged cards
