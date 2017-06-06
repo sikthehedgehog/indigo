@@ -241,7 +241,7 @@ DropCards:
     asr.w   #3, d6
     
     cmp.w   #8, d6
-    blo.s   @ReturnIt
+    blo     @ReturnIt
 
 ;----------------------------------------------------------------------------
 
@@ -252,12 +252,55 @@ DropCards:
     cmp.w   #6, d7
     bhi     @ReturnIt
     
+    moveq   #0, d6                      ; Get top card on the target pile
+    lea     (PileLen), a6
+    move.b  (a6,d7.w), d6
+    beq.s   @EmptyPile
+    move.w  d7, d5
+    lsl.w   #5, d5
+    lea     (Piles), a6
+    lea     (a6,d5.w), a6
+    move.b  -1(a6,d6.w), d6
+    
+    moveq   #0, d5                      ; Get bottom card being dragged
+    move.b  (Dragging), d5
+    
+    subq.b  #1, d5                      ; Suits must have different color
+    subq.b  #1, d6
+    divu.w  #13, d5
+    divu.w  #13, d6
+    move.w  d5, d4
+    eor.w   d6, d4
+    and.w   #2, d4
+    beq     @ReturnIt
+    
+    swap    d5                          ; Numbers must be consecutive
+    swap    d6
+    addq.w  #1, d5
+    cmp.w   d6, d5
+    bne     @ReturnIt
+    
     move.b  d7, d0                      ; Drop on this pile!
     addq.b  #ID_PILE, d0
+    bra     @DropIt
+
+@EmptyPile:
+    moveq   #0, d5                      ; On empty piles only kings
+    move.b  (Dragging), d5              ; can be placed
+    subq.b  #1, d5
+    divu.w  #13, d5
+    swap    d5
+    cmp.w   #12, d5
+    bne     @ReturnIt
+    
+    move.b  d7, d0                      ; Start new pile if king!
+    addq.b  #ID_PILE, d0
+    bra     @DropIt
 
 ;----------------------------------------------------------------------------
 
 @ReturnIt:
+@DropIt:
     moveq   #0, d1                      ; How many cards to drop?
     move.b  (DragLen), d1
     
