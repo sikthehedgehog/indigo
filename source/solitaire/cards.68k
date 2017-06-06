@@ -232,6 +232,27 @@ DropCards:
     moveq   #0, d0                      ; Where it won't get clobbered
     move.b  d7, d0
     
+    syscall OS_GETEVENTXY               ; Check in which region it landed
+    cmp.w   #7, d6
+    blo.s   @ReturnIt
+
+;----------------------------------------------------------------------------
+
+    subq.w  #4, d7                      ; Determine which pile it landed on
+    blt     @ReturnIt
+    and.l   #$FFFF, d7
+    divu.w  #5, d7
+    cmp.l   #4<<16, d7
+    bhs     @ReturnIt
+    cmp.b   #6, d7
+    bhi     @ReturnIt
+    
+    move.b  d7, d0                      ; Drop on this pile!
+    addq.b  #ID_PILE, d0
+
+;----------------------------------------------------------------------------
+
+@ReturnIt:
     moveq   #0, d1                      ; How many cards to drop?
     move.b  (DragLen), d1
     
