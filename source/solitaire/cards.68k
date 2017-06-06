@@ -137,6 +137,11 @@ DoDragging:
     moveq   #0, d0
     lea     (PileLen), a6
     move.b  (a6,d1.w), d0
+    cmp.b   d6, d0
+    bhi.s   @NotTop
+    move.b  d0, d6
+    subq.b  #1, d6
+@NotTop:
     move.b  d6, (a6,d1.w)
     sub.b   d6, d0
     move.b  d0, (DragLen)
@@ -190,9 +195,9 @@ DoDragging:
     dbf     d0, @DrawCards
     
 @OneCard:
-    moveq   #0, d7
-    move.b  (a0)+, d7
-    subq.w  #1, d7
+    moveq   #0, d7                      ; Draw the card on top of the stash
+    move.b  (a0)+, d7                   ; being dragged around (the only one
+    subq.w  #1, d7                      ; that's fully visible)
     lsl.w   #3, d7
     move.w  d7, d6
     add.w   d7, d7
