@@ -229,6 +229,33 @@ DoDragging:
 ;****************************************************************************
 
 DropCards:
+    moveq   #0, d0                      ; Where it won't get clobbered
+    move.b  d7, d0
+    
+    moveq   #0, d1                      ; How many cards to drop?
+    move.b  (DragLen), d1
+    
+    moveq   #0, d2                      ; How many cards are there already?
+    lea     (HeapLen), a0
+    move.b  (a0,d0.w), d2
+    add.b   d1, (a0,d0.w)
+    
+    move.w  d0, d7                      ; Get pointer to where to drop cards
+    lsl.w   #5, d7
+    lea     (Heap), a0
+    lea     (a0,d7.w), a0
+    lea     (a0,d2.w), a0
+    
+    lea     (Dragging), a1              ; Drop cards on the pile
+    subq.w  #1, d1
+@Loop:
+    move.b  (a1)+, (a0)+
+    dbf     d1, @Loop
+    
+    move.b  d0, d7                      ; Redraw pile
+    bsr     UpdatePileWidget
+    move.b  d0, d7
+    bsr     DrawPile
 
 ;****************************************************************************
 ; ResetDragging
