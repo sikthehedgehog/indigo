@@ -327,6 +327,10 @@ DrawHeap:
 ;****************************************************************************
 
 DrawPile:
+    cmp.b   #-1, d7                     ; Sometimes heap is the 0th pile so
+    beq     DrawHeap                    ; we have this hack to allow us to
+                                        ; treat it as such out of laziness
+    
     and.w   #$FF, d7                    ; Get pile data
     lea     (PileLen), a0
     moveq   #0, d2
@@ -391,6 +395,8 @@ DragCard:
     rts
 @CanDrag:
     
+    move.w  d7, -(sp)                   ; We need this for redrawing
+    
     subq.b  #1, d6                      ; Take the topmost card
     move.b  d6, (a0,d7.w)
     lsl.w   #5, d7
@@ -399,7 +405,10 @@ DragCard:
     move.b  (a0,d6.w), d0
     move.b  d0, (DraggedCard)
     
-    bsr     DrawTable                   ; Just redraw whole table
+    move.w  (sp)+, d7                   ; Redraw pile we picked from
+    subq.w  #1, d7
+    bsr     DrawPile
+    
     move.b  (DraggedCard), d0
     
 @Dragging:
@@ -446,9 +455,14 @@ DragCard:
     addq.b  #1, d6
     move.b  d6, (a0,d7.w)
     
+    move.w  d7, -(sp)                   ; Keep it for redrawing later
+    
     clr.b   (DraggedCard)               ; Not dragging a card anymore
     bsr     UncoverPiles                ; Ensure all piles are uncovered
-    bsr     DrawTable                   ; Update table state
+    
+    move.w  (sp)+, d7                   ; Redraw pile we dropped onto
+    subq.w  #1, d7
+    bsr     DrawPile
     
     move.b  (DragSprite), d0            ; Get rid of dragged card sprite
     moveq   #6-1, d1
