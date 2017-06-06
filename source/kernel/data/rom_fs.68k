@@ -16,17 +16,17 @@ Dir_1:
     dc.w    $4000
     dc.w    File_0>>5
     dc.l    FileEnd_0-File_0
-    dc.b    'cabinet.ixec'
+    dc.b    'calculator.ixec'
     dcb.b   $08-(*&$07), $00
     dc.w    $4000
     dc.w    File_1>>5
     dc.l    FileEnd_1-File_1
-    dc.b    'calculator.ixec'
+    dc.b    'desktop.ixec'
     dcb.b   $08-(*&$07), $00
     dc.w    $4000
     dc.w    File_2>>5
     dc.l    FileEnd_2-File_2
-    dc.b    'desktop.ixec'
+    dc.b    'filecabinet.ixec'
     dcb.b   $08-(*&$07), $00
     dc.w    $4000
     dc.w    File_3>>5
@@ -84,15 +84,15 @@ Dir_4:
 DirEnd_4:
     dcb.b   $20-(*&$1F), $FF
 File_0:
-    incbin  "./rom/./apps/cabinet.ixec"
+    incbin  "./rom/./apps/calculator.ixec"
 FileEnd_0:
     dcb.b   $20-(*&$1F), $FF
 File_1:
-    incbin  "./rom/./apps/calculator.ixec"
+    incbin  "./rom/./apps/desktop.ixec"
 FileEnd_1:
     dcb.b   $20-(*&$1F), $FF
 File_2:
-    incbin  "./rom/./apps/desktop.ixec"
+    incbin  "./rom/./apps/filecabinet.ixec"
 FileEnd_2:
     dcb.b   $20-(*&$1F), $FF
 File_3:

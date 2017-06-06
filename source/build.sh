@@ -11,8 +11,8 @@ cp dummy.text rom/dummy
 cp dummy.text rom/dummy/dummy/dummy1.text
 cp dummy.text rom/dummy/dummy/dummy2.text
 
-gfx cabinet/data/gfxbuild
-asm cabinet/buildme.68k rom/apps/cabinet.ixec
+gfx filecabinet/data/gfxbuild
+asm filecabinet/buildme.68k rom/apps/filecabinet.ixec
 
 gfx calculator/data/gfxbuild
 asm calculator/buildme.68k rom/apps/calculator.ixec

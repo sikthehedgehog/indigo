@@ -47,7 +47,7 @@ Layout:
 ;****************************************************************************
 
 Patterns:
-    incbin  "cabinet/blob/ui.blob"
+    incbin  "filecabinet/blob/ui.blob"
 
 InvPalette:
     dc.w    $000,$022,$244,$466,$688,$8AA,$E20,$EC2

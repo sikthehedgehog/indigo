@@ -1,0 +1,8 @@
+    include "os_api.68k"
+    include "filecabinet/main.68k"
+    include "filecabinet/file_list.68k"
+    include "filecabinet/scroll.68k"
+    include "filecabinet/select.68k"
+    include "filecabinet/path.68k"
+    include "filecabinet/data.68k"
+    include "filecabinet/variables.68k"

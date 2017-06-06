@@ -1,14 +1,14 @@
-output "cabinet/blob/ui.blob"
+output "filecabinet/blob/ui.blob"
 
-input "cabinet/data/type_unused.png"
+input "filecabinet/data/type_unused.png"
 tiles 0 0 1 1
-input "cabinet/data/type_folder.png"
+input "filecabinet/data/type_folder.png"
 tiles 0 0 1 1
-input "cabinet/data/type_unknown.png"
+input "filecabinet/data/type_unknown.png"
 tiles 0 0 1 1
-input "cabinet/data/type_ixec.png"
+input "filecabinet/data/type_ixec.png"
 tiles 0 0 1 1
-input "cabinet/data/type_text.png"
+input "filecabinet/data/type_text.png"
 tiles 0 0 1 1
 
 input "kernel/res/up.png"
@@ -27,27 +27,27 @@ layout tilemap
 tiles 0 0 1 3
 tiles 2 0 1 3
 
-input "cabinet/data/frame.png"
+input "filecabinet/data/frame.png"
 layout tilemap
 tiles 0 0 3 3
-input "cabinet/data/row.png"
+input "filecabinet/data/row.png"
 layout tilemap
 tiles 0 0 2 1
 
-input "cabinet/data/parent.png"
+input "filecabinet/data/parent.png"
 layout tilemap
 tiles 0 0 4 2
 tiles 0 2 4 2
 
-input "cabinet/data/open.png"
+input "filecabinet/data/open.png"
 layout tilemap
 tiles 0 0 7 2
 tiles 0 2 7 2
-input "cabinet/data/save.png"
+input "filecabinet/data/save.png"
 layout tilemap
 tiles 0 0 7 2
 tiles 0 2 7 2
 
-input "cabinet/data/filename.png"
+input "filecabinet/data/filename.png"
 layout tilemap
 tiles 0 0 3 2
