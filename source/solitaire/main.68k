@@ -83,11 +83,14 @@ NewGame:
     lea     (Piles), a1
     moveq   #7-1, d0
     moveq   #1-1, d1
+    move.b  #$80, d6
 @DealOuter:
     move.w  d1, d2
     move.l  a1, a2
 @DealInner:
-    move.b  -(a0), (a2)+
+    move.b  -(a0), d7
+    or.b    d6, d7
+    move.b  d7, (a2)+
     dbf     d2, @DealInner
     addq.w  #1, d1
     lea     $20(a1), a1
@@ -104,6 +107,7 @@ NewGame:
     move.b  #6, (a6)+
     move.b  #7, (a6)+
     
+    bsr     UncoverAllPiles             ; Expose cards on each pile
     bsr     ResetDragging               ; No cards being dragged
     bsr     UpdateAllWidgets            ; Get all widgets ready
     bsr     DrawTable                   ; Redraw everything

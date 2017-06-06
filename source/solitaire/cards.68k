@@ -325,6 +325,9 @@ DropCards:
     bsr     UpdatePileWidget
     move.b  d0, d7
     bsr     DrawPile
+    
+    bsr     UncoverAllPiles             ; If the whole process left some pile
+                                        ; covered, make sure to fix it
 
 ;****************************************************************************
 ; ResetDragging

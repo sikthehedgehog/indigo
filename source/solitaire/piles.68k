@@ -111,3 +111,41 @@ UpdatePileWidget:
     syscall OS_SETWIDGETXY
     
     rts                                 ; End of subroutine
+
+;****************************************************************************
+; UncoverAllPiles
+; Makes sure all piles have their top card uncovered.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+UncoverAllPiles:
+    lea     (Piles), a0                 ; Pointer to cards
+    lea     (PileLen), a1               ; Pointer to card counts
+    
+    moveq   #7-1, d0                    ; Go through all piles
+    moveq   #ID_PILE, d7
+@Loop:
+    moveq   #0, d1                      ; Any cards to uncover?
+    move.b  (a1)+, d1
+    beq.s   @Ready
+    move.b  -1(a0,d1.w), d2
+    bpl.s   @Ready
+    
+    and.b   #$7F, d2                    ; Flip the card and put it back
+    move.b  d2, -1(a0,d1.w)
+    
+    movem.l d0/a0-a1, -(sp)             ; Update the pile
+    move.w  d7, -(sp)
+    bsr     UpdatePileWidget
+    move.w  (sp), d7
+    bsr     DrawPile
+    move.w  (sp)+, d7
+    movem.l (sp)+, d0/a0-a1
+    
+@Ready:
+    lea     $20(a0), a0                 ; Go for next pile
+    addq.w  #1, d7
+    dbf     d0, @Loop
+    
+    rts                                 ; End of subroutine
