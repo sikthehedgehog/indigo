@@ -1,6 +1,7 @@
 #!/bin/sh
 asm() { ./sik-asmx -b 0 -C 68000 -o $2 $1 ; }
 gfx() { ./mdtiler $1 ; }
+pal() { php png2palette.php $1 $2 ; }
 
 rm -rf rom
 mkdir -p rom
@@ -18,6 +19,7 @@ gfx calculator/data/gfxbuild
 asm calculator/buildme.68k rom/apps/calculator.ixec
 
 gfx desktop/data/gfxbuild
+pal desktop/data/wallpaper.png desktop/blob/bg_pal.blob
 asm desktop/buildme.68k rom/apps/desktop.ixec
 
 gfx settings/data/gfxbuild

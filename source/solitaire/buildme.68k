@@ -4,5 +4,6 @@
     include "solitaire/stock.68k"
     include "solitaire/heap.68k"
     include "solitaire/piles.68k"
+    include "solitaire/foundations.68k"
     include "solitaire/data.68k"
     include "solitaire/variables.68k"

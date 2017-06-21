@@ -240,12 +240,12 @@ DropCards:
     asr.w   #3, d7
     asr.w   #3, d6
     
-    cmp.w   #8, d6
-    blo     @ReturnIt
+    cmp.w   #PILE_Y, d6
+    blo     @TryFoundations
 
 ;----------------------------------------------------------------------------
 
-    subq.w  #4, d7                      ; Determine which pile it landed on
+    subq.w  #PILE_X, d7                 ; Determine which pile it landed on
     blt     @ReturnIt
     and.l   #$FFFF, d7
     divu.w  #5, d7
@@ -295,6 +295,64 @@ DropCards:
     
     move.b  d7, d0                      ; Start new pile if king!
     addq.b  #ID_PILE, d0
+    bra     @DropIt
+
+;----------------------------------------------------------------------------
+
+@TryFoundations:
+    cmpi.b  #1, (DragLen)               ; Only one card can go to a
+    bne     @ReturnIt                   ; foundation at a time
+    
+    sub.w   #FOUNDATION_X, d7           ; Check if it's over a foundation
+    blt     @ReturnIt
+    
+    and.l   #$FFFF, d7                  ; Which foundation is it on?
+    divu.w  #5, d7
+    cmp.w   #4, d7
+    bhs     @ReturnIt
+    
+    moveq   #0, d6                      ; Get how many cards are in it
+    lea     (FoundationLen), a6
+    move.b  (a6,d7.w), d6
+    beq.s   @EmptyFoundation
+    
+    move.w  d7, d5                      ; Get pointer to foundation data
+    lsl.w   #5, d5
+    lea     (Foundations), a5
+    lea     (a5,d5.w), a5
+    
+    moveq   #0, d5                      ; We can only drop consecutive
+    move.b  (Dragging), d5              ; card values (from the same suit)
+    move.b  -1(a5,d6.w), d6
+    subq.b  #1, d5
+    cmp.b   d6, d5
+    bne     @ReturnIt
+    
+    divu.w  #13, d5                     ; Ensure they *are* the same suit
+    swap    d5                          ; (i.e. not a king from one suit
+    tst.w   d5                          ; followed by an ace of the next
+    beq     @ReturnIt                   ; suit)
+    
+    move.b  d7, d0                      ; Drop card into the foundation!
+    add.w   #ID_FOUNDATION, d0
+    bra     @DropIt
+    
+@EmptyFoundation:
+    moveq   #0, d6                      ; Check if we're trying to place an
+    move.b  (Dragging), d6              ; ace (only card we can place on an
+    moveq   #13, d5                     ; empty foundation)
+    subq.w  #1, d6 
+    beq.s   @StartFoundation
+    sub.w   d5, d6
+    beq.s   @StartFoundation
+    sub.w   d5, d6
+    beq.s   @StartFoundation
+    sub.w   d5, d6
+    bne     @ReturnIt
+    
+@StartFoundation:
+    move.w  d7, d0                      ; Start new foundation if ace!
+    add.w   #ID_FOUNDATION, d0
     bra     @DropIt
 
 ;----------------------------------------------------------------------------

@@ -6,6 +6,7 @@
 
 ID_HEAP:            rs.b 1              ; Dragging from heap
 ID_PILE:            rs.b 7              ; Dragging from each pile
+ID_FOUNDATION:      rs.b 4              ; Dragging from foundation 
 ID_STOCK:           rs.b 1              ; Stock
 ID_NEW:             rs.b 1              ; New game
 

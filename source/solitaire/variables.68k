@@ -3,11 +3,13 @@
 StockLen:           rs.b 1              ; Number of cards on the stock
 HeapLen:            rs.b 1              ; Number of cards on the heap
 PileLen:            rs.b 7              ; Number of cards on each pile
+FoundationLen:      rs.b 4              ; Number of cards on each foundation
 DragLen:            rs.b 1              ; Number of cards being dragged
 
 Stock:              rs.b 24             ; Cards on the stock
 Heap:               rs.b $20            ; Cards on the heap
 Piles:              rs.b $20*7          ; Cards on each pile
+Foundations:        rs.b $20*4          ; Cards on each foundation
 Dragging:           rs.b 13             ; Cards being dragged
 
 DragSpr:            rs.b 1              ; First sprite for dragged cards

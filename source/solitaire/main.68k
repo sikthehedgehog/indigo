@@ -43,6 +43,10 @@ MainLoop:
     bra.w   DoDragging                  ; ID_PILE+4
     bra.w   DoDragging                  ; ID_PILE+5
     bra.w   DoDragging                  ; ID_PILE+6
+    bra.w   DoDragging                  ; ID_FOUNDATION+0
+    bra.w   DoDragging                  ; ID_FOUNDATION+1
+    bra.w   DoDragging                  ; ID_FOUNDATION+2
+    bra.w   DoDragging                  ; ID_FOUNDATION+3
     bra.w   DealStock                   ; ID_STOCK
     bra.w   NewGame                     ; ID_NEW
 
@@ -97,8 +101,9 @@ NewGame:
     dbf     d0, @DealOuter
     
     lea     (StockLen), a6              ; Set up all card counts
+    moveq   #0, d7
     move.b  #24, (a6)+
-    move.b  #0, (a6)+
+    move.b  d7, (a6)+
     move.b  #1, (a6)+
     move.b  #2, (a6)+
     move.b  #3, (a6)+
@@ -106,6 +111,10 @@ NewGame:
     move.b  #5, (a6)+
     move.b  #6, (a6)+
     move.b  #7, (a6)+
+    move.b  d7, (a6)+
+    move.b  d7, (a6)+
+    move.b  d7, (a6)+
+    move.b  d7, (a6)+
     
     bsr     UncoverAllPiles             ; Expose cards on each pile
     bsr     ResetDragging               ; No cards being dragged
@@ -141,7 +150,7 @@ DrawTable:
     dbf     d0, @DrawSlots
     
     bsr     DrawStock                   ; Redraw all cards
-    moveq   #8-1, d7
+    moveq   #12-1, d7
 @DrawPiles:
     move.w  d7, -(sp)
     bsr     DrawPile
@@ -156,4 +165,8 @@ DrawTable:
     dc.w    2,1
     dc.w    7,1, 4,8, 9,8, 14,8
     dc.w    19,8, 24,8, 29,8, 34,8
-    dc.w    19,1, 24,1, 29,1, 34,1
+    
+    dc.w    FOUNDATION_X, FOUNDATION_Y
+    dc.w    FOUNDATION_X+5, FOUNDATION_Y
+    dc.w    FOUNDATION_X+10, FOUNDATION_Y
+    dc.w    FOUNDATION_X+15, FOUNDATION_Y

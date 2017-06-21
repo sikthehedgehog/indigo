@@ -1,0 +1,50 @@
+FOUNDATION_X:       equ 19              ; X coordinate
+FOUNDATION_Y:       equ 1               ; Y coordinate
+
+;****************************************************************************
+; DrawFoundation
+; Redraws a foundation.
+;----------------------------------------------------------------------------
+; input d7.b ... Foundation ID
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+DrawFoundation:
+    and.w   #$FF, d7                    ; Determine position
+    move.w  d7, d6
+    add.w   d6, d6
+    add.w   d6, d6
+    add.w   d7, d6
+    add.w   #FOUNDATION_X, d6
+    
+    moveq   #0, d5                      ; Get how many cards are there
+    lea     (FoundationLen), a6
+    move.b  (a6,d7.w), d5
+    beq.s   @Empty
+    
+    movem.w d5-d7, -(sp)
+    syscall OS_BEEP
+    movem.w (sp)+, d5-d7
+    
+    lsl.w   #5, d7                      ; Get topmost card
+    lea     (Foundations), a6
+    lea     (a6,d7.w), a6
+    move.b  -1(a6,d5.w), d5
+    
+@Empty:
+    move.w  d6, d7                      ; Draw topmost card
+    moveq   #FOUNDATION_Y, d6
+    bra     DrawCard
+
+;****************************************************************************
+; UpdateFoundationWidget
+; Updates the area covered by the widget for a foundation.
+;----------------------------------------------------------------------------
+; input d7.b ... Foundation ID
+;----------------------------------------------------------------------------
+; breaks: ???
+;****************************************************************************
+
+UpdateFoundationWidget:
+    rts                                 ; Placeholder

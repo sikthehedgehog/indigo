@@ -1,3 +1,6 @@
+PILE_X:             equ 4               ; X coordinate of 1st pic
+PILE_Y:             equ 8               ; Y coordinate of 2nd pic
+
 ;****************************************************************************
 ; DrawPile
 ; Redraws a pile.
@@ -9,18 +12,25 @@
 
 DrawPile:
     subq.b  #1, d7                      ; Pile #0 is the heap which is
-    bmi.s   DrawHeap                    ; drawn in a different way
+    bmi     DrawHeap                    ; drawn in a different way
     moveq   #0, d0
     move.b  d7, d0
+    
+    cmp.b   #6, d0                      ; Piles #8 onward are the foundations
+    bls.s   @NotFoundation
+    subq.b  #7, d0
+    move.w  d0, d7
+    bra     DrawFoundation
+@NotFoundation:
     
     move.w  d0, d1                      ; Get X coordinate of the pile
     add.w   d1, d1
     add.w   d1, d1
     add.w   d0, d1
-    addq.w  #4, d1
+    addq.w  #PILE_X, d1
     
     move.w  d1, d7                      ; Wipe the old pile
-    moveq   #8, d6
+    moveq   #PILE_Y, d6
     moveq   #0, d5
     move.w  #4, a6
     move.w  #17, a5
@@ -36,7 +46,7 @@ DrawPile:
     lea     (Piles), a0
     lea     (a0,d7.w), a0
     
-    moveq   #8, d3                      ; Draw all cards (maybe I should find
+    moveq   #PILE_Y, d3                 ; Draw all cards (maybe I should find
     subq.w  #1, d2                      ; a way to optimize it since most
 @Loop:                                  ; cards will show only one row)
     move.b  (a0)+, d5
@@ -62,6 +72,12 @@ UpdatePileWidget:
     subq.b  #1, d7                      ; Pile #0 is the heap which has its
     bmi     UpdateHeapWidget            ; own unique kind of widget
     and.w   #$FF, d7
+    
+    cmp.b   #6, d7                      ; Piles #8 onwards are foundations
+    bls.s   @NotFoundation
+    subq.b  #6, d7
+    bra     UpdateFoundationWidget
+@NotFoundation:
     
     moveq   #0, d6                      ; How many cards are in the pile?
     lea     (PileLen), a6
@@ -92,8 +108,8 @@ UpdatePileWidget:
     add.w   d6, d6
     add.w   d6, d6
     add.w   d7, d6
-    addq.w  #4, d6
-    addq.w  #8, d5
+    addq.w  #PILE_X, d6
+    addq.w  #PILE_Y, d5
     
     addq.b  #ID_PILE, d7                ; Resize widget
     syscall OS_SETWIDGETXY
