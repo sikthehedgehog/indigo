@@ -23,10 +23,6 @@ DrawFoundation:
     move.b  (a6,d7.w), d5
     beq.s   @Empty
     
-    movem.w d5-d7, -(sp)
-    syscall OS_BEEP
-    movem.w (sp)+, d5-d7
-    
     lsl.w   #5, d7                      ; Get topmost card
     lea     (Foundations), a6
     lea     (a6,d7.w), a6
