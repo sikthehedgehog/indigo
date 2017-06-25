@@ -1,0 +1,44 @@
+;****************************************************************************
+; Instawin
+; Immediately wins the game!
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+Instawin:
+    moveq   #0, d7                      ; Empty the heap and piles
+    lea     (HeapLen), a6
+    move.b  d7, (a6)+
+    move.b  d7, (a6)+
+    move.b  d7, (a6)+
+    move.b  d7, (a6)+
+    move.b  d7, (a6)+
+    move.b  d7, (a6)+
+    move.b  d7, (a6)+
+    move.b  d7, (a6)+
+    
+    clr.b   (StockLen)                  ; No cards in the stock either
+    
+    moveq   #13, d7                     ; Set up foundation lengths
+    move.b  d7, (a6)+
+    move.b  d7, (a6)+
+    move.b  d7, (a6)+
+    move.b  d7, (a6)+
+    
+    moveq   #1, d0                      ; Fill foundations with cards
+    lea     (Foundations), a0
+    moveq   #4-1, d6
+@FoundLoopY:
+    moveq   #13-1, d7
+@FoundLoopX:
+    move.b  d0, (a0)+
+    addq.b  #1, d0
+    dbf     d7, @FoundLoopX
+    lea     32-13(a0), a0
+    dbf     d6, @FoundLoopY
+    
+    bsr     ResetDragging               ; No cards being dragged
+    bsr     UpdateAllWidgets            ; Get all widgets ready
+    bsr     DrawTable                   ; Redraw everything
+    
+    rts

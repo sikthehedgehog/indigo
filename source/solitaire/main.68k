@@ -49,6 +49,7 @@ MainLoop:
     bra.w   DoDragging                  ; ID_FOUNDATION+3
     bra.w   DealStock                   ; ID_STOCK
     bra.w   NewGame                     ; ID_NEW
+    bra.w   Instawin                    ; ID_CHEAT
 
 @Dummy:
     rts

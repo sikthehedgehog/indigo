@@ -9,12 +9,14 @@ ID_PILE:            rs.b 7              ; Dragging from each pile
 ID_FOUNDATION:      rs.b 4              ; Dragging from foundation 
 ID_STOCK:           rs.b 1              ; Stock
 ID_NEW:             rs.b 1              ; New game
+ID_CHEAT:           rs.b 1              ; Instawin :O
 
 ;****************************************************************************
 ; Interface layout
 ;****************************************************************************
 
 Layout:
+    OSUI_Button ID_CHEAT, 12,1, 3,2, VramCheat+$2000
     OSUI_Button ID_NEW, 15,1, 3,2, VramNew+$2000
     
     OSUI_Clickable ID_STOCK, 2,1, 4,6
@@ -51,6 +53,7 @@ VramFree:           rs.b 9              ; Free slot
 VramReverse:        rs.b 9              ; Reversed card
 
 VramNew:            rs.b 6*2            ; New game button
+VramCheat:          rs.b 6*2            ; Cheat button
 
 VramCards:          rs.b 24*52          ; Every card
 NumPatterns:        rs.b 0              ; Number of patterns

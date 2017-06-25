@@ -16,8 +16,8 @@ DrawPile:
     moveq   #0, d0
     move.b  d7, d0
     
-    cmp.b   #6, d0                      ; Piles #8 onward are the foundations
-    bls.s   @NotFoundation
+    cmp.b   #7, d0                      ; Piles #8 onward are the foundations
+    blo.s   @NotFoundation
     subq.b  #7, d0
     move.w  d0, d7
     bra     DrawFoundation
@@ -73,9 +73,9 @@ UpdatePileWidget:
     bmi     UpdateHeapWidget            ; own unique kind of widget
     and.w   #$FF, d7
     
-    cmp.b   #6, d7                      ; Piles #8 onwards are foundations
-    bls.s   @NotFoundation
-    subq.b  #6, d7
+    cmp.b   #7, d7                      ; Piles #8 onwards are foundations
+    blo.s   @NotFoundation
+    subq.b  #7, d7
     bra     UpdateFoundationWidget
 @NotFoundation:
     
