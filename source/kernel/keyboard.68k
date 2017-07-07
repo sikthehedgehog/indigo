@@ -1,25 +1,15 @@
 ;****************************************************************************
 ; InitKeyboard
-; Initializes the keyboard.
+; Initializes a port for a keyboard.
 ;----------------------------------------------------------------------------
-; breaks: all
+; input a6.l .... Pointer to port
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
 ;****************************************************************************
 
 InitKeyboard:
-    lea     ($A10003), a6               ; Set up hardware
-    move.b  #$60, 6(a6)
+    move.b  #$60, 6(a6)                 ; Set up hardware
     move.b  #$60, (a6)
-    
-    moveq   #0, d7                      ; Reset key buffer
-    lea     (KeyBuf), a6
-    move.l  d7, (a6)+
-    move.l  d7, (a6)+
-    move.l  d7, (a6)+
-    move.l  d7, (a6)+
-    move.w  d7, (a6)+
-    
-    clr.b   (KeyMods)                   ; Reset modifiers
-    clr.b   (KeyLeds)
     
     rts                                 ; End of subroutine
 
@@ -27,11 +17,14 @@ InitKeyboard:
 ; UpdateKeyboard
 ; Checks for keyboard input and sends new events as needed.
 ;----------------------------------------------------------------------------
+; input a6.l .... Pointer to port
+;----------------------------------------------------------------------------
+; output d7.w ... 1 on success, 0 on failure
+;----------------------------------------------------------------------------
 ; breaks: d5-d7, a4-a6
 ;****************************************************************************
 
 UpdateKeyboard:
-    lea     ($A10003), a6               ; Keyboard port
     lea     -4(sp), sp                  ; Input buffer
     lea     (sp), a5
     
@@ -100,10 +93,16 @@ UpdateKeyboard:
     and.b   #$70, d7
     move.b  d7, (KeyLeds)
     
-@NoKeyboard:
-    lea     4(sp), sp                   ; Done with buffer
+    moveq   #1, d7                      ; Keyboard is present
+    
+@End:
     move.b  #$60, (a6)                  ; Let keyboard idle
+    lea     4(sp), sp                   ; Done with buffer
     rts                                 ; End of subroutine
+    
+@NoKeyboard:
+    moveq   #0, d7                      ; No keyboard available
+    bra.s   @End                        ; Go clean up
 
 ;----------------------------------------------------------------------------
 
@@ -154,4 +153,33 @@ ReadKeyboardByte:
 
 @Timeout:
     moveq   #-1, d7                     ; An error has happened
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; CleanUpKeyboard
+; Cleans up the keyboard state if the keyboard is missing.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+CleanUpKeyboard:
+    move.b  #$80|DEV_KEYBOARD, d7       ; Need to reset the keyboard state?
+    cmp.b   (Device1P), d7
+    beq.s   @Present
+    cmp.b   (Device2P), d7
+    beq.s   @Present
+    
+@Missing:
+    moveq   #0, d7                      ; Reset key buffer
+    lea     (KeyBuf), a6
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.l  d7, (a6)+
+    move.w  d7, (a6)+
+    
+    clr.b   (KeyMods)                   ; Reset modifiers
+    clr.b   (KeyLeds)
+    
+@Present:
     rts                                 ; End of subroutine

@@ -6,8 +6,10 @@
     include "kernel/video.68k"
     include "kernel/text.68k"
     include "kernel/random.68k"
-    include "kernel/keyboard.68k"
+    include "kernel/devices.68k"
+    include "kernel/joypad.68k"
     include "kernel/mouse.68k"
+    include "kernel/keyboard.68k"
     include "kernel/sound.68k"
     include "kernel/debug.68k"
     

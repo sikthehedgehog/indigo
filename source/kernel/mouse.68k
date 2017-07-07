@@ -1,28 +1,15 @@
 ;****************************************************************************
 ; InitMouse
-; Initializes the mouse.
+; Initializes a port for a mouse.
 ;----------------------------------------------------------------------------
-; breaks: all
+; input a6.l .... Pointer to port
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
 ;****************************************************************************
 
 InitMouse:
-    move.b  #$60, ($A1000B)             ; Set up hardware
-    move.b  #$60, ($A10005)
-    
-    clr.b   (HasMouse)                  ; No mouse detected yet
-    clr.w   (MouseX)
-    clr.w   (MouseY)
-    clr.b   (MouseButtons)
-    
-    move.b  ($A10001), d0               ; Take a rough guess as to whether
-    and.b   #$C0, d0                    ; it's a Mega or Sega mouse based
-    cmp.b   #$80, d0                    ; on the region
-    sne.b   d0
-    and.b   #1, d0
-    
-    clr.b   (MouseSwap)                 ; Default mouse settings
-    move.b  d0, (MouseType)
-    move.b  #32, (MouseSpeed)
+    move.b  #$60, 6(a6)                 ; Set up port
+    move.b  #$60, (a6)
     
     rts                                 ; End of subroutine
 
@@ -30,12 +17,15 @@ InitMouse:
 ; UpdateMouse
 ; Reads the mouse and updates its status.
 ;----------------------------------------------------------------------------
+; input a6.l .... Pointer to port
+;----------------------------------------------------------------------------
+; output d7.w ... 1 on success, 0 on failure
+;----------------------------------------------------------------------------
 ; breaks: d5-d7, a4-a6
 ;****************************************************************************
 
 UpdateMouse:
     lea     -10(sp), sp                 ; Make room for the data
-    lea     ($A10005), a6               ; Mouse port
     
     move.b  (a6), d7                    ; Check if mouse is there
     and.b   #$0F, d7
@@ -68,7 +58,7 @@ UpdateMouse:
     cmp.l   #$0B0F0F00, d7
     bne     @Error
     
-    st.b    (HasMouse)                  ; Mouse available!
+;    st.b    (HasMouse)                  ; Mouse available!
     
     moveq   #0, d7                      ; Get motion
     move.b  5(sp), d7
@@ -123,6 +113,7 @@ UpdateMouse:
     move.b  d7, (MouseButtons)          ; Store button status
     
     lea     10(sp), sp                  ; Get rid of the buffer
+    moveq   #1, d7                      ; Mouse is present
     rts                                 ; End of subroutine
 
 ;----------------------------------------------------------------------------
@@ -130,17 +121,64 @@ UpdateMouse:
 @Error:
     move.b  #$60, (a6)                  ; Leave mouse alone
     
-    clr.b   (HasMouse)                  ; No mouse present!
-    clr.w   (MouseX)                    ; Reset mouse status just in case
-    clr.w   (MouseY)
-    
     lea     10(sp), sp                  ; Get rid of the buffer
+    moveq   #0, d7                      ; Mouse not available
     rts                                 ; End of subroutine
 
 ;----------------------------------------------------------------------------
 
 @Pattern:
     dc.w    $2010,$0000,$2010,$0000,$2010,$0000,$2010,$0000,$2010
+
+;****************************************************************************
+; CleanUpMouse
+; Cleans up the mouse state if the mouse is missing.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+CleanUpMouse:
+    move.b  #$80|DEV_MOUSE, d7          ; Check if a mouse was detected
+    cmp.b   (Device1P), d7
+    beq.s   @Present
+    cmp.b   (Device2P), d7
+    beq.s   @Present
+
+;----------------------------------------------------------------------------
+
+@Missing:
+    clr.b   (HasMouse)                  ; No mouse detected yet
+    clr.w   (MouseX)
+    clr.w   (MouseY)
+    clr.b   (MouseButtons)
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Present:
+    st.b    (HasMouse)                  ; Mark mouse as available
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; SetMouseDefaults
+; Sets the default settings for the mouse.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+SetMouseDefaults:
+    move.b  ($A10001), d7               ; Take a rough guess as to whether
+    and.b   #$C0, d7                    ; it's a Mega or Sega mouse based
+    cmp.b   #$80, d7                    ; on the region
+    sne.b   d7
+    and.b   #1, d7
+    
+    clr.b   (MouseSwap)                 ; Default mouse settings
+    move.b  d7, (MouseType)
+    move.b  #32, (MouseSpeed)
+    
+    rts                                 ; End of subroutine
 
 ;****************************************************************************
 ; GetMouseType

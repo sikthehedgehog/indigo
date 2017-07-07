@@ -4,6 +4,9 @@
 
                     rsset $FFC000
 
+Device1P:           rs.b 1              ; Device in port 1
+Device2P:           rs.b 1              ; Device in port 2
+
 MouseX:             rs.w 1              ; Mouse X motion
 MouseY:             rs.w 1              ; Mouse Y motion
 MouseButtons:       rs.b 1              ; Status of each mouse button

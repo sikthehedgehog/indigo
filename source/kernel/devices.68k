@@ -1,0 +1,99 @@
+;****************************************************************************
+; DEV_*
+; List of known devices.
+;****************************************************************************
+
+                    rsreset
+DEV_NONE:           rs.b 1              ; No device present
+DEV_MOUSE:          rs.b 1              ; Sega/Mega mouse
+DEV_KEYBOARD:       rs.b 1              ; Saturn keyboard
+
+KNOWN_DEVICES:      rs.b 0              ; Number of known devices
+
+;****************************************************************************
+; InitDevices
+; Initializes the I/O ports.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+InitDevices:
+    moveq   #$40, d7                    ; Some default value for the ports
+    lea     ($A10000), a6
+    move.b  d7, $09(a6)
+    move.b  d7, $0B(a6)
+    move.b  d7, $03(a6)
+    move.b  d7, $05(a6)
+    
+    clr.b   (Device1P)                  ; No device detected yet
+    clr.b   (Device2P)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; UpdateDevice
+; Updates whatever device is present in the specified port.
+;----------------------------------------------------------------------------
+; input d7.w .... Which port
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+UpdateDevice:
+    lea     (Device1P), a5              ; Get device type address
+    lea     (a5,d7.w), a5
+    
+    add.w   d7, d7                      ; Get port address
+    lea     ($A10003), a6
+    lea     (a6,d7.w), a6
+    
+    move.b  (a5), d6                    ; Invoke the relevant handler
+    and.w   #$7F, d6
+    lsl.w   #2, d6
+    lea     @UpdateHandlers(pc), a4
+    move.l  a5, -(sp)
+    move.l  a6, -(sp)
+    jsr     (a4,d6.w)
+    move.l  (sp)+, a6
+    move.l  (sp)+, a5
+    
+    tst.w   d7                          ; Is this device in that port?
+    beq.s   @Failed
+
+;----------------------------------------------------------------------------
+
+@Success:
+    ori.b   #$80, (a5)                  ; Mark device as present
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Failed:
+    move.b  (a5), d7                    ; Try next device type next time
+    and.b   #$7F, d7                    ; Device is marked as not present
+    addq.b  #1, d7
+    cmp.b   #KNOWN_DEVICES, d7
+    blo.s   @DontLoop
+    moveq   #1, d7
+@DontLoop:
+    move.b  d7, (a5)
+    
+    lsl.w   #2, d7                      ; Jump to the initialization for the
+    lea     @InitHandlers(pc), a5       ; next device to try
+    jmp     (a5,d7.w)
+
+;----------------------------------------------------------------------------
+
+@UpdateHandlers:
+    bra.w   @Dummy                      ; DEV_NONE
+    bra.w   UpdateMouse                 ; DEV_MOUSE
+    bra.w   UpdateKeyboard              ; DEV_KEYBOARD
+
+@InitHandlers:
+    bra.w   @Dummy                      ; DEV_NONE
+    bra.w   InitMouse                   ; DEV_MOUSE
+    bra.w   InitKeyboard                ; DEV_KEYBOARD
+
+@Dummy:
+    moveq   #0, d7
+    rts

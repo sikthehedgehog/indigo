@@ -53,12 +53,13 @@ EntryPoint:
 @ProbeRamEnd:
     move.b  d0, (RamSize)
     
-    bsr     InitMouse                   ; Set up system
-    bsr     InitKeyboard
+    bsr     InitDevices                 ; Set up system
     bsr     InitSound
     bsr     InitVideo
     bsr     InitCursor
     bsr     InitHandles
+    
+    bsr     SetMouseDefaults            ; Default settings
     
     move.w  #$8174, ($C00004)           ; Turn on screen
     move.w  #$2000, sr                  ; Enable interrupts
@@ -102,11 +103,17 @@ Interrupt:
     clr.b   (ResetCount)
 @ResetHandled:
     
-    bsr     UpdateMouse                 ; Handle the cursor
-    bsr     UpdateCursor
+    moveq   #0, d7                      ; Read peripherals
+    bsr     UpdateDevice
+    moveq   #1, d7
+    bsr     UpdateDevice
+    
+    bsr     CleanUpMouse                ; Clean up hardware state if needed
+    bsr     CleanUpKeyboard
+    
+    bsr     UpdateCursor                ; Handle the cursor
     bsr     RedrawCursor
     
-    bsr     UpdateKeyboard              ; Handle typing
     bsr     UpdateBeep                  ; Update the beeper
     
     st.b    (NewFrame)                  ; Mark that a new frame started
