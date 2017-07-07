@@ -7,6 +7,9 @@ ErrorInt:
     move.w  #$2700, sr                  ; Disable all interrupts!
     move.l  ($0000).w, sp               ; Restore the stack
     
+    lea     @LogCrash(pc), a6           ; Tell the logger that we crashed
+    bsr     LogString
+    
     bsr     InitVideo                   ; Reinitialize video hardware
     bsr     ClearScreen                 ; Remove any screen leftovers
     
@@ -83,3 +86,9 @@ ErrorInt:
     dc.w    $2060
     
     dc.w    $FFFF
+
+;----------------------------------------------------------------------------
+
+@LogCrash:
+    dc.b    'CRASH!!', 0
+    even

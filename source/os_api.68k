@@ -71,6 +71,10 @@ OS_UINT2ASCII:          equ 30      ; Convert uint32 into string
 
 OS_RAND:                equ 32      ; Generate random 16-bit number
 
+OS_LOG:                 equ 48      ; Outputs a string to the logger
+OS_GETDEBUG:            equ 49      ; Checks if we're in debug mode
+OS_SETDEBUG:            equ 50      ; Changes between normal or debug mode
+
 ;****************************************************************************
 ; Macros for building the GUI layouts
 ;****************************************************************************

@@ -7,7 +7,13 @@ EntryPoint:
     lea     AltPalette(pc), a6
     syscall OS_LOADPALETTE
     
-    lea     Layout(pc), a6              ; Load interface
+    lea     Layout(pc), a0              ; Load interface
+    syscall OS_GETDEBUG
+    tst.w   d7
+    beq.s   @NormalLayout
+    lea     LayoutDebug(pc), a0
+@NormalLayout:
+    move.l   a0, a6
     syscall OS_PARSELAYOUT
     
     syscall OS_ALLOCSPRITE              ; Allocate sprites for dragging
@@ -30,6 +36,7 @@ MainLoop:
     lea     @Handlers(pc), a6
     jsr     (a6,d5.w)
     
+    bsr     CheckForWin                 ; Check if game has been won
     bra.s   MainLoop                    ; Back to the GUI
 
 ;----------------------------------------------------------------------------

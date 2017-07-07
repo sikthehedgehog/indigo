@@ -41,4 +41,4 @@ Instawin:
     bsr     UpdateAllWidgets            ; Get all widgets ready
     bsr     DrawTable                   ; Redraw everything
     
-    rts
+    bra     CheckForWin                 ; Start the celebration

@@ -1,0 +1,68 @@
+;****************************************************************************
+; Button IDs
+;****************************************************************************
+
+                    rsreset
+ID_DEBUG:           rs.b 1              ; Debug mode
+
+;****************************************************************************
+; Interface layout
+;****************************************************************************
+
+Layout:
+    OSUI_Toggle ID_DEBUG, 4,6,2,2, VramCheckbox
+    OSUI_End
+
+;****************************************************************************
+; Labels
+;****************************************************************************
+
+LabelText:
+    dc.b    9,' REPAIR MODE',0
+    dc.b    8,'Debug mode',0
+    dc.b    30,'You got here by pressing ',$0E,'Reset',$0F,' three times',0
+    dc.b    28,'Change any settings you need, then click',0
+    dc.b    23,'on ',$0E,'Apps',$0F,' to go back to the desktop',0
+    dc.b    0
+    even
+
+LabelList:
+    dc.b    4+6,3,0,9
+    dc.w    $2000+VramTitle
+    dc.b    6,6,1,8
+    dc.w    $2000+VramDebug
+    dc.b    5,20,0,30
+    dc.w    $2000+VramInstructions1
+    dc.b    5,22,0,28
+    dc.w    $2000+VramInstructions2
+    dc.b    5,23,0,23
+    dc.w    $2000+VramInstructions3
+    dc.w    $FFFF
+
+;****************************************************************************
+; Interface graphics
+;****************************************************************************
+
+Patterns:
+    incbin  "repair/blob/ui.blob"
+
+AltPalette:
+    dc.w    $000,$222,$000,$000,$000,$000,$000,$000
+    dc.w    $000,$000,$000,$000,$000,$000,$000,$0E0
+
+;****************************************************************************
+; Pattern IDs
+;****************************************************************************
+
+                    rsreset
+
+VramCheckbox:       rs.b 8              ; Checkboxes
+VramBg:             rs.b 4              ; Backgrounds
+VramIndigo:         rs.b 6*2            ; "INDIGO"
+NumPatterns:        rs.b 0              ; Number of patterns
+
+VramTitle:          rs.b 9              ; "REPAIR MODE"
+VramDebug:          rs.b 8              ; "Debug mode"
+VramInstructions1:  rs.b 30             ; "You got here by..."
+VramInstructions2:  rs.b 28             ; "Change any settings..."
+VramInstructions3:  rs.b 23             ; "on "Apps" to..."

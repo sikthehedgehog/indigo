@@ -12,15 +12,27 @@ EntryPoint:
     move.l  #'SEGA', ($A14000)
 @NoTmss:
     
+    clr.b   (DebugMode)                 ; Default to normal mode
+    addq.b  #1, (ResetCount)            ; Increase reset count
+    move.b  #60, (ResetTimer)
+    
+    tst.b   ($A10009)                   ; Cool boot? (initialize the reset
+    bne.s   @WarmBoot                   ; counter in that case)
+    move.b  #$40, ($A10009)
+    move.b  #$40, ($A10003)
+    clr.b   (ResetCount)
+    clr.b   (ResetTimer)
+@WarmBoot:
+    
     if 0
     move.w  #$A000, ($A130F0)           ; Set up the Mega Everdrive mapper
     move.w  #$01, ($A130F2)             ; in a way that will let us get 2MB
     move.w  #$02, ($A130F4)             ; ROM and 2MB RAM (the latter will be
     move.w  #$03, ($A130F6)             ; volatile, but there's a SD card)
-    move.w  #$04, ($A130F8)
-    move.w  #$05, ($A130FA)
-    move.w  #$06, ($A130FC)
-    move.w  #$07, ($A130FE)
+    move.w  #$04, ($A130F8)             ; Kind of wishing the write-protect
+    move.w  #$05, ($A130FA)             ; flag was actually per page... may
+    move.w  #$06, ($A130FC)             ; decide to enable writing only in
+    move.w  #$07, ($A130FE)             ; filesystem functions instead
 @NoMegaEverdrive:
     endc
     
@@ -59,7 +71,19 @@ EntryPoint:
     move.w  #VramTaskbar+$8000, a4
     bsr     FillFrame
     
-    bra     QuitProcess                 ; Load desktop
+    lea     @DesktopPath(pc), a6        ; Load desktop or repair mode
+    cmpi.b  #3, (ResetCount)            ; depending on how many times the
+    bne     LoadProcess                 ; Reset button has been pressed
+    clr.b   (ResetCount)
+    clr.b   (ResetTimer)
+    lea     @RepairPath(pc), a6
+    bra     LoadProcess
+
+;----------------------------------------------------------------------------
+
+@DesktopPath:   dc.b    '/rom/apps/desktop.ixec',0
+@RepairPath:    dc.b    '/rom/apps/repair.xeci',0
+                even
 
 ;****************************************************************************
 ; Interrupt
@@ -69,6 +93,14 @@ EntryPoint:
 
 Interrupt:
     movem.l d5-d7/a4-a6, -(sp)          ; Save registers
+    
+    move.b  (ResetTimer), d7            ; Handle the timeout for the Reset
+    beq.s   @ResetHandled               ; button (we should go into repair
+    subq.b  #1, d7                      ; mode only if it's pressed three
+    move.b  d7, (ResetTimer)            ; times quickly)
+    bne.s   @ResetHandled
+    clr.b   (ResetCount)
+@ResetHandled:
     
     bsr     UpdateMouse                 ; Handle the cursor
     bsr     UpdateCursor

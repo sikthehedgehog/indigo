@@ -1,0 +1,52 @@
+;****************************************************************************
+; LogString
+; Outputs a string to the logger.
+;----------------------------------------------------------------------------
+; input a6.l .... Pointer to string
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+LogString:
+    lea     ($C00004), a5               ; Pointer to VDP control port
+    move.w  #$9E00, d7                  ; We'll write to register $9Exx
+    
+@Loop:
+    move.b  (a6)+, d7                   ; Write the whole nul-terminated
+    move.w  d7, (a5)                    ; string (INCLUDING the nul) to the
+    tst.b   d7                          ; logging port.
+    bne.s   @Loop
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; GetDebugMode
+; Retrieves whether debug mode is in use.
+;----------------------------------------------------------------------------
+; output d7.w ... 1 = enabled, 0 = disabled
+;----------------------------------------------------------------------------
+; breaks: d5-d6, a4-a6
+;****************************************************************************
+
+GetDebugMode:
+    moveq   #0, d7                      ; Just retrieve the value
+    move.b  (DebugMode), d7
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; SetDebugMode
+; Toggles whether debug mode is in use.
+;----------------------------------------------------------------------------
+; input d7.b .... 1 to enable, 0 to disable
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+SetDebugMode:
+    tst.w   d7                          ; Normalize value
+    sne.b   d7
+    and.b   #1, d7
+    
+    move.b  d7, (DebugMode)             ; Store debug mode setting
+    rts                                 ; End of subroutine

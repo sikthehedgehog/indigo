@@ -1,0 +1,9 @@
+output "repair/blob/ui.blob"
+layout tilemap
+input "kernel/res/check.png"
+tiles 0 0 2 2
+tiles 2 0 2 2
+input "settings/data/background.png"
+tiles 0 0 2 2
+input "repair/data/indigo.png"
+tiles 0 0 6 2

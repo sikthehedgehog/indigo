@@ -22,6 +22,9 @@ gfx desktop/data/gfxbuild
 pal desktop/data/wallpaper.png desktop/blob/bg_pal.blob
 asm desktop/buildme.68k rom/apps/desktop.ixec
 
+gfx repair/data/gfxbuild
+asm repair/buildme.68k rom/apps/repair.xeci
+
 gfx settings/data/gfxbuild
 asm settings/buildme.68k rom/apps/settings.ixec
 

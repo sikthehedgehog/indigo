@@ -35,6 +35,8 @@ CursorOldShape:     rs.b 1              ; Previous cursor shape
 
 RamSize:            rs.b 1              ; How much RAM is there (64KB steps)
 VramSize:           rs.b 1              ; 0 = 64KB VRAM, 1 = 128KB VRAM
+DebugMode:          rs.b 1              ; 0 = normal mode, 1 = debug mode
+                    rs.b 1
 
 Widgets:            rs.b WIDGET_SIZE*MAX_WIDGETS    ; Widget data
 Hovering:           rs.l 1              ; Widget being hovered (0 if none)
@@ -56,6 +58,9 @@ BeepVolume:         rs.b 1              ; PSG volume for beeping
                     rs.b 1
 
 Handles:            rs.b HANDLE_SIZE*MAX_HANDLES    ; File handles
+
+ResetCount:         rs.b 1              ; Incremented by 1 every Reset
+ResetTimer:         rs.b 1              ; When to reset the... reset count
 
 KernelUsage:        rs.b 0              ; To help keep track of how much RAM
                                         ; the kernel is using (this address

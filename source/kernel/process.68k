@@ -76,7 +76,7 @@ LoadProcess:
 ;****************************************************************************
 
 QuitProcess:
-    lea     (@Default), a6              ; We can't actually "quit" the
+    lea     @Default(pc), a6            ; We can't actually "quit" the
     bra     LoadProcess                 ; running process, instead what we
                                         ; do is load the default process
                                         ; (which is the desktop)

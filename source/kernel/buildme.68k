@@ -9,6 +9,7 @@
     include "kernel/keyboard.68k"
     include "kernel/mouse.68k"
     include "kernel/sound.68k"
+    include "kernel/debug.68k"
     
     include "kernel/cursor.68k"
     include "kernel/gui.68k"

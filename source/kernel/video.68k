@@ -27,6 +27,11 @@ InitVideo:
     move.w  #$9001, (a0)
     move.w  #$9100, (a0)
     move.w  #$9299, (a0)
+    move.w  #$9300, (a0)
+    move.w  #$9400, (a0)
+    move.w  #$9500, (a0)
+    move.w  #$9600, (a0)
+    move.w  #$9700, (a0)
     
     move.l  #$78000003, (a0)            ; Set up sprites
     move.l  #$00000501, (a1)

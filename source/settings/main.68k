@@ -31,9 +31,31 @@ EntryPoint:
     move.w  #VramMouseButtons, d7
     syscall OS_LOADTEXTLIST
     
-    lea     Layout(pc), a6              ; Load interface
+    moveq   #1, d7                      ; Load palettes
+    lea     AltPalette(pc), a6
+    syscall OS_LOADPALETTE
+    moveq   #2, d7
+    lea     DarkPalette(pc), a6
+    syscall OS_LOADPALETTE
+    moveq   #$10, d7
+    syscall OS_SETBGCOLOR
+    
+    lea     Layout(pc), a0              ; Load interface
+    syscall OS_GETDEBUG
+    tst.w   d7
+    beq.s   @NormalLayout
+    lea     LayoutDebug(pc), a0
+@NormalLayout:
+    move.l   a0, a6
     syscall OS_PARSELAYOUT
-    lea     LabelList(pc), a6
+    
+    move.w  #$2000+VramBg, d7           ; Draw background
+    move.w  #$2001+VramBg, d6
+    move.w  #$2002+VramBg, a6
+    move.w  #$2003+VramBg, a5
+    syscall OS_FILLBACKGROUND
+    
+    lea     LabelList(pc), a6           ; Draw all labels
     syscall OS_DRAWLABELS
     
     moveq   #0, d7                      ; To shift some labels a bit

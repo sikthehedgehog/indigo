@@ -17,6 +17,13 @@ ID_TEST:            rs.b 1              ; For testing
 ; Interface layout
 ;****************************************************************************
 
+LayoutDebug:
+    OSUI_VScroll ID_MOUSESENS, 20,2,8, VramScroller,$4000+VramVScrollBg
+    
+    OSUI_Button ID_TEST, 36,1,2,2, VramWarning
+    OSUI_Toggle ID_MOUSESWAP, 36,20,2,2, VramRadio
+    OSUI_Toggle ID_MOUSETYPE, 36,22,2,2, VramRadio
+
 Layout:
     OSUI_Select ID_MOUSESWAP,0, 2,3,2,2, VramRadio
     OSUI_Select ID_MOUSESWAP,1, 2,5,2,2, VramRadio
@@ -24,25 +31,13 @@ Layout:
     OSUI_Select ID_MOUSETYPE,0, 2,10,2,2, VramRadio
     OSUI_Select ID_MOUSETYPE,1, 2,12,2,2, VramRadio
     
-    OSUI_HScroll ID_MOUSESENS, 4,17,8, VramScroller,VramHScrollBg
+    OSUI_HScroll ID_MOUSESENS, 4,17,8, VramScroller,$4000+VramHScrollBg
     OSUI_Hold ID_MOUSESENS_D, 2,17,2,2, VramLess
     OSUI_Hold ID_MOUSESENS_U, 14,17,2,2, VramMore
     
-    OSUI_HScroll ID_SOUNDVOL, 24,22,8, VramScroller,VramHScrollBg
+    OSUI_HScroll ID_SOUNDVOL, 24,22,8, VramScroller,$4000+VramHScrollBg
     OSUI_Hold ID_SOUNDVOL_D, 22,22,2,2, VramLess
     OSUI_Hold ID_SOUNDVOL_U, 34,22,2,2, VramMore
-    OSUI_End
-
-;----------------------------------------------------------------------------
-; Some stuff that was used for debugging
-; It's hidden by that OSUI_End above
-;----------------------------------------------------------------------------
-
-    OSUI_VScroll ID_MOUSESENS, 20,2,8, VramScroller,VramVScrollBg
-    
-    OSUI_Button ID_TEST, 36,1,2,2, VramWarning
-    OSUI_Toggle ID_MOUSESWAP, 34,22,2,2, VramRadio
-    OSUI_Toggle ID_MOUSETYPE, 36,22,2,2, VramRadio
     OSUI_End
 
 ;****************************************************************************
@@ -63,24 +58,24 @@ LabelText:
 
 LabelList:
     dc.b    2,1,0,10
-    dc.w    VramMouseButtons
+    dc.w    $2000+VramMouseButtons
     dc.b    4,3,1,9
-    dc.w    VramRightHanded
+    dc.w    $2000+VramRightHanded
     dc.b    4,5,1,9
-    dc.w    VramLeftHanded
+    dc.w    $2000+VramLeftHanded
     
     dc.b    2,8,0,8
-    dc.w    VramMouseType
+    dc.w    $2000+VramMouseType
     dc.b    4,10,1,8
-    dc.w    VramMegaMouse
+    dc.w    $2000+VramMegaMouse
     dc.b    4,12,1,8
-    dc.w    VramSegaMouse
+    dc.w    $2000+VramSegaMouse
     
     dc.b    2,15,0,11
-    dc.w    VramMouseSensivity
+    dc.w    $2000+VramMouseSensivity
     
     dc.b    22,20,0,9
-    dc.w    VramSoundVolume
+    dc.w    $2000+VramSoundVolume
     
     dc.w    $FFFF
 
@@ -90,6 +85,14 @@ LabelList:
 
 Patterns:
     incbin  "settings/blob/ui.blob"
+
+AltPalette:
+    dc.w    $000,$222,$000,$000,$000,$000,$000,$000
+    dc.w    $000,$000,$000,$000,$000,$000,$000,$0E0
+
+DarkPalette:
+    dc.w    $000,$644,$422,$222,$222,$000,$000,$000
+    dc.w    $000,$000,$000,$000,$000,$000,$644,$000
 
 ;****************************************************************************
 ; Pattern IDs
@@ -104,6 +107,7 @@ VramScroller:       rs.b 4              ; Scrollbar cursor
 VramHScrollBg:      rs.b 6              ; Scrollbar background (hor.)
 VramVScrollBg:      rs.b 6              ; Scrollbar background (ver.)
 VramWarning:        rs.b 4*2            ; Warning button
+VramBg:             rs.b 4              ; Background
 NumPatterns:        rs.b 0              ; Number of patterns
 
 VramMouseButtons:   rs.b 10             ; "Mouse buttons:"

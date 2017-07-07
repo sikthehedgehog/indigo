@@ -1,0 +1,71 @@
+EntryPoint:
+    moveq   #0, d7                      ; Load graphics
+    move.w  #NumPatterns, d6
+    lea     Patterns(pc), a6
+    syscall OS_LOADPATTERNS
+    lea     LabelText(pc), a6
+    move.w  #VramTitle, d7
+    syscall OS_LOADTEXTLIST
+    
+    moveq   #1, d7                      ; Load palette
+    lea     AltPalette(pc), a6
+    syscall OS_LOADPALETTE
+    moveq   #$10, d7
+    syscall OS_SETBGCOLOR
+    
+    lea     Layout(pc), a6              ; Load interface
+    syscall OS_PARSELAYOUT
+    
+    move.w  #$2000+VramBg, d7           ; Draw background
+    move.w  #$2001+VramBg, d6
+    move.w  #$2002+VramBg, a6
+    move.w  #$2003+VramBg, a5
+    syscall OS_FILLBACKGROUND
+    
+    lea     LabelList(pc), a6           ; Draw all labels
+    syscall OS_DRAWLABELS
+    
+    moveq   #4, d7                      ; Draw "INDIGO"
+    moveq   #2, d6
+    moveq   #0, d5
+    move.w  #6, a6
+    move.w  #2, a5
+    move.w  #$2000+VramIndigo, a4
+    syscall OS_DRAWTILES
+    
+    moveq   #0, d7                      ; To shift some labels a bit
+    moveq   #-4, d6
+    move.w  d7, a6
+    move.w  d6, a5
+    syscall OS_SETSCROLL
+
+;----------------------------------------------------------------------------
+
+MainLoop:
+    syscall OS_GUILOOP                  ; Let the GUI run
+    
+    and.w   #$FF, d7                    ; Handle the changed setting
+    lsl.w   #2, d7
+    lea     @Handlers(pc), a6
+    jsr     (a6,d7.w)
+    
+    bra.s   MainLoop
+
+;----------------------------------------------------------------------------
+
+@Handlers:
+    bra.w   ToggleDebug                 ; ID_DEBUG
+
+;****************************************************************************
+; ToggleDebug
+; Toggles debug mode (handles the checkbox).
+;----------------------------------------------------------------------------
+; input d6.b .... 1 = enable, 0 = disable
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ToggleDebug:
+    move.b  d6, d7
+    syscall OS_SETDEBUG
+    rts

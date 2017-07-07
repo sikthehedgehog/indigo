@@ -1,0 +1,33 @@
+;****************************************************************************
+; CheckForWin
+; Checks if the game has been won (and proceeds to the celebration if so).
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+CheckForWin:
+    moveq   #13, d7                     ; Check if all foundations are
+    lea     (FoundationLen), a6         ; filled up yet
+    cmp.b   (a6)+, d7
+    bne.s   @DidntWin
+    cmp.b   (a6)+, d7
+    bne.s   @DidntWin
+    cmp.b   (a6)+, d7
+    bne.s   @DidntWin
+    cmp.b   (a6)+, d7
+    bne.s   @DidntWin
+    
+    bra.s   Celebrate                   ; We won!! :D
+    
+@DidntWin:
+    rts                                 ; Didn't win yet
+
+;****************************************************************************
+; Celebrate
+; Does the bouncing cards animation when winning a game :O
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+Celebrate:
+    illegal                             ; Hmmmmm...
