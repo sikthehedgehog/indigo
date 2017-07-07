@@ -38,17 +38,10 @@ EntryPoint:
     move.w  #32, a5
     move.w  #VramScreen+$2000, a4
     syscall OS_DRAWTILES
-    
-    move.w  #VramScreen, d7
-    move.w  #36*NUM_ROWS, d6
-    moveq   #$0E, d5
-    syscall OS_FILLPATTERNS
 
 ;----------------------------------------------------------------------------
 
-    clr.b   (CursorX)                   ; Set up console
-    clr.b   (CursorY)
-    clr.b   (CursorBlink)
+    bsr     ClearScreen                 ; Set up console
     bsr     ClearInput
     bsr     ClearBuffer
     clr.b   (Paused)
@@ -165,6 +158,7 @@ RunCommand:
 @CmdMem:            dc.b 'mem',0
 @CmdBeep:           dc.b 'beep',0
 @CmdBoop:           dc.b 'boop',0
+@CmdCls:            dc.b 'cls',0
 @CmdPause:          dc.b 'pause',0
 @CmdExit:           dc.b 'exit',0
                     even
@@ -177,6 +171,7 @@ RunCommand:
     dc.w    @CmdMem-@List, ShowMemory-@List
     dc.w    @CmdBeep-@List, Beep-@List
     dc.w    @CmdBoop-@List, Boop-@List
+    dc.w    @CmdCls-@List, ClearScreen-@List
     dc.w    @CmdPause-@List, PauseInput-@List
     dc.w    @CmdExit-@List, ExitTerminal-@List
     dc.w    0

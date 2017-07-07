@@ -2,6 +2,25 @@ NUM_COLS:           equ 48              ; Width in columns
 NUM_ROWS:           equ 32              ; Height in rows
 
 ;****************************************************************************
+; ClearScreen
+; Wipes the terminal screen.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+ClearScreen:
+    move.w  #VramScreen, d7             ; Fill screen with nothing
+    move.w  #36*NUM_ROWS, d6
+    moveq   #$0E, d5
+    syscall OS_FILLPATTERNS
+    
+    clr.b   (CursorX)                   ; Reset cursor
+    clr.b   (CursorY)
+    clr.b   (CursorBlink)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
 ; RenderText
 ; Renders the buffered line and loads it into VRAM.
 ;----------------------------------------------------------------------------
