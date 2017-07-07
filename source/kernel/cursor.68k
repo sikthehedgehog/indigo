@@ -38,10 +38,20 @@ InitCursor:
 
 UpdateCursor:
     tst.b   (HasMouse)                  ; Is the mouse connected?
-    bne.s   @MouseOk
-    rts
-@MouseOk:
+    bne     UpdateCursorMouse
+    tst.b   (HasJoypad)                 ; Is the joypad connected?
+    bne     UpdateCursorJoypad
     
+    rts                                 ; No way to use the cursor...
+
+;****************************************************************************
+; UpdateCursorMouse
+; Mouse version of UpdateCursor.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+UpdateCursorMouse:
     move.w  (CursorX), d7               ; Get current cursor position
     move.w  (CursorY), d6
     add.w   (MouseX), d7                ; Apply mouse motion
@@ -68,6 +78,69 @@ UpdateCursor:
     move.w  d6, (CursorY)
     
     move.b  (MouseButtons), d7          ; Get cursor clicks
+    move.b  (CursorHeld), d6
+    move.b  d7, (CursorHeld)
+    not.b   d6
+    and.b   d6, d7
+    move.b  d7, (CursorClick)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; UpdateCursorJoypad
+; Joypad version of UpdateCursor.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+UpdateCursorJoypad:
+    move.w  (CursorX), d7               ; Get current cursor position
+    move.w  (CursorY), d6
+    
+    move.b  (JoyButtons), d5            ; Get D-pad state
+    
+    btst    #3, d5                      ; Test
+    beq.s   @NoRight
+    addq.w  #4, d7
+@NoRight:
+    btst    #2, d5
+    beq.s   @NoLeft
+    subq.w  #4, d7
+@NoLeft:
+    btst    #1, d5
+    beq.s   @NoDown
+    addq.w  #4, d6
+@NoDown:
+    btst    #0, d5
+    beq.s   @NoUp
+    subq.w  #4, d6
+@NoUp:
+    
+    tst.w   d7                          ; Ensure cursor stays inbounds
+    bge.s   @LeftOk
+    moveq   #0, d7
+@LeftOk:
+    tst.w   d6
+    bge.s   @TopOk
+    moveq   #0, d6
+@TopOk:
+    cmp.w   #319, d7
+    ble.s   @RightOk
+    move.w  #319, d7
+@RightOk:
+    cmp.w   #223, d6
+    ble.s   @BottomOk
+    move.w  #223, d6
+@BottomOk:
+    
+    move.w  d7, (CursorX)               ; Store new position
+    move.w  d6, (CursorY)
+    
+    move.b  (JoyButtons), d7            ; Get cursor clicks
+    roxl.b  #3, d7
+    rol.b   #1, d7
+    roxl.b  #1, d7
+    and.b   #$03, d7
     move.b  (CursorHeld), d6
     move.b  d7, (CursorHeld)
     not.b   d6

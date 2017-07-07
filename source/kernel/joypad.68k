@@ -1,0 +1,81 @@
+;****************************************************************************
+; InitJoypad
+; Initializes a port for a joypad.
+;----------------------------------------------------------------------------
+; input a6.l .... Pointer to port
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+InitJoypad:
+    move.b  #$40, 6(a6)                 ; Set up port
+    move.b  #$40, (a6)
+    
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; UpdateJoypad
+; Reads the joypad and updates its status.
+;----------------------------------------------------------------------------
+; input a6.l .... Pointer to port
+;----------------------------------------------------------------------------
+; output d7.w ... 1 on success, 0 on failure
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+UpdateJoypad:
+    move.b  #$40, (a6)                  ; Read buttons
+    nop
+    nop
+    move.b  (a6), d7
+    move.b  #$00, (a6)
+    nop
+    nop
+    move.b  (a6), d6
+    move.b  #$40, (a6)
+    
+    move.b  d6, d5                      ; Check if joypad is here
+    and.b   #$0C, d5
+    beq.s   @Present
+    moveq   #0, d7
+    rts
+@Present:
+    
+    and.b   #$3F, d7                    ; Store the state of the buttons
+    and.b   #$30, d6
+    lsl.b   #2, d6
+    or.b    d6, d7
+    not.b   d7
+    move.b  d7, (JoyButtons)
+    
+    moveq   #1, d7                      ; Joypad is available
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; CleanUpJoypad
+; Cleans up the joypad state if the joypad is missing.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+CleanUpJoypad:
+    move.b  #$80|DEV_JOYPAD, d7         ; Check if a joypad was detected
+    cmp.b   (Device1P), d7
+    beq.s   @Present
+    cmp.b   (Device2P), d7
+    beq.s   @Present
+
+;----------------------------------------------------------------------------
+
+@Missing:
+    clr.b   (HasJoypad)                 ; No joypad detected
+    clr.b   (JoyButtons)
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@Present:
+    st.b    (HasJoypad)                 ; Mark joypad as available
+    rts                                 ; End of subroutine

@@ -5,8 +5,9 @@
 
                     rsreset
 DEV_NONE:           rs.b 1              ; No device present
-DEV_MOUSE:          rs.b 1              ; Sega/Mega mouse
 DEV_KEYBOARD:       rs.b 1              ; Saturn keyboard
+DEV_MOUSE:          rs.b 1              ; Sega/Mega mouse
+DEV_JOYPAD:         rs.b 1              ; Joypad
 
 KNOWN_DEVICES:      rs.b 0              ; Number of known devices
 
@@ -86,13 +87,15 @@ UpdateDevice:
 
 @UpdateHandlers:
     bra.w   @Dummy                      ; DEV_NONE
-    bra.w   UpdateMouse                 ; DEV_MOUSE
     bra.w   UpdateKeyboard              ; DEV_KEYBOARD
+    bra.w   UpdateMouse                 ; DEV_MOUSE
+    bra.w   UpdateJoypad                ; DEV_JOYPAD
 
 @InitHandlers:
     bra.w   @Dummy                      ; DEV_NONE
-    bra.w   InitMouse                   ; DEV_MOUSE
     bra.w   InitKeyboard                ; DEV_KEYBOARD
+    bra.w   InitMouse                   ; DEV_MOUSE
+    bra.w   InitJoypad                  ; DEV_JOYPAD
 
 @Dummy:
     moveq   #0, d7

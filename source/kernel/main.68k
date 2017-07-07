@@ -108,7 +108,8 @@ Interrupt:
     moveq   #1, d7
     bsr     UpdateDevice
     
-    bsr     CleanUpMouse                ; Clean up hardware state if needed
+    bsr     CleanUpJoypad               ; Clean up hardware state if needed
+    bsr     CleanUpMouse
     bsr     CleanUpKeyboard
     
     bsr     UpdateCursor                ; Handle the cursor
