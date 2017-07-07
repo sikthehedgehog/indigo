@@ -27,12 +27,15 @@ PrintInput:
     clr.b   (InputDirty)
     
     bsr     ClearBuffer                 ; Draw the prompt
+    tst.b   (Paused)
+    bne.s   @ShowNothing
     lea     @Prompt(pc), a6
     bsr     AddText
     
     lea     (InputBuffer), a6           ; Draw the entered text
     bsr     AddText
     
+@ShowNothing:
     bra     RenderText                  ; Display the command line
 
 ;----------------------------------------------------------------------------
@@ -50,6 +53,17 @@ PrintInput:
 ;****************************************************************************
 
 GotAscii:
+    tst.b   (Paused)                    ; Waiting for a keypress?
+    beq.s   @NotPaused
+    
+    clr.b   (Paused)                    ; Stop waiting
+    st.b    (InputDirty)                ; Refresh command line
+    
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@NotPaused:
     moveq   #0, d0                      ; Get position in the buffer
     move.b  (CursorX), d0
     subq.b  #1, d0
@@ -89,4 +103,15 @@ GotAscii:
     clr.b   -1(a0,d0.w)                 ; Remove last character
     st.b    (InputDirty)                ; Refresh command line
 @NoBackspace:
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; PauseInput
+; Starts the wait for a keypress.
+;----------------------------------------------------------------------------
+; breaks: all
+;****************************************************************************
+
+PauseInput:
+    st.b    (Paused)                    ; Start pause
     rts                                 ; End of subroutine

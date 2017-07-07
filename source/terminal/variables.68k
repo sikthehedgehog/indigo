@@ -9,3 +9,5 @@ CursorBlink:        rs.b 1              ; Used to make cursor blink
 InputBuffer:        rs.b MAX_INPUT      ; Input buffer
 InputBufferNul:     rs.b 1              ; (for spare nul terminator)
 InputDirty:         rs.b 1              ; Set when need to refresh input
+Paused:             rs.b 1              ; Set when inside a PAUSE command
+                    rs.b 1
