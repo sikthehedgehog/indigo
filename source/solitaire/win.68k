@@ -17,17 +17,143 @@ CheckForWin:
     cmp.b   (a6)+, d7
     bne.s   @DidntWin
     
-    bra.s   Celebrate                   ; We won!! :D
+    st.b    (Celebrate)                 ; Start celebration :D
+    st.b    (RainPos)
+    st.b    (RainGone)
     
 @DidntWin:
     rts                                 ; Didn't win yet
 
 ;****************************************************************************
-; Celebrate
+; CardRain
 ; Does the bouncing cards animation when winning a game :O
 ;----------------------------------------------------------------------------
 ; breaks: all
 ;****************************************************************************
 
-Celebrate:
-    illegal                             ; Hmmmmm...
+CardRain:
+    tst.b   (Celebrate)                 ; Is the card rain ongoing?
+    bne.s   @DoAnimation
+    rts
+@DoAnimation:
+    
+    tst.b   (RainGone)                  ; Move onto next card?
+    bne     @NextCard
+    
+    move.w  (RainX), d7                 ; Leave trail behind
+    move.w  (RainY), d6
+    move.b  (RainCard), d5
+    addq.w  #4, d7
+    addq.w  #4, d6
+    asr.w   #3, d7
+    asr.w   #3, d6
+    bsr     DrawCard
+    
+    move.w  (RainX), d0                 ; Draw sprite that moves smoothly
+    move.w  (RainY), d1
+    moveq   #0, d2
+    move.b  (RainCard), d2
+    subq.b  #1, d2
+    lsl.w   #3, d2
+    move.w  d2, d7
+    add.w   d2, d2
+    add.w   d7, d2
+    add.w   #VramCards, d2
+    moveq   #6-1, d3
+    move.b  (DragSpr), d4
+@DrawSprite:
+    move.b  d4, d7
+    move.w  d0, d6
+    move.w  d1, d5
+    move.w  d2, a6
+    move.w  #%1100, a5
+    syscall OS_SETSPRITE
+    addq.w  #8, d1
+    addq.w  #4, d2
+    addq.b  #1, d4
+    dbf     d3, @DrawSprite
+    
+    move.w  (RainX), d7                 ; Move card around
+    move.w  (RainY), d6
+    move.w  (RainXSpeed), d5
+    move.w  (RainYSpeed), d4
+    add.w   d5, d7
+    move.w  d4, d5
+    asr.w   #8, d5
+    add.w   d5, d6
+    
+    addi.w  #$40, d4                    ; Make cards fall
+    
+    cmp.w   #19*8, d6                   ; Bounce against the floor?
+    ble.s   @DontBounce
+    move.w  #19*8, d6
+    move.w  d4, d5
+    asr.w   #2, d5
+    sub.w   d5, d4
+    neg.w   d4
+@DontBounce:
+    
+    move.w  d7, (RainX)                 ; Store new position and speed
+    move.w  d6, (RainY)
+    move.w  d4, (RainYSpeed)
+    
+    cmp.w   #-32, d7                    ; Is the card gone now?
+    blt.s   @CardIsGone
+    cmp.w   #320, d7
+    bgt.s   @CardIsGone
+    
+    rts                                 ; End of subroutine
+    
+@CardIsGone:
+    st.b    (RainGone)                  ; Get ready to move onto next card
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@NextCard:
+    move.b  (RainPos), d0               ; Go pick next card
+    addq.b  #1, d0
+    move.b  d0, (RainPos)
+    cmp.b   #52, d0
+    beq     @AnimationOver
+    
+    move.w  d0, d1                      ; Pick card from foundation
+    and.w   #3, d1
+    lea     (FoundationLen), a6
+    lea     (a6,d1.w), a6
+    moveq   #0, d2
+    move.b  (a6), d2
+    subq.b  #1, d2
+    move.b  d2, (a6)
+    lsl.w   #5, d1
+    lea     (Foundations), a5
+    lea     (a5,d1.w), a5
+    move.b  (a5,d2.w), (RainCard)
+    
+    move.w  d0, d7                      ; Determine position of the card
+    and.w   #3, d7
+    lsl.w   #3, d7
+    move.w  d7, d6
+    lsl.w   #2, d7
+    add.w   d6, d7
+    add.w   #FOUNDATION_X*8, d7
+    move.w  d7, (RainX)
+    move.w  #FOUNDATION_Y*8, (RainY)
+    
+    syscall OS_RAND                     ; Determine speed of the card
+    and.w   #$8003, d7
+    addq.w  #1, d7
+    bpl.s   @FallRight
+    and.w   #$7FFF, d7
+    neg.w   d7
+@FallRight:
+    move.w  d7, (RainXSpeed)
+    clr.w   (RainYSpeed)
+    
+    clr.b   (RainGone)                  ; Start next card
+    rts                                 ; End of subroutine
+
+;----------------------------------------------------------------------------
+
+@AnimationOver:
+    bra     NewGame                     ; Start a new game

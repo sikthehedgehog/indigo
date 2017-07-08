@@ -57,6 +57,7 @@ MainLoop:
     bra.w   DealStock                   ; ID_STOCK
     bra.w   NewGame                     ; ID_NEW
     bra.w   Instawin                    ; ID_CHEAT
+    bra.w   CardRain                    ; ID_WINANIM
 
 @Dummy:
     rts
@@ -69,6 +70,8 @@ MainLoop:
 ;****************************************************************************
 
 NewGame:
+    clr.b   (Celebrate)                 ; Stop any ongoing celebration
+    
     lea     (Stock), a6                 ; Create the initial deck
     moveq   #1, d7
     moveq   #52-1, d6
@@ -144,6 +147,14 @@ DrawTable:
     move.w  #$3000+VramBg, a6
     move.w  #$3800+VramBg, a5
     syscall OS_FILLBACKGROUND
+    
+    moveq   #0, d7                      ; Redraw foreground (to erase
+    moveq   #0, d6                      ; leftovers from the card rain)
+    moveq   #0, d5
+    move.w  #40, a6
+    move.w  #28, a5
+    syscall OS_ERASETILES
+    syscall OS_REDRAWGUI
     
     lea     @Slots(pc), a0              ; Draw the free slots
     moveq   #13-1, d0

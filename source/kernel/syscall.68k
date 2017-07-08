@@ -54,3 +54,4 @@
     jmp     LogString                   ; OS_LOG
     jmp     GetDebugMode                ; OS_GETDEBUG
     jmp     SetDebugMode                ; OS_SETDEBUG
+    jmp     DrawAllWidgets              ; OS_REDRAWGUI

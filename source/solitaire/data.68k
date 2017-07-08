@@ -10,6 +10,7 @@ ID_FOUNDATION:      rs.b 4              ; Dragging from foundation
 ID_STOCK:           rs.b 1              ; Stock
 ID_NEW:             rs.b 1              ; New game
 ID_CHEAT:           rs.b 1              ; Instawin :O
+ID_WINANIM:         rs.b 1              ; Timer for win animation
 
 ;****************************************************************************
 ; Interface layout
@@ -31,6 +32,8 @@ Layout:
     OSUI_Draggable ID_PILE+4, 24,12+32, 4,6
     OSUI_Draggable ID_PILE+5, 29,13+32, 4,6
     OSUI_Draggable ID_PILE+6, 34,14+32, 4,6
+    
+    OSUI_Timer ID_WINANIM, 1
     OSUI_End
 
 ;****************************************************************************

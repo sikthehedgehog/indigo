@@ -13,3 +13,12 @@ Foundations:        rs.b $20*4          ; Cards on each foundation
 Dragging:           rs.b 13             ; Cards being dragged
 
 DragSpr:            rs.b 1              ; First sprite for dragged cards
+
+RainX:              rs.w 1              ; X coordinate of card raining
+RainY:              rs.w 1              ; Y coordinate of card raining
+RainXSpeed:         rs.w 1              ; X speed of card raining (integer)
+RainYSpeed:         rs.w 1              ; Y speed of card raining (8.8 fixed)
+RainCard:           rs.b 1              ; Which card is raining
+RainPos:            rs.b 1              ; How many cards have been raining
+RainGone:           rs.b 1              ; Set to move onto the next card
+Celebrate:          rs.b 1              ; Set when doing the card rain

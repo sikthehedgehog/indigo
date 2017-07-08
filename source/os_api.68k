@@ -18,6 +18,7 @@ OS_READDIR:             equ 44      ; Read file entry from directory
 OS_CLOSEDIR:            equ 47      ; Close directory handle
 
 OS_PARSELAYOUT:         equ 6       ; Parse GUI layout
+OS_REDRAWGUI:           equ 51      ; Redraws all GUI widgets
 OS_GUILOOP:             equ 7       ; Run GUI main loop
 OS_GETSTATE:            equ 14      ; Retrieve a GUI state value
 OS_SETSTATE:            equ 15      ; Change a GUI state value
