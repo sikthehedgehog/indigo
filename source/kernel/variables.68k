@@ -38,6 +38,8 @@ CursorHeld:         rs.b 1              ; Cursor buttons being held
 CursorClick:        rs.b 1              ; Cursor buttons just clicked
 CursorShape:        rs.b 1              ; Current cursor shape
 CursorOldShape:     rs.b 1              ; Previous cursor shape
+DblDelay:           rs.b 1              ; How long to wait for double click
+DblTimer:           rs.b 1              ; Time left for double clicking
 
 RamSize:            rs.b 1              ; How much RAM is there (64KB steps)
 VramSize:           rs.b 1              ; 0 = 64KB VRAM, 1 = 128KB VRAM

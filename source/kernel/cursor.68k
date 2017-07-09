@@ -19,10 +19,13 @@ MAX_CURSOR:         rs.b 0
 ;****************************************************************************
 
 InitCursor:
+    move.b  #30, (DblDelay)             ; Default double click time limit
+    
     move.w  #160, (CursorX)             ; Put cursor in the center
     move.w  #112, (CursorY)
     clr.b   (CursorHeld)                ; No clicking yet
     clr.b   (CursorClick)
+    clr.b   (DblTimer)
     
     move.b  #CURSOR_ARROW,(CursorShape) ; Default shape
     move.b  #-1, (CursorOldShape)
@@ -37,6 +40,12 @@ InitCursor:
 ;****************************************************************************
 
 UpdateCursor:
+    move.b  (DblTimer), d7              ; Update double click timer
+    beq.s   @NoDoubleClick
+    subq.b  #1, d7
+    move.b  d7, (DblTimer)
+@NoDoubleClick:
+    
     tst.b   (HasMouse)                  ; Is the mouse connected?
     bne     UpdateCursorMouse
     tst.b   (HasJoypad)                 ; Is the joypad connected?

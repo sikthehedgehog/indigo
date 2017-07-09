@@ -170,6 +170,16 @@ RunGuiLoop:
 @Trigger:
     clr.l   (Interacting)               ; Done interacting with it
     
+    tst.b   (DblTimer)                  ; Was it a double click?
+    beq.s   @NoDoubleClick
+    clr.b   (DblTimer)
+    moveq   #1, d0
+    bra.s   @InDoubleClick
+@NoDoubleClick:
+    move.b  (DblDelay), (DblTimer)
+    moveq   #0, d0
+@InDoubleClick:
+    
     move.l  d2, a0                      ; Redraw widget
     move.l  a0, a6
     bsr     DrawWidget
@@ -190,6 +200,15 @@ RunGuiLoop:
     lea     (GuiStates), a6             ; how you can tell when a hold event
     move.b  (a6,d7.w), d6               ; is over or not
     
+    moveq   #0, d7                      ; Get the correct widget ID in case
+    move.b  WIDGET_ID(a0), d7           ; the widget supports double clicks
+    tst.w   d0
+    beq.s   @SingleClick
+    cmpi.b  #$FF, WIDGET_IDALT(a0)
+    beq.s   @SingleClick
+    move.b  WIDGET_IDALT(a0), d7
+@SingleClick:
+    
     movem.l (sp)+, d0-d4/a0-a3          ; Restore registers
     rts                                 ; End of subroutine
 
@@ -200,6 +219,7 @@ RunGuiLoop:
     move.l  a0, a6
     bsr     DrawWidget
     
+    moveq   #0, d0                      ; Not a double click (d'oh!)
     moveq   #-1, d6                     ; Let program know that interaction
                                         ; is still ongoing
     

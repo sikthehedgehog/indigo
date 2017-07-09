@@ -51,6 +51,9 @@ ParseGuiLayout:
     cmp.b   #$FF, d7
     beq.s   @End
     
+    st.b    WIDGET_IDALT(a6)            ; No handlers for secondary actions
+    st.b    WIDGET_IDSUB(a6)            ; by default (set to $FF)
+    
     lsl.w   #2, d7                      ; Go to the handler for this type
     lea     @Handlers(pc), a4
     move.l  (a4,d7.w), a4
@@ -78,6 +81,7 @@ ParseGuiLayout:
     dc.l    ParseGuiLayout_Ascii        ; OSUI_Ascii
     dc.l    ParseGuiLayout_Clickable    ; OSUI_Clickable
     dc.l    ParseGuiLayout_Draggable    ; OSUI_Draggable
+    dc.l    ParseGuiLayout_DoubleClick  ; OSUI_DblClick
 
 ;----------------------------------------------------------------------------
 ; Generic parser for most clickable widgets
@@ -333,4 +337,12 @@ ParseGuiLayout_Draggable:
     bset.b  #WFLAG_DRAG, WIDGET_FLAGS-WIDGET_SIZE(a5)
     move.b  #CURSOR_HAND, WIDGET_CURSOR1-WIDGET_SIZE(a5)
     move.b  #CURSOR_GRAB, WIDGET_CURSOR2-WIDGET_SIZE(a5)
+    rts
+
+;----------------------------------------------------------------------------
+; OSUI_DblClick
+;----------------------------------------------------------------------------
+
+ParseGuiLayout_DoubleClick:
+    move.b  (a6)+, WIDGET_IDALT-WIDGET_SIZE(a5)
     rts

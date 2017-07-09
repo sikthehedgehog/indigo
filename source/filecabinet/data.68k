@@ -34,9 +34,11 @@ SCROLL_Y: equ FLIST_Y-3
 
 Layout:
     OSUI_Clickable ID_FILELIST, FLIST_X,FLIST_Y, FLIST_W,FLIST_H
+    OSUI_DblClick ID_OPEN
     OSUI_VScroll ID_SCROLL, SCROLL_X,SCROLL_Y+2,SCROLL_LEN, VramScroller,VramScrollBg
     OSUI_Hold ID_SCROLL_U, SCROLL_X,SCROLL_Y, 2,2, VramUp
     OSUI_Hold ID_SCROLL_D, SCROLL_X,SCROLL_Y+SCROLL_LEN+4, 2,2, VramDown
+    
     OSUI_Button ID_PARENT, 2,1, 4,2, VramParent
     OSUI_Button ID_OPEN, 31,1, 7,2, $2000+VramOpen
     

@@ -8,7 +8,9 @@ MAX_WIDGETS:        equ $20             ; How many widgets we allow
 
 WIDGET_TYPE:        rs.b 1              ; Widget behavior (see WTYPE_*)
 WIDGET_FLAGS:       rs.b 1              ; Behavior flags (see WFLAG_*)
-WIDGET_ID:          rs.b 1              ; Associated action
+WIDGET_ID:          rs.b 1              ; Main action
+WIDGET_IDALT:       rs.b 1              ; Double click action
+WIDGET_IDSUB:       rs.b 1              ; Right click action
 WIDGET_VALUE:       rs.b 1              ; Associated value
 WIDGET_SHAPE:       rs.b 1              ; Widget shape (see WSHAPE_*)
                     rs.b 1
