@@ -9,6 +9,7 @@
 
 LoadProcess:
     move.l  a6, -(sp)                   ; We'll need this later
+    bsr     CloseAllHandles             ; Close any open file handles
     
     move.b  #CURSOR_BUSY, (CursorShape) ; Show that we're busy
     bsr     ClearScreen                 ; Remove any screen leftovers

@@ -213,17 +213,18 @@ ReadDirByHandle:
     rts                                 ; End of dummy handler
 
 ;****************************************************************************
-; CloseDir
-; Closes a directory handle.
+; CloseHandle
+; Closes a handle.
 ;----------------------------------------------------------------------------
 ; input d7.b .... Handle ID
 ;----------------------------------------------------------------------------
 ; breaks: d5-d7, a4-a6
 ;****************************************************************************
 
-CloseDir:
+CloseHandle:
     GetHandlePtr                        ; Convert ID to pointer
     
+CloseHandleByPtr:
     move.l  a6, d7                      ; Valid handle?
     beq.s   @Error
     
@@ -239,6 +240,28 @@ CloseDir:
     move.l  d7, a5
     move.l  d7, a4
     
+    rts                                 ; End of subroutine
+
+;****************************************************************************
+; CloseAllHandles
+; Closes all open handles.
+;----------------------------------------------------------------------------
+; breaks: d5-d7, a4-a6
+;****************************************************************************
+
+CloseAllHandles:
+    move.w  d0, -(sp)                   ; Save registers
+    move.l  a0, -(sp)
+    
+    lea     (Handles), a0               ; Close all handles
+    moveq   #MAX_HANDLES-1, d0
+@Loop:
+    move.l  a0, a6
+    bsr     CloseHandleByPtr
+    dbf     d0, @Loop
+    
+    move.l  (sp)+, a0                   ; Restore registers
+    move.w  (sp)+, d0
     rts                                 ; End of subroutine
 
 ;****************************************************************************

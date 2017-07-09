@@ -50,7 +50,7 @@
     jmp     ReadDir                     ; OS_READDIR
     jmp     DrawHBar                    ; OS_DRAWHBAR
     jmp     DrawVBar                    ; OS_DRAWVBAR
-    jmp     CloseDir                    ; OS_CLOSEDIR
+    jmp     CloseHandle                 ; OS_CLOSEDIR
     jmp     LogString                   ; OS_LOG
     jmp     GetDebugMode                ; OS_GETDEBUG
     jmp     SetDebugMode                ; OS_SETDEBUG
