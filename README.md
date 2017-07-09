@@ -9,6 +9,11 @@ If you want to emulate it, you can try using BlastEm (see
 
 ## System requirements
 
+> These requirements are for 0.10 (the last proper release yet) but 0.20
+> doesn't hardcode the peripherals anymore, so the "in 2P port" part doesn't
+> apply in the latest binaries. The readme will be updated when 0.20 sees its
+> proper release.
+
 Note that technically only the ROM is required, but if you intend to use the
 operating system at its fullest you'll want to fill in as many as possible.
 BlastEm can emulate this set up, in case you wonder (though you may need to
