@@ -101,8 +101,13 @@ UpdatePileWidget:
     
     sub.w   d5, d6                      ; Determine dimensions of the widget
     addq.w  #5, d6
-    move.w  d6, a5
     move.w  #4, a6
+    
+    cmp.w   #25-PILE_Y, d6              ; Prevent piles from growing into
+    bls.s   @NoOverflow                 ; the taskbar!!
+    move.w  #25-PILE_Y, d6
+@NoOverflow:
+    move.w  d6, a5
     
     move.w  d7, d6                      ; Determine position of the widget
     add.w   d6, d6

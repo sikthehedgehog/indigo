@@ -6,11 +6,11 @@ pal() { php png2palette.php $1 $2 ; }
 rm -rf rom
 mkdir -p rom
 mkdir -p rom/apps
-mkdir -p rom/dummy/dummy
-mkdir -p rom/dummy/empty
-cp dummy.text rom/dummy
-cp dummy.text rom/dummy/dummy/dummy1.text
-cp dummy.text rom/dummy/dummy/dummy2.text
+#mkdir -p rom/dummy/dummy
+#mkdir -p rom/dummy/empty
+#cp dummy.text rom/dummy
+#cp dummy.text rom/dummy/dummy/dummy1.text
+#cp dummy.text rom/dummy/dummy/dummy2.text
 
 gfx filecabinet/data/gfxbuild
 asm filecabinet/buildme.68k rom/apps/filecabinet.ixec

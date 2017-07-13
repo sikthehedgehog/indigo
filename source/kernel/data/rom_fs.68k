@@ -4,11 +4,6 @@ Dir_0:
     dc.l    DirEnd_1-Dir_1
     dc.b    'apps'
     dcb.b   $08-(*&$07), $00
-    dc.w    $C000
-    dc.w    Dir_2>>5
-    dc.l    DirEnd_2-Dir_2
-    dc.b    'dummy'
-    dcb.b   $08-(*&$07), $00
     dc.w    $FFFF
 DirEnd_0:
     dcb.b   $20-(*&$1F), $FF
@@ -51,43 +46,6 @@ Dir_1:
     dc.w    $FFFF
 DirEnd_1:
     dcb.b   $20-(*&$1F), $FF
-Dir_2:
-    dc.w    $C000
-    dc.w    Dir_3>>5
-    dc.l    DirEnd_3-Dir_3
-    dc.b    'dummy'
-    dcb.b   $08-(*&$07), $00
-    dc.w    $C000
-    dc.w    Dir_4>>5
-    dc.l    DirEnd_4-Dir_4
-    dc.b    'empty'
-    dcb.b   $08-(*&$07), $00
-    dc.w    $4000
-    dc.w    File_7>>5
-    dc.l    FileEnd_7-File_7
-    dc.b    'dummy.text'
-    dcb.b   $08-(*&$07), $00
-    dc.w    $FFFF
-DirEnd_2:
-    dcb.b   $20-(*&$1F), $FF
-Dir_3:
-    dc.w    $4000
-    dc.w    File_8>>5
-    dc.l    FileEnd_8-File_8
-    dc.b    'dummy1.text'
-    dcb.b   $08-(*&$07), $00
-    dc.w    $4000
-    dc.w    File_9>>5
-    dc.l    FileEnd_9-File_9
-    dc.b    'dummy2.text'
-    dcb.b   $08-(*&$07), $00
-    dc.w    $FFFF
-DirEnd_3:
-    dcb.b   $20-(*&$1F), $FF
-Dir_4:
-    dc.w    $FFFF
-DirEnd_4:
-    dcb.b   $20-(*&$1F), $FF
 File_0:
     incbin  "./rom/./apps/calculator.ixec"
 FileEnd_0:
@@ -115,16 +73,4 @@ FileEnd_5:
 File_6:
     incbin  "./rom/./apps/terminal.ixec"
 FileEnd_6:
-    dcb.b   $20-(*&$1F), $FF
-File_7:
-    incbin  "./rom/./dummy/dummy.text"
-FileEnd_7:
-    dcb.b   $20-(*&$1F), $FF
-File_8:
-    incbin  "./rom/./dummy/dummy/dummy1.text"
-FileEnd_8:
-    dcb.b   $20-(*&$1F), $FF
-File_9:
-    incbin  "./rom/./dummy/dummy/dummy2.text"
-FileEnd_9:
     dcb.b   $20-(*&$1F), $FF
