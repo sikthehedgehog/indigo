@@ -1,8 +1,35 @@
 <?php
-   exec("cd rom ; find -type f ; cd ..", $files);
-   exec("cd rom ; find -type d ; cd ..", $dirs);
-   sort($files);
-   sort($dirs);
+   function list_files($dirname) {
+      $filelist = [];
+      $dirlist = [];
+      
+      $data = scandir($dirname);
+      foreach ($data as &$name) {
+         if ($name == ".") continue;
+         if ($name == "..") continue;
+         $name = $dirname."/".$name;
+         
+         if (is_dir($name))
+            array_push($dirlist, $name);
+         else
+            array_push($filelist, $name);
+      }
+      
+      $scanlist = $dirlist;
+      foreach ($scanlist as &$subdir) {
+         $sublists = list_files($subdir);
+         $filelist = array_merge($filelist, $sublists[0]);
+         $dirlist = array_merge($dirlist, $sublists[1]);
+      }
+      
+      return [$filelist, $dirlist];
+   }
+   
+   chdir("rom");
+   $lists = list_files(".");
+   $files = $lists[0];
+   $dirs = array_merge(["."], $lists[1]);
+   chdir("..");
    
    $output = "";
    
